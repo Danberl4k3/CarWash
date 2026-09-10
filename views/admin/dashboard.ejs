@@ -32,6 +32,7 @@
               <p><%= booking.customer_name || 'Cliente sin nombre' %></p>
               <small><%= booking.services %></small>
               <div class="vehicle-meta"><span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span><span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span></div>
+              <div class="payment-row"><span class="payment-badge <%= booking.payment_status === 'paid' ? 'is-paid' : '' %>"><%= booking.payment_status === 'paid' ? 'Cobrado' : 'Pendiente de cobro' %></span><% if (booking.payment_status !== 'paid') { %><form method="post" action="/admin/reservas/<%= booking.id %>/cobro"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="collect-button" type="submit">Marcar cobrado</button></form><% } %></div>
               <form class="quick-status" method="post" action="/admin/reservas/<%= booking.id %>/estado">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <select name="status" aria-label="Cambiar estado">

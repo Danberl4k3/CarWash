@@ -227,6 +227,14 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     return reply.redirect('/admin');
   });
 
+  app.post('/admin/reservas/:id/cobro', async (request, reply) => {
+    const session = requirePostAuth(db, request, reply);
+    if (!session) return;
+    const id = Number((request.params as { id: string }).id);
+    db.prepare(`UPDATE bookings SET payment_status = 'paid', amount_paid_cents = total_cents, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(id);
+    return reply.redirect('/admin');
+  });
+
   app.get('/admin/servicios', async (request, reply) => {
     const session = requireAdmin(db, request, reply);
     if (!session) return;

@@ -5,7 +5,7 @@ import { createDatabase } from './db.js';
 const database = createDatabase();
 const app = await buildApp({ db: database.db, logger: true });
 const port = Number(process.env.PORT ?? 3000);
-const host = process.env.RAILWAY_ENVIRONMENT_NAME ? '0.0.0.0' : (process.env.HOST ?? '0.0.0.0');
+const host = process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_ENVIRONMENT_ID || process.env.PORT ? '0.0.0.0' : (process.env.HOST ?? '0.0.0.0');
 
 try {
   await app.listen({ port, host });

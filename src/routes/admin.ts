@@ -142,7 +142,8 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
   app.get('/admin/reservas/nueva', async (request, reply) => {
     const session = requireAdmin(db, request, reply);
     if (!session) return;
-    return reply.view('admin/new-booking.ejs', {
+    return reply.redirect('/');
+    /* return reply.view('admin/new-booking.ejs', {
       title: 'Nueva reserva',
       ...baseView(session, request),
       services: getServicesWithPrices(db, true),
@@ -151,7 +152,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       pickupSlots: pickupHours(),
       paymentMethods: PAYMENT_METHODS,
       nowHour: getLimaNow().hour,
-    });
+    }); */
   });
 
   app.post('/admin/reservas', async (request, reply) => {
@@ -323,6 +324,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
         const update = db.prepare('UPDATE capacity_slots SET max_slots = ? WHERE hour = ?');
         for (const hour of dropoffHours()) {
           const value = Number(body[`capacity_${hour}`]);
+          if (value > 10) throw new Error('Capacity must be at most 10');
           if (!Number.isInteger(value) || value < 1 || value > 50) throw new Error('Capacidad inválida');
           update.run(value, hour);
         }

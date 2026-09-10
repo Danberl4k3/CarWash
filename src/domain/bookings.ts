@@ -189,7 +189,7 @@ export function createBooking(
   const used = db
     .prepare(`
       SELECT COUNT(*) AS count FROM bookings
-      WHERE booking_date = ? AND dropoff_hour = ? AND status != 'cancelled'
+      WHERE booking_date = ? AND dropoff_hour = ? AND status NOT IN ('completed', 'cancelled')
     `)
     .get(now.date, input.dropoffHour) as { count: number };
   if (used.count >= capacity.max_slots) {
@@ -412,8 +412,9 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
     throw new BookingValidationError('Las horas deben estar en intervalos de 10 minutos.');
   }
   if (
-    update.status !== 'cancelled'
-    && (update.dropoffHour !== booking.dropoff_hour || booking.status === 'cancelled')
+    update.status !== 'completed'
+    && update.status !== 'cancelled'
+    && (update.dropoffHour !== booking.dropoff_hour || booking.status === 'completed' || booking.status === 'cancelled')
   ) {
     const capacity = db.prepare('SELECT max_slots FROM capacity_slots WHERE hour = ?').get(update.dropoffHour) as
       | { max_slots: number }
@@ -421,7 +422,7 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
     if (!capacity) throw new BookingValidationError('Ese horario no está configurado.');
     const used = db.prepare(`
       SELECT COUNT(*) AS count FROM bookings
-      WHERE booking_date = ? AND dropoff_hour = ? AND status != 'cancelled' AND id != ?
+      WHERE booking_date = ? AND dropoff_hour = ? AND status NOT IN ('completed', 'cancelled') AND id != ?
     `).get(booking.booking_date, update.dropoffHour, id) as { count: number };
     if (used.count >= capacity.max_slots) {
       throw new BookingValidationError('No hay cupos disponibles en el nuevo horario.');

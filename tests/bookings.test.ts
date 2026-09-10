@@ -82,6 +82,7 @@ describe('reglas de reserva', () => {
   });
 
   it('respeta la capacidad configurada por hora', () => {
+    db.prepare('UPDATE capacity_slots SET max_slots = 1 WHERE hour = 8').run();
     createBooking(db, validInput(), { now: mondayAt(8) });
     expect(() =>
       createBooking(db, { ...validInput(), plate: 'XYZ-987' }, { now: mondayAt(8) }),

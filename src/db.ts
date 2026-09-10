@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { VEHICLE_TYPES, type VehicleType } from './constants.js';
+import { DEFAULT_CAPACITY_PER_HOUR, VEHICLE_TYPES, type VehicleType } from './constants.js';
 import { dropoffHours } from './time.js';
 
 export interface DatabaseContext {
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS service_prices (
 
 CREATE TABLE IF NOT EXISTS capacity_slots (
   hour INTEGER PRIMARY KEY CHECK (hour BETWEEN 7 AND 17),
-  max_slots INTEGER NOT NULL DEFAULT 1 CHECK (max_slots BETWEEN 1 AND 50)
+  max_slots INTEGER NOT NULL DEFAULT 10 CHECK (max_slots BETWEEN 1 AND 10)
 );
 
 CREATE TABLE IF NOT EXISTS customers (
@@ -170,10 +170,11 @@ export function createDatabase(databasePath?: string): DatabaseContext {
       const row = db.prepare('SELECT id FROM services WHERE slug = ?').get(item[0]) as { id: number };
       for (const vehicleType of VEHICLE_TYPES) insertPrice.run(row.id, vehicleType, defaultPrices[item[0]]?.[vehicleType] ?? 0);
     }
-    const insertCapacity = db.prepare('INSERT OR IGNORE INTO capacity_slots (hour, max_slots) VALUES (?, 1)');
-    for (const hour of dropoffHours()) insertCapacity.run(hour);
+    const insertCapacity = db.prepare('INSERT OR IGNORE INTO capacity_slots (hour, max_slots) VALUES (?, ?)');
+    for (const hour of dropoffHours()) insertCapacity.run(hour, DEFAULT_CAPACITY_PER_HOUR);
   });
   seedServices();
+  db.prepare('UPDATE capacity_slots SET max_slots = ? WHERE max_slots = 1').run(DEFAULT_CAPACITY_PER_HOUR);
 
   const adminCount = (db.prepare('SELECT COUNT(*) AS count FROM admins').get() as { count: number }).count;
   let bootstrapPassword: string | null = null;

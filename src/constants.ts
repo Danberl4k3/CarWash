@@ -8,6 +8,8 @@ export const BUSINESS = {
   latePickupHour: 16,
 } as const;
 
+export const DEFAULT_CAPACITY_PER_HOUR = 10;
+
 export const VEHICLE_TYPES = ['motorcycle', 'car', 'small_suv', 'large_suv'] as const;
 export type VehicleType = (typeof VEHICLE_TYPES)[number];
 

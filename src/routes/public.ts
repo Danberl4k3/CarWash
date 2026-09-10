@@ -23,7 +23,7 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
     }>;
     const usedRows = db.prepare(`
       SELECT dropoff_hour AS hour, COUNT(*) AS used
-      FROM bookings WHERE booking_date = ? AND status != 'cancelled'
+      FROM bookings WHERE booking_date = ? AND status NOT IN ('completed', 'cancelled')
       GROUP BY dropoff_hour
     `).all(now.date) as Array<{ hour: number; used: number }>;
     const used = new Map(usedRows.map((row) => [row.hour, row.used]));

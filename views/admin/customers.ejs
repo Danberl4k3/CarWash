@@ -1,0 +1,14 @@
+<%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
+<%- include('../partials/admin-nav', { admin, csrfToken }) %>
+<main class="admin-main">
+  <div class="page-heading"><div><span class="eyebrow">Historial</span><h1>Clientes</h1><p>Busca por nombre, teléfono o placa.</p></div><a class="primary-button" href="/admin/reservas/nueva">+ Nueva reserva</a></div>
+  <%- include('../partials/alerts', { error, success }) %>
+  <form class="search-bar" method="get" action="/admin/clientes"><input name="q" value="<%= search %>" placeholder="Buscar nombre, teléfono o placa"><button class="secondary-button" type="submit">Buscar</button></form>
+  <section class="table-card">
+    <table class="data-table"><thead><tr><th>Cliente</th><th>Teléfono</th><th>Vehículos</th><th>Reservas</th><th>Última visita</th><th></th></tr></thead><tbody>
+      <% if (customers.length === 0) { %><tr><td colspan="6" class="empty-table">No se encontraron clientes.</td></tr><% } %>
+      <% customers.forEach(customer => { %><tr><td><strong><%= customer.name || 'Sin nombre' %></strong></td><td><%= customer.phone || '—' %></td><td><%= customer.plates || '—' %></td><td><%= customer.booking_count %></td><td><%= customer.last_booking || '—' %></td><td><a class="table-link" href="/admin/clientes/<%= customer.id %>">Ver →</a></td></tr><% }) %>
+    </tbody></table>
+  </section>
+</main>
+<%- include('../partials/footer') %>

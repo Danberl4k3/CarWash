@@ -1,0 +1,20 @@
+<%- include('../partials/head', { title, bodyClass: 'login-page' }) %>
+<main class="login-shell">
+  <section class="login-aside">
+    <a class="public-brand light-brand" href="/"><span class="brand-mark">DA</span><span><strong>DASAV Car Wash</strong><small>Cuidado que se nota</small></span></a>
+    <div><span class="eyebrow">Centro de control</span><h1>Todo el día,<br>en una sola vista.</h1><p>Reservas, recojos, pagos y clientes organizados para que el equipo avance sin perder tiempo.</p></div>
+  </section>
+  <section class="login-panel">
+    <form method="post" action="/admin/login" class="login-form">
+      <span class="step-kicker">Administración</span>
+      <h2>Bienvenido</h2>
+      <p>Ingresa con tus credenciales para continuar.</p>
+      <%- include('../partials/alerts', { error, success }) %>
+      <label>Usuario<input name="username" autocomplete="username" required autofocus></label>
+      <label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label>
+      <button class="primary-button block-button" type="submit">Ingresar <span>→</span></button>
+      <a class="back-link" href="/">← Volver a reservas</a>
+    </form>
+  </section>
+</main>
+</body></html>

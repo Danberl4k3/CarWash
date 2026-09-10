@@ -1,0 +1,21 @@
+<%- include('partials/head', { title, bodyClass: 'confirmation-page' }) %>
+<main class="confirmation-shell">
+  <a class="public-brand centered-brand" href="/"><span class="brand-mark">DA</span><span><strong>DASAV Car Wash</strong></span></a>
+  <section class="confirmation-card">
+    <div class="success-icon">✓</div>
+    <span class="eyebrow">Reserva registrada</span>
+    <h1>¡Listo! Te esperamos.</h1>
+    <p>Guarda este código para identificar tu reserva.</p>
+    <div class="reservation-code"><small>Código de reserva</small><strong><%= booking.code %></strong></div>
+    <div class="confirmation-details">
+      <div><small>Vehículo</small><strong><%= vehicleLabels[booking.vehicle_type] %> · <%= booking.plate %></strong></div>
+      <div><small>Ingreso</small><strong><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></strong></div>
+      <div><small>Recojo</small><strong><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></strong></div>
+      <div><small>Servicios</small><strong><%= booking.services %></strong></div>
+      <div><small>Pago</small><strong><%= paymentLabels[booking.payment_method] %></strong></div>
+      <div><small>Total</small><strong><%= formatMoney(booking.total_cents) %></strong></div>
+    </div>
+    <a class="primary-button block-button" href="/">Hacer otra reserva</a>
+  </section>
+</main>
+<%- include('partials/footer') %>

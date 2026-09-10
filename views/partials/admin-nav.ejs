@@ -1,0 +1,20 @@
+<header class="admin-topbar">
+  <a class="admin-brand" href="/admin">
+    <span class="brand-mark">DA</span>
+    <span><strong>DASAV Car Wash</strong><small>Centro de control</small></span>
+  </a>
+  <nav class="admin-nav" aria-label="Administración">
+    <a href="/admin">Operación</a>
+    <a href="/admin/reservas/nueva">Nueva reserva</a>
+    <a href="/admin/clientes">Clientes</a>
+    <a href="/admin/servicios">Servicios</a>
+    <a href="/admin/capacidad">Capacidad</a>
+  </nav>
+  <div class="admin-user">
+    <a href="/admin/seguridad"><%= admin.username %></a>
+    <form action="/admin/logout" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="link-button" type="submit">Salir</button>
+    </form>
+  </div>
+</header>

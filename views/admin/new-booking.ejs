@@ -1,0 +1,37 @@
+<%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
+<%- include('../partials/admin-nav', { admin, csrfToken }) %>
+<main class="admin-main narrow-main">
+  <div class="page-heading"><div><span class="eyebrow">Recepción</span><h1>Nueva reserva</h1><p>Registra una reserva telefónica o un vehículo que llegó directamente.</p></div><a class="secondary-button" href="/admin">Volver al panel</a></div>
+  <%- include('../partials/alerts', { error, success }) %>
+  <form id="booking-form" class="admin-form card-form" method="post" action="/admin/reservas" data-catalog="<%= serviceCatalog %>" data-now-hour="<%= nowHour %>" data-booking-mode="admin-new" data-server-now="<%= Date.now() %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="form-section"><h2>Vehículo y cliente</h2><div class="field-grid two-columns">
+      <label class="plate-field">Placa *<div class="plate-input-row"><input name="plate" maxlength="12" required placeholder="ABC-123"><button type="button" class="secondary-button" data-lookup-plate>Consultar placa</button></div><div class="plate-photo-actions"><label class="secondary-button photo-button">Tomar foto<input type="file" accept="image/*" capture="environment" data-plate-photo></label><small data-photo-status aria-live="polite"></small><small data-photo-suggestion hidden></small><button type="button" class="secondary-button" data-use-photo-plate hidden>Usar placa detectada</button></div><small class="plate-status" data-plate-status aria-live="polite"></small></label>
+      <label>Marca <small>Opcional</small><input name="vehicleMake" maxlength="100"></label>
+      <label>Modelo <small>Opcional</small><input name="vehicleModel" maxlength="100"></label>
+      <label>Color <small>Opcional</small><input name="vehicleColor" maxlength="100"></label>
+      <label>Año <small>Opcional</small><input name="vehicleYear" type="number" min="1900" max="2100"></label>
+      <label>Dueño <small>Opcional</small><input name="vehicleOwner" maxlength="200"></label>
+      <label>Tipo de vehículo<select name="vehicleType" required><% Object.entries(vehicleLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %></select></label>
+      <label>Nombre <small>Opcional</small><input name="name"></label>
+      <label id="phone-field">Teléfono <small id="phone-optional">Opcional</small><input id="phone" name="phone" type="tel"></label>
+    </div></div>
+    <div class="form-section"><h2>Servicios</h2><div class="field-grid two-columns">
+      <label>Servicio principal<select name="baseServiceId" required><% services.filter(s => s.category === 'base').forEach(s => { %><option value="<%= s.id %>" data-slug="<%= s.slug %>"><%= s.name %></option><% }) %></select></label>
+      <div class="checkbox-group"><span>Adicionales</span><% services.filter(s => s.category === 'addon').forEach(s => { %><label data-addon-slug="<%= s.slug %>" data-incompatible-interior="<%= s.incompatible_with_interior %>"><input type="checkbox" name="addonServiceIds" value="<%= s.id %>"> <%= s.name %></label><% }) %></div>
+    </div></div>
+    <div class="form-section"><h2>Horario y pago</h2><div class="field-grid two-columns">
+      <label>Ingreso<div class="time-pair"><select id="dropoff-hour" name="dropoffHour" required><% dropoffSlots.forEach(hour => { %><option value="<%= hour %>"><%= hourLabel(hour) %></option><% }) %></select><select id="dropoff-minute" name="dropoffMinute" required><% [0,10,20,30,40,50].forEach(minute => { %><option value="<%= minute %>"><%= String(minute).padStart(2, '0') %> min</option><% }) %></select></div></label>
+      <label>Recojo<div class="time-pair"><select id="pickup-hour" name="pickupHour" required><% pickupSlots.forEach(hour => { %><option value="<%= hour %>"><%= hourLabel(hour) %></option><% }) %></select><select id="pickup-minute" name="pickupMinute" required><% [0,10,20,30,40,50].forEach(minute => { %><option value="<%= minute %>"><%= String(minute).padStart(2, '0') %> min</option><% }) %></select></div></label>
+      <label>Método de pago<select name="paymentMethod"><% paymentMethods.forEach(value => { %><option value="<%= value %>"><%= paymentLabels[value] %></option><% }) %></select></label>
+      <div class="inline-total"><small>Total calculado</small><strong id="booking-total">S/ 0.00</strong></div>
+    </div><p id="phone-rule" class="phone-rule" hidden>Se requiere teléfono para este horario.</p></div>
+    <p class="time-status" data-time-status aria-live="polite"></p><label>Notas<textarea name="notes" rows="4"></textarea></label>
+    <div class="form-actions"><a class="secondary-button" href="/admin">Cancelar</a><button class="primary-button" type="submit">Crear reserva</button></div>
+  </form>
+</main>
+<script src="/public/booking.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js" defer></script>
+<script src="/public/plate-photo.js" defer></script>
+<script src="/public/booking-time.js" defer></script>
+<%- include('../partials/footer') %>

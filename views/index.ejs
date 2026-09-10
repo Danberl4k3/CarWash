@@ -1,0 +1,138 @@
+<%- include('partials/head', { title, bodyClass: 'public-page' }) %>
+<header class="public-header">
+  <a class="public-brand" href="/">
+    <span class="brand-mark">DA</span>
+    <span><strong>DASAV Car Wash</strong><small>Cuidado que se nota</small></span>
+  </a>
+  <a class="admin-link" href="/admin/login">Administración</a>
+</header>
+
+<main class="booking-shell">
+  <section class="booking-intro">
+    <span class="eyebrow">Reserva para hoy</span>
+    <h1>Tu vehículo limpio,<br><em>sin perder tiempo.</em></h1>
+    <p>Elige tu servicio y separa un horario. Nosotros nos encargamos del resto.</p>
+    <div class="intro-pills">
+      <span>15–20 min por servicio</span>
+      <span>Lun–Sáb</span>
+      <span>7 a. m. – 6 p. m.</span>
+    </div>
+    <div class="watermark-car" aria-hidden="true">
+      <span class="car-roof"></span><span class="car-body"></span><span class="wheel wheel-left"></span><span class="wheel wheel-right"></span>
+    </div>
+  </section>
+
+  <section class="booking-panel">
+    <div class="panel-heading">
+      <div><span class="step-kicker">Reserva rápida</span><h2>Separa tu turno</h2></div>
+      <span class="today-chip"><span></span> Hoy</span>
+    </div>
+    <%- include('partials/alerts', { error, success: null }) %>
+    <% if (!openToday) { %>
+      <div class="closed-state">
+        <strong>Hoy no atendemos reservas.</strong>
+        <span>Regresa de lunes a sábado para separar tu turno.</span>
+      </div>
+    <% } %>
+    <form id="booking-form" class="booking-form" method="post" action="/reservar"
+      data-catalog="<%= serviceCatalog %>" data-now-hour="<%= now.hour %>" data-booking-mode="public" data-server-now="<%= Date.now() %>" <%= !openToday ? 'inert' : '' %>>
+      <fieldset>
+        <legend><span>1</span> ¿Qué vehículo traes?</legend>
+        <div class="choice-grid vehicle-grid">
+          <% Object.entries(vehicleLabels).forEach(([value, label], index) => { %>
+            <label class="choice-card">
+              <input type="radio" name="vehicleType" value="<%= value %>" <%= index === 1 ? 'checked' : '' %> required>
+              <span class="vehicle-icon vehicle-<%= value %>"></span>
+              <strong><%= label %></strong>
+            </label>
+          <% }) %>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span>2</span> Elige el lavado</legend>
+        <div class="service-list">
+          <% services.filter(service => service.category === 'base').forEach((service, index) => { %>
+            <label class="service-option">
+              <input type="radio" name="baseServiceId" value="<%= service.id %>" data-slug="<%= service.slug %>" <%= index === 1 ? 'checked' : '' %> required>
+              <span><strong><%= service.name %></strong><small>Servicio principal</small></span>
+              <b class="service-price" data-service-price="<%= service.id %>">—</b>
+            </label>
+          <% }) %>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span>3</span> Agrega un cuidado extra</legend>
+        <div class="addon-grid">
+          <% services.filter(service => service.category === 'addon').forEach(service => { %>
+            <label class="addon-option" data-addon-slug="<%= service.slug %>" data-incompatible-interior="<%= service.incompatible_with_interior %>">
+              <input type="checkbox" name="addonServiceIds" value="<%= service.id %>">
+              <span class="check-mark">✓</span>
+              <span><strong><%= service.name %></strong><small class="service-price" data-service-price="<%= service.id %>">—</small></span>
+            </label>
+          <% }) %>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span>4</span> Horario</legend>
+        <div class="field-grid two-columns">
+          <label>Hora de ingreso
+            <input id="dropoff-display" value="<%= automaticDropoff.hour %>:<%= String(automaticDropoff.minute).padStart(2, '0') %> (automática)" readonly>
+            <input type="hidden" name="dropoffHour" id="dropoff-hour" value="<%= automaticDropoff.hour %>">
+            <input type="hidden" name="dropoffMinute" id="dropoff-minute" value="<%= automaticDropoff.minute %>">
+            <!--
+              <option value="">Selecciona un turno</option>
+              <% slots.forEach(slot => { %>
+                <option value="<%= slot.hour %>" <%= slot.disabled ? 'disabled' : '' %>>
+                  <%= slot.label %> · <%= slot.disabled ? 'No disponible' : `${slot.available} cupo${slot.available === 1 ? '' : 's'}` %>
+                </option>
+              <% }) %>
+            </select> -->
+          </label>
+          <label>Hora estimada de recojo
+            <select name="pickupTime" id="pickup-time" required>
+              <option value="">Selecciona una hora</option>
+            </select>
+            <div class="time-buttons"><button type="button" data-pickup-offset="60">+ 1 hora</button><button type="button" data-pickup-offset="90">+ 1 h 30</button></div>
+          </label>
+        </div>
+        <p class="field-help">La hora de recojo debe ser posterior al ingreso.</p>
+        <p class="time-status" data-time-status aria-live="polite"></p>
+      </fieldset>
+
+      <fieldset>
+        <legend><span>5</span> Tus datos</legend>
+        <div class="field-grid two-columns">
+          <label class="plate-field">Placa <b>*</b><div class="plate-input-row"><input name="plate" maxlength="12" placeholder="ABC-123" autocomplete="off" required><button type="button" class="secondary-button" data-lookup-plate>Consultar placa</button></div><div class="plate-photo-actions"><label class="secondary-button photo-button">Tomar foto<input type="file" accept="image/*" capture="environment" data-plate-photo></label><small data-photo-status aria-live="polite"></small><small data-photo-suggestion hidden></small><button type="button" class="secondary-button" data-use-photo-plate hidden>Usar placa detectada</button></div><small class="plate-status" data-plate-status aria-live="polite"></small></label>
+          <label>Marca <small>Opcional</small><input name="vehicleMake" maxlength="100"></label>
+          <label>Modelo <small>Opcional</small><input name="vehicleModel" maxlength="100"></label>
+          <label>Color <small>Opcional</small><input name="vehicleColor" maxlength="100"></label>
+          <label>Año <small>Opcional</small><input name="vehicleYear" type="number" min="1900" max="2100"></label>
+          <label>Dueño <small>Opcional</small><input name="vehicleOwner" maxlength="200"></label>
+          <label>Nombre <small>Opcional</small><input name="name" maxlength="200" placeholder="¿A nombre de quién?"></label>
+          <label id="phone-field">Teléfono <small id="phone-optional">Opcional</small><input type="tel" name="phone" id="phone" maxlength="20" placeholder="999 999 999"></label>
+          <label>Método de pago
+            <select name="paymentMethod" required>
+              <% Object.entries(paymentLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %>
+            </select>
+          </label>
+        </div>
+        <label>Indicaciones <small>Opcional</small><textarea name="notes" rows="3" maxlength="1000" placeholder="Nivel de suciedad, objetos delicados u otra indicación"></textarea></label>
+        <p id="phone-rule" class="phone-rule" hidden>El teléfono es necesario para reservas tardías o recojos desde las 4 p. m.</p>
+      </fieldset>
+
+      <div class="booking-total">
+        <span><small>Total estimado</small><strong id="booking-total">S/ 0.00</strong></span>
+        <button class="primary-button" type="submit" <%= !openToday ? 'disabled' : '' %>>Confirmar reserva <span>→</span></button>
+      </div>
+      <p class="price-note">Los pagos se realizan por Yape, Plin o efectivo. Si un precio figura en cero, será confirmado en el local.</p>
+    </form>
+  </section>
+</main>
+<script src="/public/booking.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js" defer></script>
+<script src="/public/plate-photo.js" defer></script>
+<script src="/public/booking-time.js" defer></script>
+<%- include('partials/footer') %>

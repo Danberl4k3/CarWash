@@ -1,0 +1,14 @@
+<%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
+<%- include('../partials/admin-nav', { admin, csrfToken }) %>
+<main class="admin-main narrow-main">
+  <div class="page-heading"><div><span class="eyebrow">Agenda</span><h1>Capacidad por turno</h1><p>Define cuántos vehículos pueden ingresar al mismo tiempo en cada hora.</p></div></div>
+  <%- include('../partials/alerts', { error, success }) %>
+  <form class="card-form capacity-form" method="post" action="/admin/capacidad">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="capacity-grid">
+      <% slots.forEach(slot => { %><label><span><small>Turno</small><strong><%= hourLabel(slot.hour) %></strong></span><input type="number" name="capacity_<%= slot.hour %>" min="1" max="50" value="<%= slot.max_slots %>" required><em>cupos</em></label><% }) %>
+    </div>
+    <div class="form-actions"><a class="secondary-button" href="/admin">Cancelar</a><button class="primary-button" type="submit">Guardar capacidad</button></div>
+  </form>
+</main>
+<%- include('../partials/footer') %>

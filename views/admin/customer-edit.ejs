@@ -1,0 +1,14 @@
+<%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
+<%- include('../partials/admin-nav', { admin, csrfToken }) %>
+<main class="admin-main narrow-main">
+  <div class="page-heading"><div><span class="eyebrow">Cliente #<%= customer.id %></span><h1><%= customer.name || 'Cliente sin nombre' %></h1><p><%= vehicles.map(v => v.plate).join(' · ') || 'Sin vehículos' %></p></div><a class="secondary-button" href="/admin/clientes">Volver</a></div>
+  <%- include('../partials/alerts', { error, success }) %>
+  <form class="card-form admin-form" method="post" action="/admin/clientes/<%= customer.id %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field-grid two-columns"><label>Nombre<input name="name" value="<%= customer.name || '' %>"></label><label>Teléfono<input name="phone" value="<%= customer.phone || '' %>"></label></div>
+    <label>Notas del cliente<textarea name="notes" rows="4"><%= customer.notes || '' %></textarea></label>
+    <div class="form-actions"><button class="primary-button" type="submit">Guardar cliente</button></div>
+  </form>
+  <section class="subsection"><h2>Historial de reservas</h2><div class="table-card"><table class="data-table"><thead><tr><th>Fecha</th><th>Placa</th><th>Ingreso</th><th>Recojo</th><th>Estado</th><th></th></tr></thead><tbody><% bookings.forEach(booking => { %><tr><td><%= booking.booking_date %></td><td><strong><%= booking.plate %></strong></td><td><%= hourLabel(booking.dropoff_hour) %></td><td><%= hourLabel(booking.pickup_hour) %></td><td><span class="status-badge"><%= statusLabels[booking.status] %></span></td><td><a class="table-link" href="/admin/reservas/<%= booking.id %>">Abrir →</a></td></tr><% }) %></tbody></table></div></section>
+</main>
+<%- include('../partials/footer') %>

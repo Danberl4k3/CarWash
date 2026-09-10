@@ -139,6 +139,7 @@ export function createDatabase(databasePath?: string): DatabaseContext {
   if (!isMemory) mkdirSync(dirname(resolvedPath), { recursive: true });
   const db = new Database(resolvedPath);
   db.pragma('foreign_keys = ON');
+  db.pragma('busy_timeout = 5000');
   db.exec(schema);
   const vehicleColumns = db.prepare('PRAGMA table_info(vehicles)').all() as Array<{ name: string }>;
   const existingVehicleColumns = new Set(vehicleColumns.map((column) => column.name));

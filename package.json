@@ -2,6 +2,9 @@
   "name": "car-wash-jc-reservas",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20 <23"
+  },
   "type": "module",
   "description": "Sistema web de reservas y operación para DASAV Car Wash",
   "scripts": {

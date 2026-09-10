@@ -20,7 +20,7 @@ npm start
 
 ## Despliegue en Railway
 
-Conecta el repositorio de GitHub y deja que Railway use `railway.toml`. En las variables del servicio configura `HOST=0.0.0.0`, `NODE_ENV=production`, `DATABASE_PATH=/data/carwash.db`, las credenciales administrativas, `COOKIE_SECRET` y `JSON_PE_TOKEN`. Agrega un volumen con punto de montaje `/data`, genera un dominio y usa `/salud` como health check. Mantén una sola réplica porque SQLite usa un único archivo de datos.
+Conecta el repositorio de GitHub y deja que Railway use `railway.toml`. En las variables del servicio configura `HOST=0.0.0.0`, `NODE_ENV=production`, `DATABASE_PATH=/data/carwash.db`, las credenciales administrativas, `COOKIE_SECRET` y `JSON_PE_TOKEN`. No definas `PORT` manualmente: Railway lo inyecta automáticamente. Agrega un volumen con punto de montaje `/data`, genera un dominio y usa `/salud` como health check. Mantén una sola réplica porque SQLite usa un único archivo de datos.
 
 ## Variables de entorno
 

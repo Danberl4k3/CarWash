@@ -189,3 +189,139 @@ textarea { resize: vertical; }
   .time-pair { grid-template-columns:1fr 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior:auto !important; transition-duration:.01ms !important; animation-duration:.01ms !important; } }
+.ocr-panel{display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem;min-width:0;max-width:100%;font:inherit}
+.ocr-panel[hidden]{display:none}
+.ocr-panel *{box-sizing:border-box;min-width:0}
+.ocr-panel .ocr-canvas{width:100%;max-width:100%;height:auto;background:#000;border:1px solid #888;border-radius:.25rem;touch-action:none;display:block}
+.ocr-panel .ocr-ranges{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.4rem}
+.ocr-panel .ocr-ranges label{display:flex;flex-direction:column;font-size:.8rem;gap:.15rem}
+.ocr-panel .ocr-ranges input[type=range]{width:100%;min-height:44px;touch-action:auto}
+.ocr-panel .ocr-btns{display:flex;flex-wrap:wrap;gap:.5rem}
+.ocr-panel button{min-height:44px;min-width:44px;padding:.5rem .75rem;white-space:normal;cursor:pointer}
+.ocr-panel button:disabled{opacity:.5;cursor:not-allowed}
+.ocr-panel .ocr-manual{min-height:44px;width:100%;padding:.5rem;font-size:1rem;text-transform:uppercase}
+@media(max-width:480px){.ocr-panel .ocr-btns{flex-direction:column}.ocr-panel button{width:100%}}
+/* admin.css - append */
+.wash-queue {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: var(--surface, #f8fafc);
+  border-radius: 12px;
+  border: 1px solid var(--border, #e2e8f0);
+}
+
+.wash-queue h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: var(--text-primary, #0f172a);
+}
+
+.queue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.queue-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.queue-card--next {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
+}
+
+.queue-badge {
+  align-self: flex-start;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.queue-card__header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.queue-card__header h3 a {
+  color: #1e40af;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.queue-card__header h3 a:hover {
+  text-decoration: underline;
+}
+
+.queue-card__times {
+  display: block;
+  font-size: 0.875rem;
+  color: #475569;
+  margin-top: 0.25rem;
+}
+
+.queue-card__services {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.service-tag {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.queue-card__action {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn--primary {
+  min-height: 44px;
+  padding: 0.625rem 1.25rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  max-width: 100%;
+}
+
+.btn--primary:hover {
+  background: #1d4ed8;
+}
+
+.btn--primary:focus-visible {
+  outline: 2px solid #1e40af;
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .wash-queue {
+    padding: 1rem;
+  }
+  .queue-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -111,6 +111,17 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     if (!session) return;
     const now = getLimaNow();
     const bookings = listBookingsForDate(db, now.date);
+    const washQueue = bookings
+      .filter(b => b.status === 'pending')
+      .sort((a, b) => {
+        const aPickup = (a.pickup_minute ?? a.pickup_hour * 60);
+        const bPickup = (b.pickup_minute ?? b.pickup_hour * 60);
+        if (aPickup !== bPickup) return aPickup - bPickup;
+        const aDropoff = (a.dropoff_minute ?? a.dropoff_hour * 60);
+        const bDropoff = (b.dropoff_minute ?? b.dropoff_hour * 60);
+        if (aDropoff !== bDropoff) return aDropoff - bDropoff;
+        return a.id - b.id;
+      });
     const pickupGroups = pickupHours().map((hour) => ({
       hour,
       label: hourLabel(hour),
@@ -128,6 +139,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       ...baseView(session, request),
       now,
       pickupGroups,
+      washQueue,
       summary,
     });
   });

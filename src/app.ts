@@ -27,8 +27,8 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   await app.register(fastifyStatic, {
     root: resolve('public'),
     prefix: '/public/',
-    cacheControl: process.env.NODE_ENV === 'production',
-    maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
+    cacheControl: true,
+    maxAge: 0,
   });
   await app.register(view, {
     engine: { ejs },
@@ -43,7 +43,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     reply.header(
       'Content-Security-Policy',
-      "default-src 'self'; style-src 'self'; script-src 'self' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; worker-src 'self' blob:; img-src 'self' data: blob:; font-src 'self'; form-action 'self'; frame-ancestors 'none'",
+      "default-src 'self'; style-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net https://tessdata.projectnaptha.com; worker-src 'self' blob:; img-src 'self' data: blob:; font-src 'self'; form-action 'self'; frame-ancestors 'none'",
     );
     return payload;
   });

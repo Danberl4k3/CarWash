@@ -15,6 +15,43 @@
     <article><span class="summary-dot dot-mint"></span><small>Cobrado</small><strong><%= formatMoney(summary.collected) %></strong></article>
   </section>
 
+<!-- admin.ejs - before board h2 -->
+<section class="wash-queue" data-wash-queue aria-label="Orden sugerido por hora de recojo">
+  <h2>Orden sugerido por hora de recojo</h2>
+  <p>Orden sugerido por hora de recojo; confirma que el vehículo haya llegado antes de iniciar.</p>
+  <% if (washQueue.length === 0) { %>
+    <p>No hay reservas pendientes.</p>
+  <% } else { %>
+    <div class="queue-grid">
+      <% washQueue.slice(0, 5).forEach((booking, idx) => { %>
+        <article class="queue-card<%= idx === 0 ? ' queue-card--next' : '' %>">
+          <% if (idx === 0) { %>
+            <span class="queue-badge">Siguiente por lavar</span>
+          <% } %>
+          <div class="queue-card__header">
+            <h3><a href="/admin/reservas/<%= booking.id %>"><%= booking.plate %></a></h3>
+            <span class="queue-card__times">
+              Ingreso: <%= hourLabel(booking.dropoff_hour, (booking.dropoff_minute ?? booking.dropoff_hour * 60) % 60) %> ·
+              Recojo: <%= hourLabel(booking.pickup_hour, (booking.pickup_minute ?? booking.pickup_hour * 60) % 60) %>
+            </span>
+          </div>
+          <div class="queue-card__services">
+            <% (booking.services || '').split(',').map(s => s.trim()).filter(Boolean).forEach(s => { %>
+              <span class="service-tag"><%= s %></span>
+            <% }); %>
+          </div>
+          <% if (idx === 0) { %>
+            <form method="POST" action="/admin/reservas/<%= booking.id %>/estado" class="queue-card__action">
+              <input type="hidden" name="status" value="in_progress">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="primary-button">Iniciar lavado</button>
+            </form>
+          <% } %>
+        </article>
+      <% }); %>
+    </div>
+  <% } %>
+</section>
   <div class="board-heading"><h2>Recojos por hora</h2><span><%= now.date %></span></div>
   <section class="pickup-board" data-live-board>
     <% pickupGroups.forEach(group => { %>
@@ -32,7 +69,29 @@
               <p><%= booking.customer_name || 'Cliente sin nombre' %></p>
               <small><%= booking.services %></small>
               <div class="vehicle-meta"><span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span><span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span></div>
-              <div class="payment-row"><span class="payment-badge <%= booking.payment_status === 'paid' ? 'is-paid' : '' %>"><%= booking.payment_status === 'paid' ? 'Pagado' : 'Pendiente de pago' %></span><% if (booking.payment_status !== 'paid' || booking.amount_paid_cents < booking.total_cents) { %><form method="post" action="/admin/reservas/<%= booking.id %>/cobro"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button class="collect-button" type="submit"><%= booking.payment_status === 'paid' ? 'Actualizar pago' : 'Poner pagado' %></button></form><% } %></div>
+<!-- paymentTemplate.ejs - replace existing payment-row -->
+<% if (booking.payment_status === 'paid' && booking.amount_paid_cents >= booking.total_cents) { %>
+  <div class="payment-row payment-row--paid">
+    <div class="payment-amounts">
+      <span class="payment-total"><%= formatMoney(booking.total_cents) %></span>
+      <span class="payment-badge is-paid">✓ Pagado</span>
+    </div>
+  </div>
+<% } else { %>
+  <div class="payment-row">
+    <div class="payment-amounts">
+      <span class="payment-total"><%= formatMoney(booking.total_cents) %></span>
+      <% const paid = booking.amount_paid_cents || 0; %>
+      <% const pending = Math.max(0, booking.total_cents - paid); %>
+      <span class="payment-pending">Pendiente: <%= formatMoney(pending) %></span>
+    </div>
+    <form method="POST" action="/admin/reservas/<%= booking.id %>/cobro" class="payment-action">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" class="btn btn--payment">Marcar como pagado</button>
+    </form>
+  </div>
+<% } %>
+
               <form class="quick-status" method="post" action="/admin/reservas/<%= booking.id %>/estado">
                 <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <select name="status" aria-label="Cambiar estado">

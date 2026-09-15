@@ -92,10 +92,13 @@ function selectedServices(
   const base = services.find((service) => service.id === input.baseServiceId && service.category === 'base');
   if (!base) throw new BookingValidationError('El servicio principal no está disponible.');
   if (input.vehicleType === 'motorcycle' && base.slug !== 'motorcycle-wash') {
-    throw new BookingValidationError('Para motos solo está disponible el lavado de moto.');
+    throw new BookingValidationError('Para motos solo está disponible el lavado simple.');
   }
   if (input.vehicleType !== 'motorcycle' && base.slug === 'motorcycle-wash') {
-    throw new BookingValidationError('El lavado de moto solo corresponde a motos.');
+    throw new BookingValidationError('El lavado para motos solo corresponde a motos.');
+  }
+  if (input.vehicleType === 'motorcycle' && input.addonServiceIds.length > 0) {
+    throw new BookingValidationError('Para motos no hay servicios adicionales disponibles.');
   }
   const addonIds = uniqueNumbers(input.addonServiceIds);
   const addons = addonIds.map((id) => services.find((service) => service.id === id && service.category === 'addon'));

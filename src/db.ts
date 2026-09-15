@@ -108,7 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
 `;
 
 const defaultServices = [
-  ['motorcycle-wash', 'Lavado de moto', 'base', 0, 5],
+  ['motorcycle-wash', 'Lavado simple', 'base', 0, 5],
   ['interior', 'Lavado interior', 'base', 0, 10],
   ['exterior', 'Lavado exterior', 'base', 0, 20],
   ['complete', 'Lavado completo', 'base', 0, 30],

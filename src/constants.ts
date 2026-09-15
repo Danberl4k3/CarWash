@@ -8,7 +8,7 @@ export const BUSINESS = {
   latePickupHour: 16,
 } as const;
 
-export const VEHICLE_TYPES = ['motorcycle', 'car', 'small_suv', 'large_suv', 'pickup'] as const;
+export const VEHICLE_TYPES = ['motorcycle', 'car', 'small_suv', 'large_suv'] as const;
 export type VehicleType = (typeof VEHICLE_TYPES)[number];
 
 export const VEHICLE_LABELS: Record<VehicleType, string> = {
@@ -16,7 +16,6 @@ export const VEHICLE_LABELS: Record<VehicleType, string> = {
   car: 'Auto',
   small_suv: 'SUV pequeña',
   large_suv: 'SUV grande',
-  pickup: 'Camioneta',
 };
 
 export const BOOKING_STATUSES = [

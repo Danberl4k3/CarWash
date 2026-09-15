@@ -61,9 +61,25 @@
       const isMotorcycleService = input.dataset.slug === 'motorcycle-wash';
       const option = input.tagName === 'OPTION' ? input : input.closest('label');
       const hidden = motorcycle ? !isMotorcycleService : isMotorcycleService;
-      if (option) option.hidden = hidden;
+      if (option) {
+        option.hidden = hidden;
+        option.style.display = hidden ? 'none' : '';
+      }
       if (input.tagName !== 'OPTION') input.disabled = hidden;
     });
+
+    // Moto solo tiene lavado simple (ocultar adicionales para motos)
+    const addonFieldset = form.querySelector('.addon-grid')?.closest('fieldset');
+    if (addonFieldset) {
+      addonFieldset.hidden = motorcycle;
+      addonFieldset.style.display = motorcycle ? 'none' : '';
+      if (motorcycle) {
+        form.querySelectorAll('[name="addonServiceIds"]').forEach((input) => {
+          input.checked = false;
+        });
+      }
+    }
+
     const selected = baseChoices.find((input) =>
       !input.disabled
       && (input.tagName === 'OPTION' ? input.selected : input.checked)

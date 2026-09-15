@@ -84,8 +84,8 @@
     const pickup = form.querySelector('#pickup-time');
     if (!pickup) return;
     const previous = pickup.value;
-    pickup.innerHTML = '';
-    for (let total = dropoff + 60; total <= 18 * 60; total += 10) {
+    const start = Math.ceil((dropoff + 20) / 10) * 10;
+    for (let total = Math.max(start, dropoff + 10); total <= 18 * 60; total += 10) {
       const hour = Math.floor(total / 60); const minute = total % 60;
       const option = document.createElement('option'); option.value = `${hour}:${String(minute).padStart(2, '0')}`;
       option.textContent = `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour >= 12 ? 'p. m.' : 'a. m.'}`;

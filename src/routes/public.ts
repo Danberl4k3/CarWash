@@ -14,7 +14,7 @@ function stringArray(value: unknown): string[] {
 export async function registerPublicRoutes(app: FastifyInstance, db: Database.Database): Promise<void> {
   app.get('/', async (request, reply) => {
     const now = getLimaNow();
-    const automaticDropoff = roundUpTo10(now);
+    const automaticDropoff = { hour: now.hour, minute: now.minute };
     const services = getServicesWithPrices(db, true);
     const capacities = db.prepare('SELECT hour, max_slots FROM capacity_slots ORDER BY hour').all() as Array<{
       hour: number;
@@ -58,7 +58,6 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
       const body = request.body as Record<string, unknown>;
       try {
         const now = getLimaNow();
-        const automaticDropoff = roundUpTo10(now);
         const pickup = String(body.pickupTime || '');
         const [pickupHour, pickupMinute] = pickup.split(':').map(Number);
         const result = createBooking(db, {
@@ -68,8 +67,8 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
           vehicleType: body.vehicleType,
           baseServiceId: body.baseServiceId,
           addonServiceIds: stringArray(body.addonServiceIds),
-          dropoffHour: automaticDropoff.hour,
-          dropoffMinute: automaticDropoff.minute,
+          dropoffHour: now.hour,
+          dropoffMinute: now.minute,
           pickupHour: Number.isFinite(pickupHour) ? pickupHour : body.pickupHour,
           pickupMinute: Number.isFinite(pickupMinute) ? pickupMinute : 0,
           paymentMethod: body.paymentMethod,

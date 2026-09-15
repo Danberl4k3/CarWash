@@ -82,7 +82,7 @@
         <legend><span>4</span> Horario</legend>
         <div class="field-grid two-columns">
           <label>Hora de ingreso
-            <input id="dropoff-display" value="<%= automaticDropoff.hour %>:<%= String(automaticDropoff.minute).padStart(2, '0') %> (automática)" readonly>
+            <input id="dropoff-display" value="<%= hourLabel(automaticDropoff.hour, automaticDropoff.minute) %> (hora exacta de ingreso)" readonly>
             <input type="hidden" name="dropoffHour" id="dropoff-hour" value="<%= automaticDropoff.hour %>">
             <input type="hidden" name="dropoffMinute" id="dropoff-minute" value="<%= automaticDropoff.minute %>">
             <!--
@@ -128,5 +128,5 @@
     </form>
   </section>
 </main>
-<script src="/public/booking.js" defer></script>
+<script src="/public/booking.js?v=2" defer></script>
 <%- include('partials/footer') %>

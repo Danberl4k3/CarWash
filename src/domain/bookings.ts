@@ -113,8 +113,8 @@ export function validateBookingRules(input: BookingInput, now: LimaNow, allowPas
   if (!isBusinessDay(now)) throw new BookingValidationError('Las reservas están disponibles de lunes a sábado.');
   const dropoffTotal = toMinutes(input.dropoffHour, input.dropoffMinute);
   const pickupTotal = toMinutes(input.pickupHour, input.pickupMinute);
-  if (input.dropoffMinute % 10 !== 0 || input.pickupMinute % 10 !== 0) {
-    throw new BookingValidationError('Las horas deben estar en intervalos de 10 minutos.');
+  if (input.pickupMinute % 10 !== 0) {
+    throw new BookingValidationError('La hora de recojo debe estar en intervalos de 10 minutos.');
   }
   if (dropoffTotal >= BUSINESS.closeHour * 60 || pickupTotal > BUSINESS.closeHour * 60) {
     throw new BookingValidationError('El horario seleccionado está fuera de atención.');
@@ -122,7 +122,7 @@ export function validateBookingRules(input: BookingInput, now: LimaNow, allowPas
   if (pickupTotal <= dropoffTotal) {
     throw new BookingValidationError('La hora de recojo debe ser posterior a la hora de ingreso.');
   }
-  if (!allowPastSlot && dropoffTotal <= toMinutes(now.hour, now.minute)) {
+  if (!allowPastSlot && dropoffTotal < toMinutes(now.hour, now.minute)) {
     throw new BookingValidationError('Selecciona una hora de ingreso futura.');
   }
   if (phoneIsRequired(now, input.pickupHour, input.pickupMinute) && !input.phone) {
@@ -372,8 +372,8 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
   const booking = getBooking(db, id);
   if (!booking) throw new BookingValidationError('Reserva no encontrada.');
   const update = parsed.data;
-  if (update.dropoffMinute % 10 !== 0 || update.pickupMinute % 10 !== 0) {
-    throw new BookingValidationError('Las horas deben estar en intervalos de 10 minutos.');
+  if (update.pickupMinute % 10 !== 0) {
+    throw new BookingValidationError('La hora de recojo debe estar en intervalos de 10 minutos.');
   }
   if (
     update.status !== 'cancelled'

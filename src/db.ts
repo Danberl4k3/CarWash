@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS service_prices (
 
 CREATE TABLE IF NOT EXISTS capacity_slots (
   hour INTEGER PRIMARY KEY CHECK (hour BETWEEN 7 AND 17),
-  max_slots INTEGER NOT NULL DEFAULT 1 CHECK (max_slots BETWEEN 1 AND 50)
+  max_slots INTEGER NOT NULL DEFAULT 6 CHECK (max_slots BETWEEN 1 AND 50)
 );
 
 CREATE TABLE IF NOT EXISTS customers (
@@ -145,7 +145,11 @@ export function createDatabase(databasePath?: string): DatabaseContext {
   ]) {
     try { db.exec(statement); } catch { /* column already exists */ }
   }
-  db.exec('UPDATE bookings SET dropoff_minute = dropoff_hour * 60 WHERE dropoff_minute IS NULL; UPDATE bookings SET pickup_minute = pickup_hour * 60 WHERE pickup_minute IS NULL;');
+  db.exec(`
+    UPDATE bookings SET dropoff_minute = dropoff_hour * 60 WHERE dropoff_minute IS NULL;
+    UPDATE bookings SET pickup_minute = pickup_hour * 60 WHERE pickup_minute IS NULL;
+    UPDATE capacity_slots SET max_slots = 6 WHERE max_slots = 1;
+  `);
 
   const insertService = db.prepare(`
     INSERT OR IGNORE INTO services
@@ -162,7 +166,7 @@ export function createDatabase(databasePath?: string): DatabaseContext {
       const row = db.prepare('SELECT id FROM services WHERE slug = ?').get(item[0]) as { id: number };
       for (const vehicleType of VEHICLE_TYPES) insertPrice.run(row.id, vehicleType, defaultPrices[item[0]]?.[vehicleType] ?? 0);
     }
-    const insertCapacity = db.prepare('INSERT OR IGNORE INTO capacity_slots (hour, max_slots) VALUES (?, 1)');
+    const insertCapacity = db.prepare('INSERT OR IGNORE INTO capacity_slots (hour, max_slots) VALUES (?, 6)');
     for (const hour of dropoffHours()) insertCapacity.run(hour);
   });
   seedServices();

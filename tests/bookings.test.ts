@@ -74,7 +74,11 @@ describe('reglas de reserva', () => {
     expect(() => createBooking(db, input, { now: mondayAt(8) })).toThrow(/cera/i);
   });
 
-  it('respeta la capacidad configurada por hora', () => {
+  it('respeta la capacidad configurada por hora y tiene 6 por defecto', () => {
+    const slot = db.prepare('SELECT max_slots FROM capacity_slots WHERE hour = 10').get() as { max_slots: number };
+    expect(slot.max_slots).toBe(6);
+
+    db.prepare('UPDATE capacity_slots SET max_slots = 1 WHERE hour = 10').run();
     createBooking(db, validInput(), { now: mondayAt(8) });
     expect(() =>
       createBooking(db, { ...validInput(), plate: 'XYZ-987' }, { now: mondayAt(8) }),

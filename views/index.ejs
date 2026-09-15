@@ -95,10 +95,13 @@
             </select> -->
           </label>
           <label>Hora estimada de recojo
-            <select name="pickupTime" id="pickup-time" required>
-              <option value="">Selecciona una hora</option>
-            </select>
-            <div class="time-buttons"><button type="button" data-pickup-offset="60">+ 1 hora</button><button type="button" data-pickup-offset="90">+ 1 h 30</button></div>
+            <input type="time" name="pickupTime" id="pickup-time" required>
+            <div class="time-buttons">
+              <button type="button" data-pickup-offset="30">+ 30 min</button>
+              <button type="button" data-pickup-offset="60">+ 1 hora</button>
+              <button type="button" data-pickup-offset="90">+ 1 h 30</button>
+              <button type="button" data-pickup-offset="120">+ 2 horas</button>
+            </div>
           </label>
         </div>
         <p class="field-help">La hora de recojo debe ser posterior al ingreso.</p>
@@ -129,5 +132,5 @@
     </form>
   </section>
 </main>
-<script src="/public/booking.js?v=4" defer></script>
+<script src="/public/booking.js?v=5" defer></script>
 <%- include('partials/footer') %>

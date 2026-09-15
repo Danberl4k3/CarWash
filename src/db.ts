@@ -80,8 +80,8 @@ CREATE TABLE IF NOT EXISTS bookings (
   booking_date TEXT NOT NULL,
   customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
   vehicle_id INTEGER NOT NULL REFERENCES vehicles(id),
-  dropoff_hour INTEGER NOT NULL CHECK (dropoff_hour BETWEEN 7 AND 17),
-  pickup_hour INTEGER NOT NULL CHECK (pickup_hour BETWEEN 8 AND 18),
+  dropoff_hour INTEGER NOT NULL CHECK (dropoff_hour BETWEEN 0 AND 23),
+  pickup_hour INTEGER NOT NULL CHECK (pickup_hour BETWEEN 0 AND 23),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'in_progress', 'completed', 'cancelled')),
   payment_method TEXT NOT NULL CHECK (payment_method IN ('yape', 'plin', 'cash')),
   payment_status TEXT NOT NULL DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid')),
@@ -147,6 +147,44 @@ export function createDatabase(databasePath?: string): DatabaseContext {
   ]) {
     try { db.exec(statement); } catch { /* column already exists */ }
   }
+  const bookingsSql = (db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bookings'").get() as { sql: string } | undefined)?.sql;
+  if (bookingsSql && (bookingsSql.includes('BETWEEN 8 AND 18') || bookingsSql.includes('BETWEEN 7 AND 17'))) {
+    db.exec(`
+      PRAGMA foreign_keys = OFF;
+      BEGIN TRANSACTION;
+      CREATE TABLE bookings_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        code TEXT NOT NULL UNIQUE,
+        booking_date TEXT NOT NULL,
+        customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
+        vehicle_id INTEGER NOT NULL REFERENCES vehicles(id),
+        dropoff_hour INTEGER NOT NULL CHECK (dropoff_hour BETWEEN 0 AND 23),
+        pickup_hour INTEGER NOT NULL CHECK (pickup_hour BETWEEN 0 AND 23),
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'in_progress', 'completed', 'cancelled')),
+        payment_method TEXT NOT NULL CHECK (payment_method IN ('yape', 'plin', 'cash')),
+        payment_status TEXT NOT NULL DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid')),
+        amount_paid_cents INTEGER NOT NULL DEFAULT 0 CHECK (amount_paid_cents >= 0),
+        total_cents INTEGER NOT NULL DEFAULT 0 CHECK (total_cents >= 0),
+        notes TEXT,
+        started_washing_at TEXT,
+        created_by_admin INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        dropoff_minute INTEGER,
+        pickup_minute INTEGER
+      );
+      INSERT INTO bookings_new (id, code, booking_date, customer_id, vehicle_id, dropoff_hour, pickup_hour, status, payment_method, payment_status, amount_paid_cents, total_cents, notes, started_washing_at, created_by_admin, created_at, updated_at, dropoff_minute, pickup_minute)
+        SELECT id, code, booking_date, customer_id, vehicle_id, dropoff_hour, pickup_hour, status, payment_method, payment_status, amount_paid_cents, total_cents, notes, started_washing_at, created_by_admin, created_at, updated_at, dropoff_minute, pickup_minute FROM bookings;
+      DROP TABLE bookings;
+      ALTER TABLE bookings_new RENAME TO bookings;
+      CREATE INDEX IF NOT EXISTS idx_bookings_date_dropoff ON bookings(booking_date, dropoff_hour);
+      CREATE INDEX IF NOT EXISTS idx_bookings_date_pickup ON bookings(booking_date, pickup_hour);
+      CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+      COMMIT;
+      PRAGMA foreign_keys = ON;
+    `);
+  }
+
   db.exec(`
     UPDATE bookings SET dropoff_minute = dropoff_hour * 60 WHERE dropoff_minute IS NULL;
     UPDATE bookings SET pickup_minute = pickup_hour * 60 WHERE pickup_minute IS NULL;

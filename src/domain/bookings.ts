@@ -51,8 +51,8 @@ export const bookingSchema = z.object({
   vehicleType: z.enum(VEHICLE_TYPES, { message: 'Selecciona un tipo de vehículo.' }),
   baseServiceId: z.coerce.number().int().positive('Selecciona un servicio.'),
   addonServiceIds: z.array(z.coerce.number().int().positive()).default([]),
-  dropoffHour: z.coerce.number().int().min(BUSINESS.openHour).max(BUSINESS.lastDropoffHour),
-  pickupHour: z.coerce.number().int().min(BUSINESS.openHour + 1).max(BUSINESS.closeHour),
+  dropoffHour: z.coerce.number().int().min(0).max(23),
+  pickupHour: z.coerce.number().int().min(0).max(23),
   dropoffMinute: z.coerce.number().int().min(0).max(59).default(0),
   pickupMinute: z.coerce.number().int().min(0).max(59).default(0),
   paymentMethod: z.enum(PAYMENT_METHODS, { message: 'Selecciona un método de pago.' }),
@@ -128,12 +128,6 @@ export function validateBookingRules(input: BookingInput, now: LimaNow, allowPas
   if (!isBusinessDay(now)) throw new BookingValidationError('Las reservas están disponibles de lunes a sábado.');
   const dropoffTotal = toMinutes(input.dropoffHour, input.dropoffMinute);
   const pickupTotal = toMinutes(input.pickupHour, input.pickupMinute);
-  if (input.pickupMinute % 10 !== 0) {
-    throw new BookingValidationError('La hora de recojo debe estar en intervalos de 10 minutos.');
-  }
-  if (dropoffTotal >= BUSINESS.closeHour * 60 || pickupTotal > BUSINESS.closeHour * 60) {
-    throw new BookingValidationError('El horario seleccionado está fuera de atención.');
-  }
   if (pickupTotal <= dropoffTotal) {
     throw new BookingValidationError('La hora de recojo debe ser posterior a la hora de ingreso.');
   }
@@ -385,8 +379,8 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
     vehicleType: z.enum(VEHICLE_TYPES),
     baseServiceId: z.coerce.number().int().positive(),
     addonServiceIds: z.array(z.coerce.number().int().positive()).default([]),
-    dropoffHour: z.coerce.number().int().min(7).max(17),
-    pickupHour: z.coerce.number().int().min(8).max(18),
+    dropoffHour: z.coerce.number().int().min(0).max(23),
+    pickupHour: z.coerce.number().int().min(0).max(23),
     dropoffMinute: z.coerce.number().int().min(0).max(59).default(0),
     pickupMinute: z.coerce.number().int().min(0).max(59).default(0),
     status: z.enum(BOOKING_STATUSES),
@@ -401,19 +395,12 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
   if (toMinutes(parsed.data.pickupHour, parsed.data.pickupMinute) <= toMinutes(parsed.data.dropoffHour, parsed.data.dropoffMinute)) {
     throw new BookingValidationError('La hora de recojo debe ser posterior al ingreso.');
   }
-  if (toMinutes(parsed.data.dropoffHour, parsed.data.dropoffMinute) >= BUSINESS.closeHour * 60
-    || toMinutes(parsed.data.pickupHour, parsed.data.pickupMinute) > BUSINESS.closeHour * 60) {
-    throw new BookingValidationError('El horario seleccionado estÃ¡ fuera de atenciÃ³n.');
-  }
   if (parsed.data.phone && !/^\+?[0-9 ()-]{7,20}$/.test(parsed.data.phone)) {
-    throw new BookingValidationError('Ingresa un telÃ©fono vÃ¡lido.');
+    throw new BookingValidationError('Ingresa un teléfono válido.');
   }
   const booking = getBooking(db, id);
   if (!booking) throw new BookingValidationError('Reserva no encontrada.');
   const update = parsed.data;
-  if (update.pickupMinute % 10 !== 0) {
-    throw new BookingValidationError('La hora de recojo debe estar en intervalos de 10 minutos.');
-  }
   const totalCents = Math.round(update.total * 100);
   const amountPaidCents = Math.round(update.amountPaid * 100);
   if (amountPaidCents > totalCents) {

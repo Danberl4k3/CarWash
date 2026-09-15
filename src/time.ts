@@ -54,14 +54,21 @@ export function phoneIsRequired(createdAt: LimaNow, pickupHour: number, pickupMi
 
 export function dropoffHours(): number[] {
   return Array.from(
-    { length: BUSINESS.lastDropoffHour - BUSINESS.openHour + 1 },
+    { length: 24 - BUSINESS.openHour },
     (_, index) => BUSINESS.openHour + index,
   );
 }
 
 export function pickupHours(): number[] {
   return Array.from(
-    { length: BUSINESS.closeHour - BUSINESS.openHour },
+    { length: 11 },
+    (_, index) => 8 + index,
+  );
+}
+
+export function allPickupHours(): number[] {
+  return Array.from(
+    { length: 24 - BUSINESS.openHour },
     (_, index) => BUSINESS.openHour + index + 1,
   );
 }

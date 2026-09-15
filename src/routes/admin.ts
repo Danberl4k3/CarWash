@@ -25,7 +25,7 @@ import {
   listBookingsForDate,
   updateBookingByAdmin,
 } from '../domain/bookings.js';
-import { dropoffHours, getLimaNow, pickupHours } from '../time.js';
+import { allPickupHours, dropoffHours, getLimaNow, pickupHours } from '../time.js';
 
 function failRedirect(reply: FastifyReply, path: string, message: string): FastifyReply {
   return reply.redirect(`${path}${path.includes('?') ? '&' : '?'}error=${encodeURIComponent(message)}`);
@@ -113,7 +113,10 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     checkAndAutoCompleteBookings(db);
     const now = getLimaNow();
     const bookings = listBookingsForDate(db, now.date);
-    const pickupGroups = pickupHours().map((hour) => ({
+    const baseHours = pickupHours();
+    const extraHours = bookings.map((booking) => booking.pickup_hour).filter((h) => !baseHours.includes(h));
+    const activeHours = Array.from(new Set([...baseHours, ...extraHours])).sort((a, b) => a - b);
+    const pickupGroups = activeHours.map((hour) => ({
       hour,
       label: hourLabel(hour),
       bookings: bookings.filter((booking) => booking.pickup_hour === hour),
@@ -163,7 +166,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       services: getServicesWithPrices(db, true),
       serviceCatalog: JSON.stringify(getServicesWithPrices(db, true)).replaceAll('<', '\\u003c'),
       dropoffSlots: dropoffHours(),
-      pickupSlots: pickupHours(),
+      pickupSlots: allPickupHours(),
       paymentMethods: PAYMENT_METHODS,
       nowHour: getLimaNow().hour,
     });
@@ -208,7 +211,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       serviceCatalog: JSON.stringify(getServicesWithPrices(db)).replaceAll('<', '\\u003c'),
       selectedServices: getBookingServiceIds(db, id),
       dropoffSlots: dropoffHours(),
-      pickupSlots: pickupHours(),
+      pickupSlots: allPickupHours(),
     });
   });
 

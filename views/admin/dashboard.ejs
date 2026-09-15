@@ -16,6 +16,58 @@
     <article><span class="summary-dot dot-mint"></span><small>Cobrado</small><strong><%= formatMoney(summary.collected) %></strong></article>
   </section>
 
+  <section class="next-up-card-container">
+    <% if (nextBookingToEnter) { %>
+      <div class="next-up-card">
+        <div class="next-up-header">
+          <span class="next-up-badge">🚗 Siguiente por ingresar</span>
+          <span class="next-up-count"><%= pendingBookings.length %> <%= pendingBookings.length === 1 ? 'en espera' : 'en espera' %></span>
+        </div>
+        <div class="next-up-body">
+          <div class="next-up-info">
+            <div class="next-up-plate-line">
+              <strong class="next-up-plate"><%= nextBookingToEnter.plate %></strong>
+              <span class="vehicle-badge"><%= vehicleLabels[nextBookingToEnter.vehicle_type] %></span>
+              <% if (nextBookingToEnter.vehicle_model) { %>
+                <b class="next-up-model">· <%= nextBookingToEnter.vehicle_model %></b>
+              <% } %>
+            </div>
+            <div class="next-up-meta">
+              <span>Cliente: <b><%= nextBookingToEnter.customer_name || 'Sin nombre' %></b></span>
+              <span>Servicio: <b><%= nextBookingToEnter.services %></b></span>
+              <span>Ingreso: <b><%= hourLabel(nextBookingToEnter.dropoff_hour, nextBookingToEnter.dropoff_minute === null ? 0 : nextBookingToEnter.dropoff_minute % 60) %></b></span>
+            </div>
+          </div>
+          <div class="next-up-action">
+            <form method="post" action="/admin/reservas/<%= nextBookingToEnter.id %>/quick-action">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" name="action" value="start_washing" class="start-wash-btn">
+                <span>▶ Iniciar lavado</span>
+                <small>(<%= nextBookingToEnter.vehicle_type === 'small_suv' || nextBookingToEnter.vehicle_type === 'large_suv' ? '45 min' : '30 min' %>)</small>
+              </button>
+            </form>
+          </div>
+        </div>
+        <% if (pendingBookings.length > 1) { %>
+          <div class="next-up-queue">
+            <small>Siguientes en cola:</small>
+            <div class="queue-chips">
+              <% pendingBookings.slice(1).forEach((b) => { %>
+                <a href="#booking-<%= b.id %>" class="queue-chip">
+                  <%= b.plate %> · <%= b.vehicle_model || vehicleLabels[b.vehicle_type] %>
+                </a>
+              <% }) %>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    <% } else { %>
+      <div class="next-up-card empty-queue">
+        <span>✨ <b>Todos los vehículos del día han ingresado a lavado</b> · No hay turnos pendientes</span>
+      </div>
+    <% } %>
+  </section>
+
   <div class="board-heading">
     <div class="board-heading-row">
       <h2>Recojos por hora</h2>
@@ -35,7 +87,9 @@
         <div class="pickup-stack">
           <% if (group.bookings.length === 0) { %><div class="empty-slot">Sin vehículos</div><% } %>
           <% group.bookings.forEach(booking => { %>
-            <div class="vehicle-card status-<%= booking.status %>" id="booking-<%= booking.id %>">
+            <div class="vehicle-card status-<%= booking.status %>" id="booking-<%= booking.id %>"
+                 data-started-at="<%= booking.started_washing_at || '' %>"
+                 data-vehicle-type="<%= booking.vehicle_type %>">
               <div class="vehicle-card-top">
                 <div>
                   <span class="vehicle-badge"><%= vehicleLabels[booking.vehicle_type] %></span>
@@ -59,6 +113,15 @@
               </p>
               <small><%= booking.services %></small>
               <div class="vehicle-meta"><span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span><span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span></div>
+              <% if (booking.status === 'in_progress' && booking.started_washing_at) { %>
+                <div class="wash-timer-card" data-wash-timer>
+                  <div class="wash-timer-row">
+                    <span class="wash-timer-label">⏳ Lavando...</span>
+                    <strong class="wash-timer-remain">-- min</strong>
+                  </div>
+                  <div class="wash-progress-track"><div class="wash-progress-bar"></div></div>
+                </div>
+              <% } %>
               <div class="quick-actions">
                 <form method="post" action="/admin/reservas/<%= booking.id %>/quick-action">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
@@ -85,5 +148,5 @@
     <% }) %>
 </section>
 </main>
-<script src="/public/admin.js?v=6" defer></script>
+<script src="/public/admin.js?v=7" defer></script>
 <%- include('../partials/footer') %>

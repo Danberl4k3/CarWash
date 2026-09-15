@@ -18,6 +18,7 @@ import { assertCsrf, createSession, destroySession, getSession, verifyCredential
 import { getServicesWithPrices } from '../db.js';
 import {
   BookingValidationError,
+  checkAndAutoCompleteBookings,
   createBooking,
   getBooking,
   getBookingServiceIds,
@@ -109,6 +110,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
   app.get('/admin', async (request, reply) => {
     const session = requireAdmin(db, request, reply);
     if (!session) return;
+    checkAndAutoCompleteBookings(db);
     const now = getLimaNow();
     const bookings = listBookingsForDate(db, now.date);
     const pickupGroups = pickupHours().map((hour) => ({
@@ -124,12 +126,24 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       collected: bookings.reduce((sum, booking) => sum + booking.amount_paid_cents, 0),
       expected: bookings.reduce((sum, booking) => sum + booking.total_cents, 0),
     };
+
+    const pendingBookings = bookings
+      .filter((booking) => booking.status === 'pending')
+      .sort((a, b) => {
+        const aMin = a.dropoff_minute ?? (a.dropoff_hour * 60);
+        const bMin = b.dropoff_minute ?? (b.dropoff_hour * 60);
+        return aMin - bMin;
+      });
+    const nextBookingToEnter = pendingBookings[0] || null;
+
     return reply.view('admin/dashboard.ejs', {
       title: 'Panel de operación',
       ...baseView(session, request),
       now,
       pickupGroups,
       summary,
+      nextBookingToEnter,
+      pendingBookings,
     });
   });
 
@@ -248,12 +262,24 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     if (action === 'next_status') {
       const idx = statusOrder.indexOf(booking.status);
       if (idx !== -1 && idx < statusOrder.length - 1) {
-        db.prepare('UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(statusOrder[idx + 1], id);
+        const nextStatus = statusOrder[idx + 1];
+        if (nextStatus === 'in_progress') {
+          db.prepare('UPDATE bookings SET status = ?, started_washing_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(nextStatus, new Date().toISOString(), id);
+        } else {
+          db.prepare('UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(nextStatus, id);
+        }
       }
+    } else if (action === 'start_washing') {
+      db.prepare('UPDATE bookings SET status = ?, started_washing_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run('in_progress', new Date().toISOString(), id);
     } else if (action === 'prev_status') {
       const idx = statusOrder.indexOf(booking.status);
       if (idx > 0) {
-        db.prepare('UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(statusOrder[idx - 1], id);
+        const prevStatus = statusOrder[idx - 1];
+        if (prevStatus === 'pending') {
+          db.prepare('UPDATE bookings SET status = ?, started_washing_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(prevStatus, id);
+        } else {
+          db.prepare('UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(prevStatus, id);
+        }
       }
     } else if (action === 'toggle_payment') {
       if (booking.payment_status === 'paid') {

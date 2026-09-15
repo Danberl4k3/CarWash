@@ -10,6 +10,7 @@ import { resolve } from 'node:path';
 import type Database from 'better-sqlite3';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerPublicRoutes } from './routes/public.js';
+import { checkAndAutoCompleteBookings } from './domain/bookings.js';
 
 export interface BuildAppOptions {
   db: Database.Database;
@@ -63,5 +64,18 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     if (reply.sent) return;
     return reply.code(500).view('error.ejs', { title: 'Ocurrió un problema' });
   });
+
+  const autoTimer = setInterval(() => {
+    try {
+      checkAndAutoCompleteBookings(options.db);
+    } catch {
+      // ignore
+    }
+  }, 10000);
+
+  app.addHook('onClose', async () => {
+    clearInterval(autoTimer);
+  });
+
   return app;
 }

@@ -15,6 +15,10 @@
       const newSummary = doc.querySelector('.summary-grid');
       const currentSummary = document.querySelector('.summary-grid');
       if (newSummary && currentSummary) currentSummary.innerHTML = newSummary.innerHTML;
+
+      const newNextUp = doc.querySelector('.next-up-card-container');
+      const currentNextUp = document.querySelector('.next-up-card-container');
+      if (newNextUp && currentNextUp) currentNextUp.innerHTML = newNextUp.innerHTML;
       
       // Re-apply search filter if active
       const searchInput = document.getElementById('board-search');
@@ -22,6 +26,7 @@
         searchInput.dispatchEvent(new Event('input'));
       }
       applyEmptyHoursFilter();
+      updateWashTimers();
     } catch (e) {
       // Ignore network errors
     }
@@ -38,7 +43,7 @@
     if (!btn) return;
     
     const form = btn.closest('form');
-    if (!form || !form.closest('.quick-actions')) return;
+    if (!form || (!form.closest('.quick-actions') && !form.closest('.next-up-action'))) return;
     
     e.preventDefault(); // Stop normal form submission
 
@@ -113,4 +118,46 @@
       applyEmptyHoursFilter();
     });
   }
+
+  // Live Wash Timer for vehicles in_progress
+  function updateWashTimers() {
+    let hasFinishedWashing = false;
+    document.querySelectorAll('[data-wash-timer]').forEach(timer => {
+      const card = timer.closest('.vehicle-card');
+      if (!card) return;
+      const startedAt = card.dataset.startedAt;
+      const vehicleType = card.dataset.vehicleType;
+      if (!startedAt) return;
+      const startedMs = Date.parse(startedAt);
+      if (isNaN(startedMs)) return;
+
+      const durationMinutes = (vehicleType === 'small_suv' || vehicleType === 'large_suv') ? 45 : 30;
+      const elapsedMs = Date.now() - startedMs;
+      const elapsedMinutes = Math.floor(elapsedMs / (60 * 1000));
+      const remainingMinutes = Math.max(0, durationMinutes - elapsedMinutes);
+      const percent = Math.min(100, Math.max(0, (elapsedMs / (durationMinutes * 60 * 1000)) * 100));
+
+      const remainEl = timer.querySelector('.wash-timer-remain');
+      const fillEl = timer.querySelector('.wash-progress-bar');
+      const labelEl = timer.querySelector('.wash-timer-label');
+
+      if (remainingMinutes > 0) {
+        if (remainEl) remainEl.textContent = `faltan ${remainingMinutes} min`;
+        if (labelEl) labelEl.textContent = `⏳ Lavando (${durationMinutes} min)`;
+        if (fillEl) fillEl.style.width = `${percent}%`;
+      } else {
+        if (remainEl) remainEl.textContent = '¡Completado!';
+        if (labelEl) labelEl.textContent = '✨ Listo para entregar';
+        if (fillEl) fillEl.style.width = '100%';
+        hasFinishedWashing = true;
+      }
+    });
+
+    if (hasFinishedWashing) {
+      silentRefresh();
+    }
+  }
+
+  window.setInterval(updateWashTimers, 5000);
+  updateWashTimers();
 })();

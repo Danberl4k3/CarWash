@@ -297,6 +297,7 @@ export interface BookingDetailRow {
   amount_paid_cents: number;
   total_cents: number;
   notes: string | null;
+  started_washing_at: string | null;
   created_by_admin: number;
   created_at: string;
   updated_at: string;
@@ -484,3 +485,39 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
     }
   })();
 }
+
+export const WASH_DURATION_MINUTES: Record<VehicleType, number> = {
+  motorcycle: 30,
+  car: 30,
+  small_suv: 45,
+  large_suv: 45,
+};
+
+export function checkAndAutoCompleteBookings(db: Database.Database): number {
+  const inProgress = db.prepare(`
+    SELECT b.id, b.started_washing_at, v.vehicle_type
+    FROM bookings b
+    JOIN vehicles v ON b.vehicle_id = v.id
+    WHERE b.status = 'in_progress' AND b.started_washing_at IS NOT NULL
+  `).all() as Array<{ id: number; started_washing_at: string; vehicle_type: VehicleType }>;
+
+  const nowMs = Date.now();
+  let updatedCount = 0;
+  const completeStmt = db.prepare(`
+    UPDATE bookings SET status = 'completed', updated_at = CURRENT_TIMESTAMP WHERE id = ?
+  `);
+
+  for (const item of inProgress) {
+    const startedMs = Date.parse(item.started_washing_at);
+    if (isNaN(startedMs)) continue;
+    const durationMinutes = (item.vehicle_type === 'small_suv' || item.vehicle_type === 'large_suv') ? 45 : 30;
+    const elapsedMinutes = (nowMs - startedMs) / (60 * 1000);
+    if (elapsedMinutes >= durationMinutes) {
+      completeStmt.run(item.id);
+      updatedCount++;
+    }
+  }
+
+  return updatedCount;
+}
+

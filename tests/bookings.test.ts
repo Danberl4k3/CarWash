@@ -3,6 +3,7 @@ import type Database from 'better-sqlite3';
 import { createDatabase } from '../src/db.js';
 import {
   BookingValidationError,
+  checkAndAutoCompleteBookings,
   createBooking,
   getBooking,
   getBookingServiceIds,
@@ -138,5 +139,42 @@ describe('reglas de reserva', () => {
       amount_paid_cents: 2500,
     });
     expect(getBookingServiceIds(db, result.id)).toEqual({ baseServiceId: interiorId, addonServiceIds: [] });
+  });
+
+  it('autocompleta lavado a los 30 min para autos y 45 min para SUVs', () => {
+    const carRes = createBooking(db, validInput(), { now: mondayAt(8) });
+    const suvRes = createBooking(db, {
+      ...validInput(),
+      plate: 'SUV-999',
+      vehicleType: 'small_suv',
+    }, { now: mondayAt(8) });
+
+    const twentyMinAgo = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+    const thirtyFiveMinAgo = new Date(Date.now() - 35 * 60 * 1000).toISOString();
+    const fiftyMinAgo = new Date(Date.now() - 50 * 60 * 1000).toISOString();
+
+    // Set both to in_progress with 20 minutes ago
+    db.prepare('UPDATE bookings SET status = ?, started_washing_at = ? WHERE id = ?').run('in_progress', twentyMinAgo, carRes.id);
+    db.prepare('UPDATE bookings SET status = ?, started_washing_at = ? WHERE id = ?').run('in_progress', twentyMinAgo, suvRes.id);
+
+    let completedCount = checkAndAutoCompleteBookings(db);
+    expect(completedCount).toBe(0);
+    expect(getBooking(db, carRes.id)?.status).toBe('in_progress');
+    expect(getBooking(db, suvRes.id)?.status).toBe('in_progress');
+
+    // After 35 minutes: car (30 min threshold) is completed, SUV (45 min threshold) is still in_progress
+    db.prepare('UPDATE bookings SET started_washing_at = ? WHERE id = ?').run(thirtyFiveMinAgo, carRes.id);
+    db.prepare('UPDATE bookings SET started_washing_at = ? WHERE id = ?').run(thirtyFiveMinAgo, suvRes.id);
+
+    completedCount = checkAndAutoCompleteBookings(db);
+    expect(completedCount).toBe(1);
+    expect(getBooking(db, carRes.id)?.status).toBe('completed');
+    expect(getBooking(db, suvRes.id)?.status).toBe('in_progress');
+
+    // After 50 minutes: SUV also reaches threshold (45 min) and transitions to completed
+    db.prepare('UPDATE bookings SET started_washing_at = ? WHERE id = ?').run(fiftyMinAgo, suvRes.id);
+    completedCount = checkAndAutoCompleteBookings(db);
+    expect(completedCount).toBe(1);
+    expect(getBooking(db, suvRes.id)?.status).toBe('completed');
   });
 });

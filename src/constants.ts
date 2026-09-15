@@ -21,7 +21,6 @@ export const VEHICLE_LABELS: Record<VehicleType, string> = {
 
 export const BOOKING_STATUSES = [
   'pending',
-  'confirmed',
   'in_progress',
   'completed',
   'cancelled',
@@ -30,7 +29,6 @@ export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
 export const STATUS_LABELS: Record<BookingStatus, string> = {
   pending: 'Pendiente',
-  confirmed: 'Confirmada',
   in_progress: 'En proceso',
   completed: 'Terminada',
   cancelled: 'Cancelada',

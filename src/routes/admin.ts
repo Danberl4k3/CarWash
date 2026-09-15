@@ -243,7 +243,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     const booking = db.prepare('SELECT status, payment_status, total_cents FROM bookings WHERE id = ?').get(id) as { status: string, payment_status: string, total_cents: number } | undefined;
     if (!booking) return failRedirect(reply, '/admin', 'Reserva no encontrada.');
 
-    const statusOrder = ['pending', 'confirmed', 'in_progress', 'completed'];
+    const statusOrder = ['pending', 'in_progress', 'completed'];
 
     if (action === 'next_status') {
       const idx = statusOrder.indexOf(booking.status);

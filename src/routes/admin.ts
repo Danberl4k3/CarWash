@@ -265,6 +265,23 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     return reply.redirect(`/admin#booking-${id}`);
   });
 
+  app.get('/admin/reservas/:id/ticket', async (request, reply) => {
+    const session = requireAdmin(db, request, reply);
+    if (!session) return;
+    const id = Number((request.params as { id: string }).id);
+    const booking = getBooking(db, id);
+    if (!booking) return failRedirect(reply, '/admin', 'Reserva no encontrada.');
+    
+    // Convert services into an array for easier rendering
+    const services = booking.services ? booking.services.split(' · ') : [];
+    
+    return reply.view('admin/ticket.ejs', { 
+      booking, 
+      services,
+      formatMoney: (cents: number) => `S/ ${(cents / 100).toFixed(2)}`
+    });
+  });
+
   app.get('/admin/servicios', async (request, reply) => {
     const session = requireAdmin(db, request, reply);
     if (!session) return;

@@ -15,6 +15,12 @@
       const newSummary = doc.querySelector('.summary-grid');
       const currentSummary = document.querySelector('.summary-grid');
       if (newSummary && currentSummary) currentSummary.innerHTML = newSummary.innerHTML;
+      
+      // Re-apply search filter if active
+      const searchInput = document.getElementById('board-search');
+      if (searchInput && searchInput.value) {
+        searchInput.dispatchEvent(new Event('input'));
+      }
     } catch (e) {
       // Ignore network errors
     }
@@ -26,28 +32,60 @@
   }, 30000);
 
   // Handle quick action buttons without full page reload
-  document.addEventListener('submit', async (e) => {
-    const form = e.target;
-    if (!form.closest('.quick-actions')) return;
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[type="submit"][name="action"]');
+    if (!btn) return;
     
-    e.preventDefault();
-    const btn = e.submitter;
+    const form = btn.closest('form');
+    if (!form || !form.closest('.quick-actions')) return;
+    
+    e.preventDefault(); // Stop normal form submission
+
     const formData = new FormData(form);
-    if (btn && btn.name) {
-      formData.append(btn.name, btn.value);
-    }
+    formData.append(btn.name, btn.value);
     
-    if (btn) {
-      btn.style.opacity = '0.5';
-      btn.style.pointerEvents = 'none';
+    btn.style.opacity = '0.5';
+    btn.style.pointerEvents = 'none';
+
+    const params = new URLSearchParams();
+    for (const [key, value] of formData.entries()) {
+      if (key !== 'action') {
+        params.append(key, value);
+      }
     }
+    params.append(btn.name, btn.value);
 
-    const postPromise = fetch(form.action, {
-      method: 'POST',
-      body: new URLSearchParams(formData),
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
-
-    await silentRefresh(postPromise);
+    try {
+      const postPromise = fetch(form.action, {
+        method: 'POST',
+        body: params.toString(),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      await silentRefresh(postPromise);
+    } catch (err) {
+      console.error('Quick action failed:', err);
+    } finally {
+      btn.style.opacity = '';
+      btn.style.pointerEvents = '';
+    }
   });
+
+  // Handle board searching
+  const searchInput = document.getElementById('board-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase().trim();
+      const cards = document.querySelectorAll('.vehicle-card');
+      
+      cards.forEach(card => {
+        const plate = card.querySelector('.plate-number')?.textContent?.toLowerCase() || '';
+        const name = card.querySelector('p')?.textContent?.toLowerCase() || '';
+        if (plate.includes(term) || name.includes(term)) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  }
 })();

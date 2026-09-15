@@ -16,7 +16,11 @@
     <article><span class="summary-dot dot-mint"></span><small>Cobrado</small><strong><%= formatMoney(summary.collected) %></strong></article>
   </section>
 
-  <div class="board-heading"><h2>Recojos por hora</h2><span><%= now.date %></span></div>
+  <div class="board-heading">
+    <h2>Recojos por hora</h2>
+    <input type="search" id="board-search" class="board-search" placeholder="🔍 Buscar placa o cliente...">
+    <span><%= now.date %></span>
+  </div>
   <section class="pickup-board" data-live-board>
     <% pickupGroups.forEach(group => { %>
       <article class="pickup-column <%= group.hour === 17 ? 'featured-hour' : '' %>">
@@ -32,8 +36,15 @@
                 </div>
                 <span class="payment-badge badge-<%= booking.payment_status %>"><%= booking.payment_status === 'paid' ? 'Pagado' : 'Por pagar' %></span>
               </div>
-              <a href="/admin/reservas/<%= booking.id %>" class="plate-number"><%= booking.plate %></a>
-              <p><%= booking.customer_name || 'Cliente sin nombre' %></p>
+              <div>
+                <a href="/admin/reservas/<%= booking.id %>" class="plate-number"><%= booking.plate %></a>
+                <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" style="font-size: 14px; text-decoration: none; margin-left: 8px;">🖨️</a>
+              </div>
+              <% if (booking.customer_id) { %>
+                <a href="/admin/clientes/<%= booking.customer_id %>" class="customer-link"><%= booking.customer_name %></a>
+              <% } else { %>
+                <p><%= booking.customer_name || 'Cliente sin nombre' %></p>
+              <% } %>
               <small><%= booking.services %></small>
               <div class="vehicle-meta"><span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span><span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span></div>
               <div class="quick-actions">
@@ -44,10 +55,13 @@
                       <button type="submit" name="action" value="prev_status" title="Retroceder estado" <%= booking.status === 'pending' || booking.status === 'cancelled' ? 'disabled' : '' %>>◀</button>
                       <button type="submit" name="action" value="next_status" title="Avanzar estado" <%= booking.status === 'completed' || booking.status === 'cancelled' ? 'disabled' : '' %>>▶</button>
                     </div>
-                    <div class="payment-stepper">
+                    <div class="payment-stepper" style="display: flex; gap: 4px;">
                       <button type="submit" name="action" value="toggle_payment" class="toggle-btn <%= booking.payment_status === 'paid' ? 'is-paid' : '' %>">
                         <%= booking.payment_status === 'paid' ? 'Pagado' : 'Cobrar' %>
                       </button>
+                      <% if (booking.phone) { %>
+                        <a href="https://wa.me/<%= booking.phone.replace(/\D/g, '') %>?text=Hola <%= encodeURIComponent((booking.customer_name || 'Amigo').split(' ')[0]) %>, tu veh%C3%ADculo de placa <%= booking.plate %> ya est%C3%A1 listo y reluciente en D'Asav Car Wash. %C2%A1Te esperamos!" target="_blank" class="wa-btn" title="Avisar por WhatsApp">💬</a>
+                      <% } %>
                     </div>
                   </div>
                 </form>
@@ -59,5 +73,5 @@
     <% }) %>
 </section>
 </main>
-<script src="/public/admin.js" defer></script>
+<script src="/public/admin.js?v=4" defer></script>
 <%- include('../partials/footer') %>

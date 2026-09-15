@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ticket #<%= booking.code %></title>
+  <style>
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      padding: 0;
+      background: #f0f0f0;
+    }
+    .ticket {
+      width: 300px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      color: #000;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    .center {
+      text-align: center;
+    }
+    .header {
+      margin-bottom: 20px;
+      border-bottom: 1px dashed #000;
+      padding-bottom: 10px;
+    }
+    h1 {
+      font-size: 22px;
+      margin: 0 0 5px;
+    }
+    p {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+    .line {
+      border-top: 1px dashed #000;
+      margin: 10px 0;
+    }
+    .items {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+    .items td {
+      font-size: 14px;
+      padding: 3px 0;
+    }
+    .items .price {
+      text-align: right;
+    }
+    .total-row td {
+      font-weight: bold;
+      font-size: 16px;
+      border-top: 1px dashed #000;
+      padding-top: 10px;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 12px;
+    }
+    .print-btn {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: #333;
+      color: white;
+      text-align: center;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    @media print {
+      body { background: white; }
+      .ticket { margin: 0; padding: 0; width: 100%; box-shadow: none; }
+      .print-btn { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ticket">
+    <button class="print-btn" onclick="window.print()">🖨️ IMPRIMIR RECIBO</button>
+    <div class="header center">
+      <h1>D'Asav Car Wash</h1>
+      <p>Comprobante de Servicio</p>
+      <p>Fecha: <%= new Date(booking.created_at).toLocaleDateString('es-PE') %></p>
+      <p>Ticket: <%= booking.code %></p>
+    </div>
+    
+    <p><strong>Cliente:</strong> <%= booking.customer_name || 'Al paso' %></p>
+    <p><strong>Placa:</strong> <%= booking.plate %></p>
+    
+    <div class="line"></div>
+    
+    <table class="items">
+      <% services.forEach(service => { %>
+        <tr>
+          <td><%= service %></td>
+        </tr>
+      <% }) %>
+      <tr class="total-row">
+        <td>TOTAL:</td>
+        <td class="price"><%= formatMoney(booking.total_cents) %></td>
+      </tr>
+    </table>
+    
+    <div class="line"></div>
+    <p>Estado de pago: <strong><%= booking.payment_status === 'paid' ? 'PAGADO' : 'PENDIENTE' %></strong></p>
+    
+    <div class="footer">
+      <p>¡Gracias por su preferencia!</p>
+    </div>
+  </div>
+</body>
+</html>
+

@@ -11,6 +11,7 @@
     <a href="/admin/capacidad">Capacidad</a>
   </nav>
   <div class="admin-user">
+    <button class="theme-toggle-btn" type="button" aria-label="Cambiar tema" title="Modo oscuro">🌙</button>
     <a href="/admin/seguridad"><%= admin.username %></a>
     <form action="/admin/logout" method="post">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">

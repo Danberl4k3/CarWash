@@ -1,0 +1,32 @@
+<%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
+<%- include('../partials/admin-nav', { admin, csrfToken }) %>
+<main class="admin-main">
+  <div class="page-heading"><div><span class="eyebrow">Catálogo</span><h1>Servicios y precios</h1><p>Configura cuánto cuesta cada servicio según el tipo de vehículo.</p></div></div>
+  <%- include('../partials/alerts', { error, success }) %>
+  <section class="settings-layout">
+    <div class="settings-list">
+      <% services.forEach(service => { %>
+        <form class="settings-card" method="post" action="/admin/servicios/<%= service.id %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <header><span class="service-type"><%= service.category === 'base' ? 'Servicio principal' : 'Adicional' %></span><label class="switch-label"><input type="checkbox" name="active" value="1" <%= service.active ? 'checked' : '' %>><span></span>Activo</label></header>
+          <div class="field-grid two-columns"><label>Nombre<input name="name" value="<%= service.name %>" required></label><label>Tipo<select name="category"><option value="base" <%= service.category === 'base' ? 'selected' : '' %>>Principal</option><option value="addon" <%= service.category === 'addon' ? 'selected' : '' %>>Adicional</option></select></label></div>
+          <div class="price-matrix">
+            <% vehicleTypes.forEach(type => { %><label><span><%= vehicleLabels[type] %></span><span class="money-input">S/ <input type="number" name="price_<%= type %>" min="0" step="0.01" value="<%= ((service.prices[type] || 0) / 100).toFixed(2) %>"></span></label><% }) %>
+          </div>
+          <% if (service.category === 'addon') { %><label class="check-row"><input type="checkbox" name="incompatibleWithInterior" value="1" <%= service.incompatible_with_interior ? 'checked' : '' %>> No permitir con lavado interior</label><% } %>
+          <button class="secondary-button" type="submit">Guardar servicio</button>
+        </form>
+      <% }) %>
+    </div>
+    <aside class="settings-sidebar">
+      <form class="settings-card sticky-card" method="post" action="/admin/servicios/nuevo">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <span class="step-kicker">Nuevo</span><h2>Agregar servicio</h2>
+        <label>Nombre<input name="name" placeholder="Ej. Aspirado premium" required></label>
+        <label>Tipo<select name="category"><option value="base">Servicio principal</option><option value="addon">Adicional</option></select></label>
+        <button class="primary-button block-button" type="submit">Agregar</button>
+      </form>
+    </aside>
+  </section>
+</main>
+<%- include('../partials/footer') %>

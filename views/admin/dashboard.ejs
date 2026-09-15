@@ -1,0 +1,63 @@
+<%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
+<%- include('../partials/admin-nav', { admin, csrfToken }) %>
+<main class="admin-main">
+  <div class="page-heading">
+    <div><span class="eyebrow">Operación de hoy</span><h1>Panel de recojos</h1><p>Todos los vehículos organizados por la hora en que estarán listos.</p></div>
+    <a class="primary-button" href="/">+ Nueva reserva</a>
+  </div>
+  <%- include('../partials/alerts', { error, success }) %>
+
+  <section class="summary-grid">
+    <article><span class="summary-dot dot-blue"></span><small>Vehículos hoy</small><strong><%= summary.total %></strong></article>
+    <article><span class="summary-dot dot-amber"></span><small>Pendientes</small><strong><%= summary.pending %></strong></article>
+    <article><span class="summary-dot dot-purple"></span><small>En proceso</small><strong><%= summary.inProgress %></strong></article>
+    <article><span class="summary-dot dot-green"></span><small>Terminados</small><strong><%= summary.completed %></strong></article>
+    <article><span class="summary-dot" style="background: #9fb4bb"></span><small>Total (Proyectado)</small><strong><%= formatMoney(summary.expected) %></strong></article>
+    <article><span class="summary-dot dot-mint"></span><small>Cobrado</small><strong><%= formatMoney(summary.collected) %></strong></article>
+  </section>
+
+  <div class="board-heading"><h2>Recojos por hora</h2><span><%= now.date %></span></div>
+  <section class="pickup-board" data-live-board>
+    <% pickupGroups.forEach(group => { %>
+      <article class="pickup-column <%= group.hour === 17 ? 'featured-hour' : '' %>">
+        <header><div><small>Listos para</small><h3><%= group.label %></h3></div><span><%= group.bookings.length %></span></header>
+        <div class="pickup-stack">
+          <% if (group.bookings.length === 0) { %><div class="empty-slot">Sin vehículos</div><% } %>
+          <% group.bookings.forEach(booking => { %>
+            <div class="vehicle-card status-<%= booking.status %>" id="booking-<%= booking.id %>">
+              <div class="vehicle-card-top">
+                <div>
+                  <span class="vehicle-badge"><%= vehicleLabels[booking.vehicle_type] %></span>
+                  <span class="status-badge badge-<%= booking.status %>"><%= statusLabels[booking.status] %></span>
+                </div>
+                <span class="payment-badge badge-<%= booking.payment_status %>"><%= booking.payment_status === 'paid' ? 'Pagado' : 'Por pagar' %></span>
+              </div>
+              <a href="/admin/reservas/<%= booking.id %>" class="plate-number"><%= booking.plate %></a>
+              <p><%= booking.customer_name || 'Cliente sin nombre' %></p>
+              <small><%= booking.services %></small>
+              <div class="vehicle-meta"><span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span><span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span></div>
+              <div class="quick-actions">
+                <form method="post" action="/admin/reservas/<%= booking.id %>/quick-action">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                  <div class="action-row">
+                    <div class="status-stepper">
+                      <button type="submit" name="action" value="prev_status" title="Retroceder estado" <%= booking.status === 'pending' || booking.status === 'cancelled' ? 'disabled' : '' %>>◀</button>
+                      <button type="submit" name="action" value="next_status" title="Avanzar estado" <%= booking.status === 'completed' || booking.status === 'cancelled' ? 'disabled' : '' %>>▶</button>
+                    </div>
+                    <div class="payment-stepper">
+                      <button type="submit" name="action" value="toggle_payment" class="toggle-btn <%= booking.payment_status === 'paid' ? 'is-paid' : '' %>">
+                        <%= booking.payment_status === 'paid' ? 'Pagado' : 'Cobrar' %>
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </article>
+    <% }) %>
+</section>
+</main>
+<script src="/public/admin.js" defer></script>
+<%- include('../partials/footer') %>

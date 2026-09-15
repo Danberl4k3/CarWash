@@ -1,0 +1,13 @@
+<%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
+<%- include('../partials/admin-nav', { admin, csrfToken }) %>
+<main class="admin-main small-main">
+  <div class="page-heading"><div><span class="eyebrow">Tu cuenta</span><h1>Seguridad</h1><p>Cambia la contraseña de acceso administrativo.</p></div></div>
+  <%- include('../partials/alerts', { error, success }) %>
+  <form class="card-form admin-form" method="post" action="/admin/seguridad">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <label>Contraseña actual<input type="password" name="currentPassword" autocomplete="current-password" required></label>
+    <label>Nueva contraseña<input type="password" name="newPassword" minlength="10" autocomplete="new-password" required><small>Mínimo 10 caracteres.</small></label>
+    <button class="primary-button" type="submit">Actualizar contraseña</button>
+  </form>
+</main>
+<%- include('../partials/footer') %>

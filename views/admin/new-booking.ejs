@@ -1,0 +1,29 @@
+<%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
+<%- include('../partials/admin-nav', { admin, csrfToken }) %>
+<main class="admin-main narrow-main">
+  <div class="page-heading"><div><span class="eyebrow">Recepción</span><h1>Nueva reserva</h1><p>Registra una reserva telefónica o un vehículo que llegó directamente.</p></div><a class="secondary-button" href="/admin">Volver al panel</a></div>
+  <%- include('../partials/alerts', { error, success }) %>
+  <form id="booking-form" class="admin-form card-form" method="post" action="/admin/reservas" data-catalog="<%= serviceCatalog %>" data-now-hour="<%= nowHour %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="form-section"><h2>Vehículo y cliente</h2><div class="field-grid two-columns">
+      <label>Placa *<input name="plate" maxlength="12" required placeholder="ABC-123"></label>
+      <label>Tipo de vehículo<select name="vehicleType" required><% Object.entries(vehicleLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %></select></label>
+      <label>Nombre <small>Opcional</small><input name="name"></label>
+      <label id="phone-field">Teléfono <small id="phone-optional">Opcional</small><input id="phone" name="phone" type="tel"></label>
+    </div></div>
+    <div class="form-section"><h2>Servicios</h2><div class="field-grid two-columns">
+      <label>Servicio principal<select name="baseServiceId" required><% services.filter(s => s.category === 'base').forEach(s => { %><option value="<%= s.id %>" data-slug="<%= s.slug %>"><%= s.name %></option><% }) %></select></label>
+      <div class="checkbox-group"><span>Adicionales</span><% services.filter(s => s.category === 'addon').forEach(s => { %><label data-addon-slug="<%= s.slug %>" data-incompatible-interior="<%= s.incompatible_with_interior %>"><input type="checkbox" name="addonServiceIds" value="<%= s.id %>"> <%= s.name %></label><% }) %></div>
+    </div></div>
+    <div class="form-section"><h2>Horario y pago</h2><div class="field-grid two-columns">
+      <label>Ingreso<select id="dropoff-hour" name="dropoffHour" required><% dropoffSlots.forEach(hour => { %><option value="<%= hour %>"><%= hourLabel(hour) %></option><% }) %></select></label>
+      <label>Recojo<select id="pickup-hour" name="pickupHour" required><% pickupSlots.forEach(hour => { %><option value="<%= hour %>"><%= hourLabel(hour) %></option><% }) %></select></label>
+      <label>Método de pago<select name="paymentMethod"><% paymentMethods.forEach(value => { %><option value="<%= value %>"><%= paymentLabels[value] %></option><% }) %></select></label>
+      <div class="inline-total"><small>Total calculado</small><strong id="booking-total">S/ 0.00</strong></div>
+    </div><p id="phone-rule" class="phone-rule" hidden>Se requiere teléfono para este horario.</p></div>
+    <label>Notas<textarea name="notes" rows="4"></textarea></label>
+    <div class="form-actions"><a class="secondary-button" href="/admin">Cancelar</a><button class="primary-button" type="submit">Crear reserva</button></div>
+  </form>
+</main>
+<script src="/public/booking.js" defer></script>
+<%- include('../partials/footer') %>

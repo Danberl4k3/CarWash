@@ -9,3 +9,5 @@ data/*.db-shm
 data/*.db-wal
 *.log
 __pycache__/
+artifacts/
+data/backups/

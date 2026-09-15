@@ -91,8 +91,9 @@ describe('reglas de reserva', () => {
     const result = createBooking(db, validInput(), { now: mondayAt(8) });
     updateBookingByAdmin(db, result.id, {
       name: 'Ana actualizada',
+      model: 'toyota corolla',
       phone: '999999999',
-      plate: 'NEW-456',
+      plate: 'new-456',
       vehicleType: 'large_suv',
       baseServiceId: interiorId,
       addonServiceIds: [],
@@ -107,7 +108,8 @@ describe('reglas de reserva', () => {
     });
     const booking = getBooking(db, result.id);
     expect(booking).toMatchObject({
-      customer_name: 'Ana actualizada',
+      customer_name: 'Ana Actualizada',
+      vehicle_model: 'Toyota Corolla',
       plate: 'NEW-456',
       vehicle_type: 'large_suv',
       dropoff_hour: 11,

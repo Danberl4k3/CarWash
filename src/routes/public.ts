@@ -62,6 +62,7 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
         const [pickupHour, pickupMinute] = pickup.split(':').map(Number);
         const result = createBooking(db, {
           name: body.name,
+          model: body.model,
           phone: body.phone,
           plate: body.plate,
           vehicleType: body.vehicleType,

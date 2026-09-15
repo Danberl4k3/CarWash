@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   plate TEXT NOT NULL UNIQUE,
   vehicle_type TEXT NOT NULL CHECK (vehicle_type IN ('motorcycle', 'car', 'small_suv', 'large_suv', 'pickup')),
+  model TEXT,
   customer_id INTEGER REFERENCES customers(id) ON DELETE SET NULL,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -140,6 +141,7 @@ export function createDatabase(databasePath?: string): DatabaseContext {
   for (const statement of [
     'ALTER TABLE bookings ADD COLUMN dropoff_minute INTEGER',
     'ALTER TABLE bookings ADD COLUMN pickup_minute INTEGER',
+    'ALTER TABLE vehicles ADD COLUMN model TEXT',
   ]) {
     try { db.exec(statement); } catch { /* column already exists */ }
   }

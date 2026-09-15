@@ -7,6 +7,7 @@
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
     <div class="form-section"><h2>Cliente y vehículo</h2><div class="field-grid two-columns">
       <label>Placa<input name="plate" value="<%= booking.plate %>" required></label>
+      <label>Marca y modelo<input name="model" list="car-brands" value="<%= booking.vehicle_model || '' %>" placeholder="Ej. Toyota Corolla..."></label>
       <label>Tipo<select name="vehicleType"><% vehicleTypes.forEach(value => { %><option value="<%= value %>" <%= booking.vehicle_type === value ? 'selected' : '' %>><%= vehicleLabels[value] %></option><% }) %></select></label>
       <label>Nombre<input name="name" value="<%= booking.customer_name || '' %>"></label>
       <label>Teléfono<input name="phone" type="tel" value="<%= booking.phone || '' %>"></label>

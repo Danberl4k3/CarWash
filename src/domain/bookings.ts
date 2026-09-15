@@ -15,6 +15,16 @@ import {
 import { getServicesWithPrices, type ServiceWithPrices } from '../db.js';
 import { getLimaNow, isBusinessDay, isDropoffInPast, phoneIsRequired, toMinutes, type LimaNow } from '../time.js';
 
+function capitalizeWords(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
 const optionalText = z
   .string()
   .trim()
@@ -23,7 +33,8 @@ const optionalText = z
   .transform((value) => value || null);
 
 export const bookingSchema = z.object({
-  name: optionalText,
+  name: optionalText.transform((value) => capitalizeWords(value)),
+  model: optionalText.transform((value) => capitalizeWords(value)),
   phone: z
     .string()
     .trim()
@@ -55,6 +66,7 @@ export const bookingSchema = z.object({
 
 export interface BookingInput {
   name: string | null;
+  model?: string | null;
   phone: string | null;
   plate: string;
   vehicleType: VehicleType;
@@ -202,12 +214,12 @@ export function createBooking(
 
     if (vehicle) {
       db.prepare(`
-        UPDATE vehicles SET vehicle_type = ?, customer_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-      `).run(input.vehicleType, customerId, vehicle.id);
+        UPDATE vehicles SET vehicle_type = ?, model = COALESCE(?, model), customer_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+      `).run(input.vehicleType, input.model ?? null, customerId, vehicle.id);
     } else {
       const vehicleResult = db
-        .prepare('INSERT INTO vehicles (plate, vehicle_type, customer_id) VALUES (?, ?, ?)')
-        .run(input.plate, input.vehicleType, customerId);
+        .prepare('INSERT INTO vehicles (plate, vehicle_type, model, customer_id) VALUES (?, ?, ?, ?)')
+        .run(input.plate, input.vehicleType, input.model ?? null, customerId);
       vehicle = { id: Number(vehicleResult.lastInsertRowid), customer_id: customerId };
     }
 
@@ -260,6 +272,7 @@ export interface BookingDetailRow {
   vehicle_id: number;
   plate: string;
   vehicle_type: VehicleType;
+  vehicle_model: string | null;
   dropoff_hour: number;
   pickup_hour: number;
   dropoff_minute: number | null;
@@ -278,7 +291,7 @@ export interface BookingDetailRow {
 
 export function getBooking(db: Database.Database, id: number): BookingDetailRow | undefined {
   return db.prepare(`
-    SELECT b.*, c.name AS customer_name, c.phone, v.plate, v.vehicle_type,
+    SELECT b.*, c.name AS customer_name, c.phone, v.plate, v.vehicle_type, v.model AS vehicle_model,
       GROUP_CONCAT(bs.service_name, ' · ') AS services
     FROM bookings b
     JOIN vehicles v ON v.id = b.vehicle_id
@@ -291,7 +304,7 @@ export function getBooking(db: Database.Database, id: number): BookingDetailRow 
 
 export function getBookingByCode(db: Database.Database, code: string): BookingDetailRow | undefined {
   return db.prepare(`
-    SELECT b.*, c.name AS customer_name, c.phone, v.plate, v.vehicle_type,
+    SELECT b.*, c.name AS customer_name, c.phone, v.plate, v.vehicle_type, v.model AS vehicle_model,
       GROUP_CONCAT(bs.service_name, ' · ') AS services
     FROM bookings b
     JOIN vehicles v ON v.id = b.vehicle_id
@@ -319,7 +332,7 @@ export function getBookingServiceIds(
 
 export function listBookingsForDate(db: Database.Database, date: string): BookingDetailRow[] {
   return db.prepare(`
-    SELECT b.*, c.name AS customer_name, c.phone, v.plate, v.vehicle_type,
+    SELECT b.*, c.name AS customer_name, c.phone, v.plate, v.vehicle_type, v.model AS vehicle_model,
       GROUP_CONCAT(bs.service_name, ' · ') AS services
     FROM bookings b
     JOIN vehicles v ON v.id = b.vehicle_id
@@ -350,7 +363,8 @@ export interface AdminBookingUpdate {
 
 export function updateBookingByAdmin(db: Database.Database, id: number, raw: unknown): void {
   const schema = z.object({
-    name: optionalText,
+    name: optionalText.transform((value) => capitalizeWords(value)),
+    model: optionalText.transform((value) => capitalizeWords(value)),
     phone: z.string().trim().max(20).optional().transform((value) => value || null),
     plate: z.string().trim().min(3).max(12).regex(/^[A-Za-z0-9-]+$/).transform((value) => value.toUpperCase()),
     vehicleType: z.enum(VEHICLE_TYPES),
@@ -402,9 +416,10 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
       update.phone,
       booking.customer_id,
     );
-    db.prepare(`UPDATE vehicles SET plate = ?, vehicle_type = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(
+    db.prepare(`UPDATE vehicles SET plate = ?, vehicle_type = ?, model = COALESCE(?, model), updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(
       update.plate,
       update.vehicleType,
+      update.model ?? null,
       booking.vehicle_id,
     );
     db.prepare(`

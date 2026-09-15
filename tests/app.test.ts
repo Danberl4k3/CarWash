@@ -82,6 +82,6 @@ describe('aplicación web', () => {
     });
     expect(dashboard.statusCode).toBe(200);
     expect(dashboard.body).toContain('TAB-001');
-    expect(dashboard.body).toContain('Panel test');
+    expect(dashboard.body).toContain('Panel Test');
   });
 });

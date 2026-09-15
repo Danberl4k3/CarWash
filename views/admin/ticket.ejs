@@ -91,7 +91,7 @@
     </div>
     
     <p><strong>Cliente:</strong> <%= booking.customer_name || 'Al paso' %></p>
-    <p><strong>Placa:</strong> <%= booking.plate %></p>
+    <p><strong>Placa:</strong> <%= booking.plate %><% if (booking.vehicle_model) { %> (<%= booking.vehicle_model %>)<% } %></p>
     
     <div class="line"></div>
     

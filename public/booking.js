@@ -130,7 +130,46 @@
     if (name === 'pickupTime') refreshPhoneRule();
   });
 
+  // Uppercase for license plate
+  const plateInput = form.querySelector('input[name="plate"]');
+  if (plateInput) {
+    plateInput.addEventListener('input', () => {
+      const start = plateInput.selectionStart;
+      const end = plateInput.selectionEnd;
+      plateInput.value = plateInput.value.toUpperCase();
+      if (start !== null && end !== null) {
+        plateInput.setSelectionRange(start, end);
+      }
+    });
+  }
+
+  // Auto-capitalization for customer name and model
+  const capitalize = (str) => {
+    return str
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  };
+
+  [form.querySelector('input[name="name"]'), form.querySelector('input[name="model"]')].forEach((input) => {
+    if (!input) return;
+    input.addEventListener('blur', () => {
+      if (input.value) {
+        input.value = capitalize(input.value);
+      }
+    });
+  });
+
   form.addEventListener('submit', (event) => {
+    if (plateInput) plateInput.value = plateInput.value.toUpperCase().trim();
+    const nameInput = form.querySelector('input[name="name"]');
+    if (nameInput && nameInput.value.trim()) nameInput.value = capitalize(nameInput.value);
+    const modelInput = form.querySelector('input[name="model"]');
+    if (modelInput && modelInput.value.trim()) modelInput.value = capitalize(modelInput.value);
+
     const dropoff = Number(form.querySelector('#dropoff-hour')?.value || 0) * 60 + Number(form.querySelector('#dropoff-minute')?.value || 0);
     const [pickupHour, pickupMinute] = String(form.querySelector('#pickup-time')?.value || '0:0').split(':').map(Number);
     const pickup = pickupHour * 60 + pickupMinute;

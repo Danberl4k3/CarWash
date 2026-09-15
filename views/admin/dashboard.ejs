@@ -40,11 +40,16 @@
                 <a href="/admin/reservas/<%= booking.id %>" class="plate-number"><%= booking.plate %></a>
                 <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" style="font-size: 14px; text-decoration: none; margin-left: 8px;">🖨️</a>
               </div>
-              <% if (booking.customer_id) { %>
-                <a href="/admin/clientes/<%= booking.customer_id %>" class="customer-link"><%= booking.customer_name %></a>
-              <% } else { %>
-                <p><%= booking.customer_name || 'Cliente sin nombre' %></p>
-              <% } %>
+              <p>
+                <% if (booking.customer_id) { %>
+                  <a href="/admin/clientes/<%= booking.customer_id %>" class="customer-link" style="display:inline;"><%= booking.customer_name %></a>
+                <% } else { %>
+                  <span><%= booking.customer_name || 'Cliente sin nombre' %></span>
+                <% } %>
+                <% if (booking.vehicle_model) { %>
+                  <b style="color: var(--aqua-dark); font-weight: 700;">· <%= booking.vehicle_model %></b>
+                <% } %>
+              </p>
               <small><%= booking.services %></small>
               <div class="vehicle-meta"><span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span><span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span></div>
               <div class="quick-actions">

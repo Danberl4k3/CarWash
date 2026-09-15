@@ -2,30 +2,5 @@
     <span>© <%= new Date().getFullYear() %> DASAV Car Wash</span>
     <span>Atención de lunes a sábado · 7:00 a. m. – 6:00 p. m.</span>
   </footer>
-  <script>
-    (() => {
-      const updateThemeIcons = () => {
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
-          btn.textContent = isDark ? '☀️' : '🌙';
-          btn.setAttribute('title', isDark ? 'Modo claro' : 'Modo oscuro');
-        });
-      };
-      updateThemeIcons();
-      document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.theme-toggle-btn');
-        if (!btn) return;
-        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        if (isDark) {
-          document.documentElement.removeAttribute('data-theme');
-          try { localStorage.setItem('theme', 'light'); } catch (err) {}
-        } else {
-          document.documentElement.setAttribute('data-theme', 'dark');
-          try { localStorage.setItem('theme', 'dark'); } catch (err) {}
-        }
-        updateThemeIcons();
-      });
-    })();
-  </script>
 </body>
 </html>

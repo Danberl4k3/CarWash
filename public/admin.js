@@ -56,7 +56,8 @@
     params.append(btn.name, btn.value);
 
     try {
-      const postPromise = fetch(form.action, {
+      const url = form.getAttribute('action');
+      const postPromise = fetch(url, {
         method: 'POST',
         body: params.toString(),
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }

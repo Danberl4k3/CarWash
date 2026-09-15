@@ -39,6 +39,21 @@ describe('aplicación web', () => {
     expect(response.json()).toEqual({ status: 'ok', service: 'DASAV Car Wash' });
   });
 
+  it('rechaza acciones administrativas sin CSRF', async () => {
+    const login = await app.inject({
+      method: 'POST', url: '/admin/login',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      payload: 'username=admin-test&password=password-seguro-test',
+    });
+    const cookie = login.cookies[0];
+    const response = await app.inject({
+      method: 'POST', url: '/admin/logout',
+      headers: { cookie: `${cookie.name}=${cookie.value}`, 'content-type': 'application/x-www-form-urlencoded' },
+      payload: '',
+    });
+    expect(response.statusCode).toBe(403);
+  });
+
   it('protege el panel y permite iniciar sesión', async () => {
     const anonymous = await app.inject({ method: 'GET', url: '/admin' });
     expect(anonymous.statusCode).toBe(302);

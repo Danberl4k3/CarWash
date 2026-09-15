@@ -18,7 +18,10 @@ export interface BuildAppOptions {
 }
 
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
-  const app = Fastify({ logger: options.logger ?? false, trustProxy: true });
+  const app = Fastify({
+    logger: options.logger ?? false,
+    trustProxy: process.env.TRUST_PROXY === 'true',
+  });
   const cookieSecret = options.cookieSecret ?? process.env.COOKIE_SECRET ?? randomBytes(32).toString('hex');
 
   await app.register(cookie, { secret: cookieSecret, hook: 'onRequest' });
@@ -41,6 +44,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     reply.header('X-Frame-Options', 'DENY');
     reply.header('Referrer-Policy', 'same-origin');
     reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    if (process.env.NODE_ENV === 'production') reply.header('Strict-Transport-Security', 'max-age=31536000');
     reply.header(
       'Content-Security-Policy',
       "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; font-src 'self'; form-action 'self'; frame-ancestors 'none'",

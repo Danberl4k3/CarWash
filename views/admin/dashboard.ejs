@@ -17,9 +17,16 @@
   </section>
 
   <div class="board-heading">
-    <h2>Recojos por hora</h2>
+    <div class="board-heading-row">
+      <h2>Recojos por hora</h2>
+      <div class="board-heading-actions">
+        <button type="button" id="toggle-empty-hours" class="filter-chip-btn" title="Filtrar horas">
+          <span class="filter-text">Solo con autos</span>
+        </button>
+        <span class="board-date"><%= now.date %></span>
+      </div>
+    </div>
     <input type="search" id="board-search" class="board-search" placeholder="🔍 Buscar placa o cliente...">
-    <span><%= now.date %></span>
   </div>
   <section class="pickup-board" data-live-board>
     <% pickupGroups.forEach(group => { %>
@@ -36,9 +43,9 @@
                 </div>
                 <span class="payment-badge badge-<%= booking.payment_status %>"><%= booking.payment_status === 'paid' ? 'Pagado' : 'Por pagar' %></span>
               </div>
-              <div>
+              <div class="plate-row">
                 <a href="/admin/reservas/<%= booking.id %>" class="plate-number"><%= booking.plate %></a>
-                <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" style="font-size: 14px; text-decoration: none; margin-left: 8px;">🖨️</a>
+                <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" class="ticket-btn">🖨️</a>
               </div>
               <p>
                 <% if (booking.customer_id) { %>
@@ -78,5 +85,5 @@
     <% }) %>
 </section>
 </main>
-<script src="/public/admin.js?v=5" defer></script>
+<script src="/public/admin.js?v=6" defer></script>
 <%- include('../partials/footer') %>

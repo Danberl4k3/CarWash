@@ -21,6 +21,7 @@
       if (searchInput && searchInput.value) {
         searchInput.dispatchEvent(new Event('input'));
       }
+      applyEmptyHoursFilter();
     } catch (e) {
       // Ignore network errors
     }
@@ -87,6 +88,29 @@
           card.style.display = 'none';
         }
       });
+    });
+  }
+
+  // Toggle empty hours filter
+  const filterBtn = document.getElementById('toggle-empty-hours');
+  function applyEmptyHoursFilter() {
+    if (!filterBtn) return;
+    const hideEmpty = localStorage.getItem('hideEmptyHours') === 'true';
+    filterBtn.classList.toggle('active', hideEmpty);
+    const textSpan = filterBtn.querySelector('.filter-text');
+    if (textSpan) textSpan.textContent = hideEmpty ? 'Ver todas' : 'Solo con autos';
+    document.querySelectorAll('.pickup-column').forEach(col => {
+      const hasEmpty = !!col.querySelector('.empty-slot');
+      col.classList.toggle('column-hidden', hideEmpty && hasEmpty);
+    });
+  }
+
+  if (filterBtn) {
+    applyEmptyHoursFilter();
+    filterBtn.addEventListener('click', () => {
+      const current = localStorage.getItem('hideEmptyHours') === 'true';
+      localStorage.setItem('hideEmptyHours', String(!current));
+      applyEmptyHoursFilter();
     });
   }
 })();

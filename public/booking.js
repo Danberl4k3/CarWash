@@ -100,6 +100,7 @@
     const pickup = form.querySelector('#pickup-time');
     if (!pickup) return;
     const previous = pickup.value;
+    pickup.replaceChildren(new Option('Selecciona una hora', ''));
     const start = Math.ceil((dropoff + 20) / 10) * 10;
     for (let total = Math.max(start, dropoff + 10); total <= 18 * 60; total += 10) {
       const hour = Math.floor(total / 60); const minute = total % 60;
@@ -128,6 +129,7 @@
     if (name === 'baseServiceId') refreshAddonRules();
     if (name === 'addonServiceIds') refreshPrices();
     if (name === 'pickupTime') refreshPhoneRule();
+    if (name === 'dropoffHour' || name === 'dropoffMinute') refreshPickupOptions();
   });
 
   // Uppercase for license plate

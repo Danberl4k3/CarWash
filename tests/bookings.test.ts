@@ -91,6 +91,21 @@ describe('reglas de reserva', () => {
     ).toThrow(/lunes a sábado/i);
   });
 
+  it('exige teléfono para reservas tardías', () => {
+    expect(() => createBooking(db, { ...validInput(), phone: '', dropoffHour: 15, pickupHour: 16 }, {
+      now: mondayAt(14),
+    })).toThrow(/teléfono/i);
+  });
+
+  it('rechaza datos de pago inconsistentes al editar', () => {
+    const result = createBooking(db, validInput(), { now: mondayAt(8) });
+    expect(() => updateBookingByAdmin(db, result.id, {
+      name: 'Ana', model: 'Toyota', phone: '999999999', plate: 'abc-123', vehicleType: 'car',
+      baseServiceId: exteriorId, addonServiceIds: [], dropoffHour: 10, pickupHour: 11,
+      status: 'pending', paymentMethod: 'cash', paymentStatus: 'paid', amountPaid: 1, total: 10, notes: '',
+    })).toThrow(/pagada/i);
+  });
+
   it('permite al administrador editar todos los datos y servicios', () => {
     const result = createBooking(db, validInput(), { now: mondayAt(8) });
     updateBookingByAdmin(db, result.id, {

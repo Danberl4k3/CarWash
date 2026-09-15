@@ -194,6 +194,20 @@ export function createBooking(
   }
 
   const transaction = db.transaction(() => {
+    // Re-check inside the write transaction so concurrent requests cannot
+    // both reserve the last available slot.
+    const lockedCapacity = db.prepare('SELECT max_slots FROM capacity_slots WHERE hour = ?').get(input.dropoffHour) as
+      | { max_slots: number }
+      | undefined;
+    if (!lockedCapacity) throw new BookingValidationError('Ese horario no estÃ¡ configurado.');
+    const lockedUsed = db.prepare(`
+      SELECT COUNT(*) AS count FROM bookings
+      WHERE booking_date = ? AND dropoff_hour = ? AND status != 'cancelled'
+    `).get(now.date, input.dropoffHour) as { count: number };
+    if (lockedUsed.count >= lockedCapacity.max_slots) {
+      throw new BookingValidationError('Ese horario acaba de llenarse. Elige otro turno.');
+    }
+
     let vehicle = db.prepare('SELECT id, customer_id FROM vehicles WHERE plate = ?').get(input.plate) as
       | { id: number; customer_id: number | null }
       | undefined;
@@ -386,11 +400,26 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
   if (toMinutes(parsed.data.pickupHour, parsed.data.pickupMinute) <= toMinutes(parsed.data.dropoffHour, parsed.data.dropoffMinute)) {
     throw new BookingValidationError('La hora de recojo debe ser posterior al ingreso.');
   }
+  if (toMinutes(parsed.data.dropoffHour, parsed.data.dropoffMinute) >= BUSINESS.closeHour * 60
+    || toMinutes(parsed.data.pickupHour, parsed.data.pickupMinute) > BUSINESS.closeHour * 60) {
+    throw new BookingValidationError('El horario seleccionado estÃ¡ fuera de atenciÃ³n.');
+  }
+  if (parsed.data.phone && !/^\+?[0-9 ()-]{7,20}$/.test(parsed.data.phone)) {
+    throw new BookingValidationError('Ingresa un telÃ©fono vÃ¡lido.');
+  }
   const booking = getBooking(db, id);
   if (!booking) throw new BookingValidationError('Reserva no encontrada.');
   const update = parsed.data;
   if (update.pickupMinute % 10 !== 0) {
     throw new BookingValidationError('La hora de recojo debe estar en intervalos de 10 minutos.');
+  }
+  const totalCents = Math.round(update.total * 100);
+  const amountPaidCents = Math.round(update.amountPaid * 100);
+  if (amountPaidCents > totalCents) {
+    throw new BookingValidationError('El monto pagado no puede superar el total.');
+  }
+  if (update.paymentStatus === 'paid' && amountPaidCents !== totalCents) {
+    throw new BookingValidationError('Una reserva pagada debe tener el total cancelado.');
   }
   if (
     update.status !== 'cancelled'
@@ -434,8 +463,8 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
       update.status,
       update.paymentMethod,
       update.paymentStatus,
-      Math.round(update.amountPaid * 100),
-      Math.round(update.total * 100),
+      amountPaidCents,
+      totalCents,
       update.notes,
       id,
     );

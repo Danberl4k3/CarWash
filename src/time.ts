@@ -48,7 +48,8 @@ export function timeLabel(hour: number, minute = 0): string {
 }
 
 export function phoneIsRequired(createdAt: LimaNow, pickupHour: number, pickupMinute = 0): boolean {
-  return false;
+  return createdAt.hour >= BUSINESS.phoneRequiredFromHour
+    || toMinutes(pickupHour, pickupMinute) >= BUSINESS.latePickupHour * 60;
 }
 
 export function dropoffHours(): number[] {

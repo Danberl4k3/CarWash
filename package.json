@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Sistema web de reservas y operación para DASAV Car Wash",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "node ./node_modules/tsx/dist/cli.mjs watch src/server.ts",
     "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.json",

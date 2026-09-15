@@ -30,3 +30,4 @@ try {
   console.error('[BACKUP] ✗ Error al realizar backup:', error.message);
   process.exit(1);
 }
+

@@ -53,3 +53,4 @@ try {
   console.error('[RESTORE] ✗ Error al restaurar:', error.message);
   process.exit(1);
 }
+

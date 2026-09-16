@@ -2,13 +2,44 @@
 <%- include('../partials/admin-nav', { admin, csrfToken }) %>
 <main class="admin-main">
   <div class="page-heading">
-    <div><span class="eyebrow">Operación de hoy</span><h1>Panel de recojos</h1><p>Todos los vehículos organizados por la hora en que estarán listos.</p></div>
-    <a class="primary-button" href="/">+ Nueva reserva</a>
+    <div>
+      <span class="eyebrow">Control de operaciones</span>
+      <h1>Panel de recojos</h1>
+      <p>Vehículos organizados por la hora estimada de entrega.</p>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <a class="primary-button" href="/">+ Nueva reserva</a>
+    </div>
   </div>
   <%- include('../partials/alerts', { error, success }) %>
 
+  <!-- Barra de navegación por fechas, alertas y exportación -->
+  <section class="dashboard-controls-bar">
+    <div class="date-navigator">
+      <a href="/admin?date=<%= prevDate %>" class="btn-date-nav" title="Día anterior: <%= prevDate %>">◀</a>
+      <div class="date-picker-wrap">
+        <input type="date" id="admin-date-input" value="<%= selectedDate %>" class="date-picker-input" title="Seleccionar fecha">
+        <% if (isToday) { %>
+          <span class="badge-today">Hoy</span>
+        <% } else { %>
+          <a href="/admin" class="btn-today-link" title="Volver a la fecha de hoy">Ir a Hoy</a>
+        <% } %>
+      </div>
+      <a href="/admin?date=<%= nextDate %>" class="btn-date-nav" title="Día siguiente: <%= nextDate %>">▶</a>
+    </div>
+
+    <div class="dashboard-extra-actions">
+      <button type="button" id="toggle-sound-btn" class="action-pill sound-btn" title="Activar o silenciar avisos sonoros de reservas">
+        <span class="sound-icon">🔔</span> <span class="sound-label">Avisos activos</span>
+      </button>
+      <a href="/admin/export-csv?date=<%= selectedDate %>" class="action-pill export-csv-btn" title="Descargar planilla de reservas en CSV / Excel">
+        📥 Exportar CSV
+      </a>
+    </div>
+  </section>
+
   <section class="summary-grid">
-    <article><span class="summary-dot dot-blue"></span><small>Vehículos hoy</small><strong><%= summary.total %></strong></article>
+    <article><span class="summary-dot dot-blue"></span><small>Vehículos</small><strong><%= summary.total %></strong></article>
     <article><span class="summary-dot dot-amber"></span><small>Pendientes</small><strong><%= summary.pending %></strong></article>
     <article><span class="summary-dot dot-purple"></span><small>En proceso</small><strong><%= summary.inProgress %></strong></article>
     <article><span class="summary-dot dot-green"></span><small>Terminados</small><strong><%= summary.completed %></strong></article>
@@ -16,12 +47,38 @@
     <article><span class="summary-dot dot-mint"></span><small>Cobrado</small><strong><%= formatMoney(summary.collected) %></strong></article>
   </section>
 
+  <!-- Módulo de cierre de caja -->
+  <section class="cash-breakdown-panel">
+    <div class="cash-breakdown-title">
+      <span>💵 <strong>Cierre de caja · <%= selectedDate %></strong></span>
+      <% if (paymentBreakdown.totalPendingCents > 0) { %>
+        <span class="pending-to-collect">Por cobrar: <b><%= formatMoney(paymentBreakdown.totalPendingCents) %></b></span>
+      <% } else { %>
+        <span class="all-collected">✓ 100% cobrado</span>
+      <% } %>
+    </div>
+    <div class="cash-breakdown-chips">
+      <div class="cash-chip chip-yape">
+        <span class="chip-label">🟣 Yape</span>
+        <strong><%= formatMoney(paymentBreakdown.yapeCents) %></strong>
+      </div>
+      <div class="cash-chip chip-plin">
+        <span class="chip-label">🔵 Plin</span>
+        <strong><%= formatMoney(paymentBreakdown.plinCents) %></strong>
+      </div>
+      <div class="cash-chip chip-cash">
+        <span class="chip-label">💵 Efectivo</span>
+        <strong><%= formatMoney(paymentBreakdown.cashCents) %></strong>
+      </div>
+    </div>
+  </section>
+
   <section class="next-up-card-container">
     <% if (nextBookingToEnter) { %>
       <div class="next-up-card">
         <div class="next-up-header">
-          <span class="next-up-badge">🚗 Siguiente por ingresar</span>
-          <span class="next-up-count"><%= pendingBookings.length %> <%= pendingBookings.length === 1 ? 'en espera' : 'en espera' %></span>
+          <span class="next-up-badge">🚗 Siguiente por ingresar a pista</span>
+          <span class="next-up-count"><%= pendingBookings.length %> en espera</span>
         </div>
         <div class="next-up-body">
           <div class="next-up-info">
@@ -63,7 +120,7 @@
       </div>
     <% } else { %>
       <div class="next-up-card empty-queue">
-        <span>✨ <b>Todos los vehículos del día han ingresado a lavado</b> · No hay turnos pendientes</span>
+        <span>✨ <b>Todos los vehículos registrados han ingresado a lavado</b> · No hay turnos pendientes</span>
       </div>
     <% } %>
   </section>
@@ -72,7 +129,7 @@
     <div class="board-heading-row">
       <h2>Recojos por hora</h2>
       <div class="board-heading-actions">
-        <span class="board-date"><%= now.date %></span>
+        <span class="board-date"><%= selectedDate %></span>
       </div>
     </div>
     <input type="search" id="board-search" class="board-search" placeholder="🔍 Buscar placa o cliente...">
@@ -120,7 +177,10 @@
                 <% } %>
               </p>
               <small><%= booking.services %></small>
-              <div class="vehicle-meta"><span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span><span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span></div>
+              <div class="vehicle-meta">
+                <span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span>
+                <span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span>
+              </div>
               <% if (booking.status === 'in_progress' && booking.started_washing_at) { %>
                 <div class="wash-timer-card" data-wash-timer>
                   <div class="wash-timer-row">
@@ -138,12 +198,14 @@
                       <button type="submit" name="action" value="prev_status" title="Retroceder estado" <%= booking.status === 'pending' || booking.status === 'cancelled' ? 'disabled' : '' %>>◀</button>
                       <button type="submit" name="action" value="next_status" title="Avanzar estado" <%= booking.status === 'completed' || booking.status === 'cancelled' ? 'disabled' : '' %>>▶</button>
                     </div>
-                    <div class="payment-stepper" style="display: flex; gap: 4px;">
+                    <div class="payment-stepper" style="display: flex; gap: 4px; align-items: center;">
                       <button type="submit" name="action" value="toggle_payment" class="toggle-btn <%= booking.payment_status === 'paid' ? 'is-paid' : '' %>">
                         <%= booking.payment_status === 'paid' ? 'Pagado' : 'Cobrar' %>
                       </button>
                       <% if (booking.phone) { %>
-                        <a href="https://wa.me/<%= booking.phone.replace(/\D/g, '') %>?text=Hola <%= encodeURIComponent((booking.customer_name || 'Amigo').split(' ')[0]) %>, tu veh%C3%ADculo de placa <%= booking.plate %> ya est%C3%A1 listo y reluciente en D'Asav Car Wash. %C2%A1Te esperamos!" target="_blank" class="wa-btn" title="Avisar por WhatsApp">💬</a>
+                        <div class="wa-action-wrap">
+                          <a href="https://wa.me/<%= booking.phone.replace(/\D/g, '') %>?text=<%= encodeURIComponent(`Hola ${(booking.customer_name || 'Amigo').split(' ')[0]}, tu vehículo de placa ${booking.plate} ya está listo y reluciente en DASAV Car Wash. Monto: S/ ${(booking.total_cents / 100).toFixed(2)}. ¡Te esperamos!`) %>" target="_blank" class="wa-btn" title="Avisar por WhatsApp: ¡Vehículo listo!">💬</a>
+                        </div>
                       <% } %>
                     </div>
                   </div>
@@ -154,7 +216,7 @@
         </div>
       </article>
     <% }) %>
-</section>
+  </section>
 </main>
-<script src="/public/admin.js?v=7" defer></script>
+<script src="/public/admin.js?v=8" defer></script>
 <%- include('../partials/footer') %>

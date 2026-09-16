@@ -22,9 +22,11 @@ import {
   createBooking,
   getBooking,
   getBookingServiceIds,
+  getDailyPaymentBreakdown,
   listBookingsForDate,
   updateBookingByAdmin,
 } from '../domain/bookings.js';
+import { appEvents, type AppEvent } from '../events.js';
 import { allPickupHours, dropoffHours, getLimaNow } from '../time.js';
 
 function failRedirect(reply: FastifyReply, path: string, message: string): FastifyReply {
@@ -33,6 +35,13 @@ function failRedirect(reply: FastifyReply, path: string, message: string): Fasti
 
 function okRedirect(reply: FastifyReply, path: string, message: string): FastifyReply {
   return reply.redirect(`${path}${path.includes('?') ? '&' : '?'}success=${encodeURIComponent(message)}`);
+}
+
+function offsetDate(dateStr: string, days: number): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function queryMessages(request: FastifyRequest): { error: string | null; success: string | null } {
@@ -112,7 +121,13 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     if (!session) return;
     checkAndAutoCompleteBookings(db);
     const now = getLimaNow();
-    const bookings = listBookingsForDate(db, now.date);
+    const query = request.query as { date?: unknown };
+    const selectedDate = typeof query.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(query.date) ? query.date : now.date;
+    const isToday = selectedDate === now.date;
+    const prevDate = offsetDate(selectedDate, -1);
+    const nextDate = offsetDate(selectedDate, 1);
+
+    const bookings = listBookingsForDate(db, selectedDate);
     const activeHours = Array.from(new Set(bookings.map((booking) => booking.pickup_hour))).sort(
       (a, b) => a - b,
     );
@@ -141,6 +156,8 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       expected: bookings.reduce((sum, booking) => sum + booking.total_cents, 0),
     };
 
+    const paymentBreakdown = getDailyPaymentBreakdown(db, selectedDate);
+
     const pendingBookings = bookings
       .filter((booking) => booking.status === 'pending')
       .sort((a, b) => {
@@ -154,12 +171,113 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       title: 'Panel de operación',
       ...baseView(session, request),
       now,
+      selectedDate,
+      isToday,
+      prevDate,
+      nextDate,
       pickupGroups,
       hourlySummary,
       summary,
+      paymentBreakdown,
       nextBookingToEnter,
       pendingBookings,
     });
+  });
+
+  app.get('/admin/events', async (request, reply) => {
+    const session = requireAdmin(db, request, reply);
+    if (!session) return;
+
+    reply.raw.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+
+    reply.raw.write('event: connected\ndata: {"status":"connected"}\n\n');
+
+    const onEvent = (event: AppEvent) => {
+      try {
+        reply.raw.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
+      } catch {
+        // Ignorar si el socket ya está cerrado
+      }
+    };
+
+    appEvents.on('app_event', onEvent);
+
+    const keepAliveTimer = setInterval(() => {
+      try {
+        reply.raw.write(': ping\n\n');
+      } catch {
+        clearInterval(keepAliveTimer);
+        appEvents.off('app_event', onEvent);
+      }
+    }, 15000);
+
+    request.raw.on('close', () => {
+      clearInterval(keepAliveTimer);
+      appEvents.off('app_event', onEvent);
+    });
+  });
+
+  app.get('/admin/export-csv', async (request, reply) => {
+    const session = requireAdmin(db, request, reply);
+    if (!session) return;
+    const query = request.query as { date?: unknown };
+    const targetDate = typeof query.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(query.date) ? query.date : getLimaNow().date;
+    const bookings = listBookingsForDate(db, targetDate);
+
+    const headers = [
+      'Código',
+      'Fecha',
+      'Ingreso',
+      'Recojo',
+      'Placa',
+      'Tipo de Vehículo',
+      'Modelo',
+      'Cliente',
+      'Teléfono',
+      'Servicios',
+      'Estado',
+      'Método de Pago',
+      'Estado de Pago',
+      'Monto Cobrado (S/)',
+      'Total (S/)',
+    ];
+
+    const escapeCsv = (val: string | number | null | undefined) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replaceAll('"', '""');
+      return `"${str}"`;
+    };
+
+    const rows = bookings.map((b) =>
+      [
+        escapeCsv(b.code),
+        escapeCsv(b.booking_date),
+        escapeCsv(hourLabel(b.dropoff_hour, b.dropoff_minute === null ? 0 : b.dropoff_minute % 60)),
+        escapeCsv(hourLabel(b.pickup_hour, b.pickup_minute === null ? 0 : b.pickup_minute % 60)),
+        escapeCsv(b.plate),
+        escapeCsv(VEHICLE_LABELS[b.vehicle_type] ?? b.vehicle_type),
+        escapeCsv(b.vehicle_model || ''),
+        escapeCsv(b.customer_name || 'Sin nombre'),
+        escapeCsv(b.phone || ''),
+        escapeCsv(b.services || ''),
+        escapeCsv(STATUS_LABELS[b.status] ?? b.status),
+        escapeCsv(PAYMENT_LABELS[b.payment_method] ?? b.payment_method),
+        escapeCsv(b.payment_status === 'paid' ? 'Pagado' : 'Pendiente'),
+        escapeCsv((b.amount_paid_cents / 100).toFixed(2)),
+        escapeCsv((b.total_cents / 100).toFixed(2)),
+      ].join(','),
+    );
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+    return reply
+      .header('Content-Type', 'text/csv; charset=utf-8')
+      .header('Content-Disposition', `attachment; filename="carwash-reservas-${targetDate}.csv"`)
+      .send(csvContent);
   });
 
   app.post('/admin/logout', async (request, reply) => {
@@ -197,6 +315,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
         },
         { createdByAdmin: true, allowPastSlot: true },
       );
+      appEvents.emitAppEvent('booking_created', { id: result.id, code: result.code });
       return okRedirect(reply, `/admin/reservas/${result.id}`, 'Reserva creada correctamente.');
     } catch (error) {
       const message = error instanceof BookingValidationError ? error.message : 'No se pudo crear la reserva.';
@@ -237,6 +356,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
         ...body,
         addonServiceIds: normalizeArray(body.addonServiceIds),
       });
+      appEvents.emitAppEvent('booking_updated', { id });
       return okRedirect(reply, `/admin/reservas/${id}`, 'Cambios guardados.');
     } catch (error) {
       const message = error instanceof BookingValidationError ? error.message : 'No se pudieron guardar los cambios.';
@@ -259,6 +379,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     } else {
       db.prepare('UPDATE bookings SET status = ?, payment_status = ?, amount_paid_cents = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(parsedStatus.data, parsedPayment.data, id);
     }
+    appEvents.emitAppEvent('booking_updated', { id });
     return reply.redirect('/admin');
   });
 
@@ -303,6 +424,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
         db.prepare('UPDATE bookings SET payment_status = ?, amount_paid_cents = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run('paid', booking.total_cents, id);
       }
     }
+    appEvents.emitAppEvent('booking_updated', { id });
     return reply.redirect(`/admin#booking-${id}`);
   });
 

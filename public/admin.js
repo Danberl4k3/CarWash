@@ -2,25 +2,81 @@
   const board = document.querySelector('[data-live-board]');
   if (!board) return;
 
+  // Web Audio API Synthesizer Chime
+  function playBookingChime() {
+    if (localStorage.getItem('adminSoundEnabled') === 'false') return;
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      const ctx = new AudioContextClass();
+      const now = ctx.currentTime;
+
+      // Nota 1: D5 (587.33 Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(587.33, now);
+      gain1.gain.setValueAtTime(0.3, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      // Nota 2: A5 (880.00 Hz)
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880.0, now + 0.14);
+      gain2.gain.setValueAtTime(0.35, now + 0.14);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.14);
+      osc2.stop(now + 0.65);
+    } catch (e) {
+      // Ignorar bloqueos de autoplay del navegador antes de interacción
+    }
+  }
+
+  // Toast flotante para notificaciones instantáneas
+  function showToast(message) {
+    let toast = document.getElementById('admin-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'admin-toast';
+      toast.className = 'admin-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+
   async function silentRefresh(fetchPromise) {
     try {
       const res = await (fetchPromise || fetch(window.location.href));
       if (!res.ok) return;
       const text = await res.text();
       const doc = new DOMParser().parseFromString(text, 'text/html');
-      
+
       const newBoard = doc.querySelector('[data-live-board]');
       if (newBoard && board) board.innerHTML = newBoard.innerHTML;
-      
+
       const newSummary = doc.querySelector('.summary-grid');
       const currentSummary = document.querySelector('.summary-grid');
       if (newSummary && currentSummary) currentSummary.innerHTML = newSummary.innerHTML;
 
+      const newCash = doc.querySelector('.cash-breakdown-panel');
+      const currentCash = document.querySelector('.cash-breakdown-panel');
+      if (newCash && currentCash) currentCash.innerHTML = newCash.innerHTML;
+
       const newNextUp = doc.querySelector('.next-up-card-container');
       const currentNextUp = document.querySelector('.next-up-card-container');
       if (newNextUp && currentNextUp) currentNextUp.innerHTML = newNextUp.innerHTML;
-      
-      // Re-apply search filter if active
+
+      // Reaplicar filtro de búsqueda si está activo
       const searchInput = document.getElementById('board-search');
       if (searchInput && searchInput.value) {
         searchInput.dispatchEvent(new Event('input'));
@@ -28,28 +84,83 @@
       applyEmptyHoursFilter();
       updateWashTimers();
     } catch (e) {
-      // Ignore network errors
+      // Ignorar errores de red temporales
     }
   }
 
-  // Auto-refresh every 30s silently instead of full page reload
+  // Conexión Server-Sent Events (SSE) para tiempo real instantáneo
+  function initSSE() {
+    if (!window.EventSource) return;
+    try {
+      const sse = new EventSource('/admin/events');
+      sse.addEventListener('booking_created', () => {
+        playBookingChime();
+        showToast('🚗 ¡Nueva reserva registrada!');
+        silentRefresh();
+      });
+      sse.addEventListener('booking_updated', () => {
+        silentRefresh();
+      });
+      sse.addEventListener('refresh', () => {
+        silentRefresh();
+      });
+    } catch (err) {
+      console.warn('SSE fallback to polling');
+    }
+  }
+
+  initSSE();
+
+  // Polling de respaldo cada 30s por si la pestaña estuvo suspendida
   window.setInterval(() => {
     if (document.visibilityState === 'visible') silentRefresh();
   }, 30000);
 
-  // Handle quick action buttons without full page reload
+  // Control de fecha interactivo
+  const dateInput = document.getElementById('admin-date-input');
+  if (dateInput) {
+    dateInput.addEventListener('change', () => {
+      if (dateInput.value) {
+        window.location.href = `/admin?date=${encodeURIComponent(dateInput.value)}`;
+      }
+    });
+  }
+
+  // Control de sonido (Activar / Silenciar)
+  const soundBtn = document.getElementById('toggle-sound-btn');
+  function updateSoundBtn() {
+    if (!soundBtn) return;
+    const enabled = localStorage.getItem('adminSoundEnabled') !== 'false';
+    const icon = soundBtn.querySelector('.sound-icon');
+    const label = soundBtn.querySelector('.sound-label');
+    if (icon) icon.textContent = enabled ? '🔔' : '🔕';
+    if (label) label.textContent = enabled ? 'Avisos activos' : 'Silenciado';
+    soundBtn.classList.toggle('is-muted', !enabled);
+  }
+
+  if (soundBtn) {
+    updateSoundBtn();
+    soundBtn.addEventListener('click', () => {
+      const current = localStorage.getItem('adminSoundEnabled') !== 'false';
+      localStorage.setItem('adminSoundEnabled', String(!current));
+      updateSoundBtn();
+      if (!current) playBookingChime();
+    });
+  }
+
+  // Manejo de acciones rápidas sin recarga de página completa
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('button[type="submit"][name="action"]');
     if (!btn) return;
-    
+
     const form = btn.closest('form');
     if (!form || (!form.closest('.quick-actions') && !form.closest('.next-up-action'))) return;
-    
-    e.preventDefault(); // Stop normal form submission
+
+    e.preventDefault();
 
     const formData = new FormData(form);
     formData.append(btn.name, btn.value);
-    
+
     btn.style.opacity = '0.5';
     btn.style.pointerEvents = 'none';
 
@@ -66,7 +177,7 @@
       const postPromise = fetch(url, {
         method: 'POST',
         body: params.toString(),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
       await silentRefresh(postPromise);
     } catch (err) {
@@ -77,14 +188,14 @@
     }
   });
 
-  // Handle board searching
+  // Búsqueda en el tablero
   const searchInput = document.getElementById('board-search');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
       const term = e.target.value.toLowerCase().trim();
       const cards = document.querySelectorAll('.vehicle-card');
-      
-      cards.forEach(card => {
+
+      cards.forEach((card) => {
         const plate = card.querySelector('.plate-number')?.textContent?.toLowerCase() || '';
         const name = card.querySelector('p')?.textContent?.toLowerCase() || '';
         if (plate.includes(term) || name.includes(term)) {
@@ -96,7 +207,7 @@
     });
   }
 
-  // Toggle empty hours filter
+  // Ocultar horas vacías
   const filterBtn = document.getElementById('toggle-empty-hours');
   function applyEmptyHoursFilter() {
     if (!filterBtn) return;
@@ -104,7 +215,7 @@
     filterBtn.classList.toggle('active', hideEmpty);
     const textSpan = filterBtn.querySelector('.filter-text');
     if (textSpan) textSpan.textContent = hideEmpty ? 'Ver todas' : 'Solo con autos';
-    document.querySelectorAll('.pickup-column').forEach(col => {
+    document.querySelectorAll('.pickup-column').forEach((col) => {
       const hasEmpty = !!col.querySelector('.empty-slot');
       col.classList.toggle('column-hidden', hideEmpty && hasEmpty);
     });
@@ -119,10 +230,10 @@
     });
   }
 
-  // Live Wash Timer for vehicles in_progress
+  // Temporizador en vivo para vehículos en progreso
   function updateWashTimers() {
     let hasFinishedWashing = false;
-    document.querySelectorAll('[data-wash-timer]').forEach(timer => {
+    document.querySelectorAll('[data-wash-timer]').forEach((timer) => {
       const card = timer.closest('.vehicle-card');
       if (!card) return;
       const startedAt = card.dataset.startedAt;
@@ -131,7 +242,7 @@
       const startedMs = Date.parse(startedAt);
       if (isNaN(startedMs)) return;
 
-      const durationMinutes = (vehicleType === 'small_suv' || vehicleType === 'large_suv') ? 45 : 30;
+      const durationMinutes = vehicleType === 'small_suv' || vehicleType === 'large_suv' ? 45 : 30;
       const elapsedMs = Date.now() - startedMs;
       const elapsedMinutes = Math.floor(elapsedMs / (60 * 1000));
       const remainingMinutes = Math.max(0, durationMinutes - elapsedMinutes);

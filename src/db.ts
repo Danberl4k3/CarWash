@@ -107,6 +107,10 @@ CREATE INDEX IF NOT EXISTS idx_bookings_date_dropoff ON bookings(booking_date, d
 CREATE INDEX IF NOT EXISTS idx_bookings_date_pickup ON bookings(booking_date, pickup_hour);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
 CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+CREATE INDEX IF NOT EXISTS idx_vehicles_customer_id ON vehicles(customer_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_vehicle_id ON bookings(vehicle_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_customer_id ON bookings(customer_id);
+CREATE INDEX IF NOT EXISTS idx_service_prices_service_id ON service_prices(service_id);
 `;
 
 const defaultServices = [
@@ -242,14 +246,25 @@ export function getServicesWithPrices(db: Database.Database, onlyActive = false)
   const services = db
     .prepare(`SELECT * FROM services ${onlyActive ? 'WHERE active = 1' : ''} ORDER BY sort_order, id`)
     .all() as ServiceRow[];
-  const priceStatement = db.prepare('SELECT vehicle_type, price_cents FROM service_prices WHERE service_id = ?');
-  return services.map((service) => {
-    const prices = Object.fromEntries(
-      (priceStatement.all(service.id) as Array<{ vehicle_type: VehicleType; price_cents: number }>).map((row) => [
-        row.vehicle_type,
-        row.price_cents,
-      ]),
-    ) as Record<VehicleType, number>;
-    return { ...service, prices };
-  });
+  const allPrices = db
+    .prepare('SELECT service_id, vehicle_type, price_cents FROM service_prices')
+    .all() as Array<{ service_id: number; vehicle_type: VehicleType; price_cents: number }>;
+  const priceMap = new Map<number, Record<VehicleType, number>>();
+  for (const row of allPrices) {
+    let entry = priceMap.get(row.service_id);
+    if (!entry) {
+      entry = {} as Record<VehicleType, number>;
+      priceMap.set(row.service_id, entry);
+    }
+    entry[row.vehicle_type] = row.price_cents;
+  }
+  return services.map((service) => ({
+    ...service,
+    prices: priceMap.get(service.id) ?? ({} as Record<VehicleType, number>),
+  }));
+}
+
+export function cleanupExpiredSessions(db: Database.Database): number {
+  const result = db.prepare('DELETE FROM admin_sessions WHERE expires_at <= ?').run(new Date().toISOString());
+  return result.changes;
 }

@@ -1,0 +1,17 @@
+{
+  "name": "DASAV Car Wash",
+  "short_name": "DASAV",
+  "description": "Sistema de reservas y control de pista para DASAV Car Wash",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#071a26",
+  "theme_color": "#071a26",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/public/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

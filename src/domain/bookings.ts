@@ -447,3 +447,77 @@ export function checkAndAutoCompleteBookings(db: Database.Database): number {
   return updatedCount;
 }
 
+export interface VehicleLookupResult {
+  found: boolean;
+  plate?: string;
+  vehicleType?: VehicleType;
+  model?: string | null;
+  name?: string | null;
+}
+
+export function lookupVehicleByPlate(db: Database.Database, plate: string): VehicleLookupResult {
+  const normalized = plate.trim().toUpperCase();
+  if (normalized.length < 3) return { found: false };
+
+  const row = db.prepare(`
+    SELECT v.plate, v.vehicle_type, v.model, c.name AS customer_name
+    FROM vehicles v
+    LEFT JOIN customers c ON c.id = v.customer_id
+    WHERE v.plate = ?
+    LIMIT 1
+  `).get(normalized) as { plate: string; vehicle_type: VehicleType; model: string | null; customer_name: string | null } | undefined;
+
+  if (!row) return { found: false };
+  return {
+    found: true,
+    plate: row.plate,
+    vehicleType: row.vehicle_type,
+    model: row.model,
+    name: row.customer_name,
+  };
+}
+
+export interface PaymentBreakdown {
+  yapeCents: number;
+  plinCents: number;
+  cashCents: number;
+  totalCollectedCents: number;
+  totalPendingCents: number;
+  totalExpectedCents: number;
+}
+
+export function getDailyPaymentBreakdown(db: Database.Database, date: string): PaymentBreakdown {
+  const rows = db.prepare(`
+    SELECT payment_method, payment_status, amount_paid_cents, total_cents
+    FROM bookings
+    WHERE booking_date = ? AND status != 'cancelled'
+  `).all(date) as Array<{
+    payment_method: PaymentMethod;
+    payment_status: PaymentStatus;
+    amount_paid_cents: number;
+    total_cents: number;
+  }>;
+
+  let yapeCents = 0;
+  let plinCents = 0;
+  let cashCents = 0;
+  let totalCollectedCents = 0;
+  let totalExpectedCents = 0;
+
+  for (const row of rows) {
+    totalCollectedCents += row.amount_paid_cents;
+    totalExpectedCents += row.total_cents;
+    if (row.payment_method === 'yape') yapeCents += row.amount_paid_cents;
+    else if (row.payment_method === 'plin') plinCents += row.amount_paid_cents;
+    else if (row.payment_method === 'cash') cashCents += row.amount_paid_cents;
+  }
+
+  return {
+    yapeCents,
+    plinCents,
+    cashCents,
+    totalCollectedCents,
+    totalPendingCents: Math.max(0, totalExpectedCents - totalCollectedCents),
+    totalExpectedCents,
+  };
+}

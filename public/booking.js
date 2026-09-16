@@ -130,8 +130,49 @@
     if (name === 'dropoffHour' || name === 'dropoffMinute') refreshPickupOptions();
   });
 
-  // Uppercase for license plate
+  // Uppercase for license plate & auto-lookup
   const plateInput = form.querySelector('input[name="plate"]');
+  let lastLookupPlate = '';
+  async function performPlateLookup() {
+    if (!plateInput) return;
+    const plate = plateInput.value.trim().toUpperCase();
+    if (plate.length < 4 || plate === lastLookupPlate) return;
+    lastLookupPlate = plate;
+    try {
+      const res = await fetch(`/api/vehiculo-lookup?plate=${encodeURIComponent(plate)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && data.found) {
+        const nameInput = form.querySelector('input[name="name"]');
+        const modelInput = form.querySelector('input[name="model"]');
+        if (nameInput && !nameInput.value && data.name) {
+          nameInput.value = data.name;
+        }
+        if (modelInput && !modelInput.value && data.model) {
+          modelInput.value = data.model;
+        }
+        if (data.vehicleType) {
+          const typeRadio = form.querySelector(`input[name="vehicleType"][value="${data.vehicleType}"]`);
+          if (typeRadio && !typeRadio.checked) {
+            typeRadio.checked = true;
+            typeRadio.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+        let badge = document.getElementById('recognized-badge');
+        if (!badge) {
+          badge = document.createElement('small');
+          badge.id = 'recognized-badge';
+          badge.className = 'recognized-badge';
+          plateInput.parentElement?.appendChild(badge);
+        }
+        badge.textContent = '✓ Vehículo registrado reconocido';
+        badge.style.display = 'block';
+      }
+    } catch {
+      // Ignorar errores de conexión
+    }
+  }
+
   if (plateInput) {
     plateInput.addEventListener('input', () => {
       const start = plateInput.selectionStart;
@@ -140,7 +181,12 @@
       if (start !== null && end !== null) {
         plateInput.setSelectionRange(start, end);
       }
+      if (plateInput.value.trim().length >= 6) {
+        clearTimeout(plateInput._timer);
+        plateInput._timer = setTimeout(performPlateLookup, 700);
+      }
     });
+    plateInput.addEventListener('blur', performPlateLookup);
   }
 
   // Auto-capitalization for customer name and model

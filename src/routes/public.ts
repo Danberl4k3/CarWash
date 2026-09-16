@@ -1,8 +1,9 @@
 import type Database from 'better-sqlite3';
 import type { FastifyInstance } from 'fastify';
-import { BUSINESS, PAYMENT_LABELS, VEHICLE_LABELS, formatMoney, hourLabel } from '../constants.js';
+import { BUSINESS, PAYMENT_LABELS, STATUS_LABELS, VEHICLE_LABELS, formatMoney, hourLabel } from '../constants.js';
 import { getServicesWithPrices } from '../db.js';
-import { BookingValidationError, createBooking, getBookingByCode } from '../domain/bookings.js';
+import { BookingValidationError, createBooking, getBookingByCode, lookupVehicleByPlate } from '../domain/bookings.js';
+import { appEvents } from '../events.js';
 import { dropoffHours, getLimaNow, isBusinessDay, isDropoffInPast, pickupHours, roundUpTo10 } from '../time.js';
 
 function stringArray(value: unknown): string[] {
@@ -51,6 +52,17 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
     });
   });
 
+  app.get(
+    '/api/vehiculo-lookup',
+    { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const plate = String((request.query as { plate?: unknown })?.plate ?? '');
+      if (!plate) return reply.code(400).send({ error: 'Placa requerida' });
+      const result = lookupVehicleByPlate(db, plate);
+      return reply.send(result);
+    },
+  );
+
   app.post(
     '/reservar',
     { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
@@ -84,6 +96,10 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
           paymentMethod: body.paymentMethod,
           notes: body.notes,
         });
+
+        // Emitir evento para el panel administrativo en tiempo real (SSE)
+        appEvents.emitAppEvent('booking_created', { code: result.code, id: result.id });
+
         return reply.redirect(`/reserva/${encodeURIComponent(result.code)}`);
       } catch (error) {
         const message = error instanceof BookingValidationError ? error.message : 'No pudimos registrar la reserva.';
@@ -93,15 +109,37 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
     },
   );
 
+  app.get('/api/reserva/:code/status', async (request, reply) => {
+    const { code } = request.params as { code: string };
+    const booking = getBookingByCode(db, code.toUpperCase());
+    if (!booking) return reply.code(404).send({ error: 'Reserva no encontrada' });
+    const durationMinutes = (booking.vehicle_type === 'small_suv' || booking.vehicle_type === 'large_suv') ? 45 : 30;
+    return reply.send({
+      code: booking.code,
+      status: booking.status,
+      statusLabel: STATUS_LABELS[booking.status] ?? booking.status,
+      paymentStatus: booking.payment_status,
+      startedWashingAt: booking.started_washing_at,
+      durationMinutes,
+      totalCents: booking.total_cents,
+      amountPaidCents: booking.amount_paid_cents,
+      updatedAt: booking.updated_at,
+    });
+  });
+
   app.get('/reserva/:code', async (request, reply) => {
     const { code } = request.params as { code: string };
     const booking = getBookingByCode(db, code.toUpperCase());
     if (!booking) return reply.code(404).view('not-found.ejs', { title: 'Reserva no encontrada' });
+    const durationMinutes = (booking.vehicle_type === 'small_suv' || booking.vehicle_type === 'large_suv') ? 45 : 30;
     return reply.view('confirmation.ejs', {
-      title: 'Reserva confirmada',
+      title: `Reserva ${booking.code}`,
+      business: BUSINESS,
       booking,
       vehicleLabels: VEHICLE_LABELS,
       paymentLabels: PAYMENT_LABELS,
+      statusLabels: STATUS_LABELS,
+      durationMinutes,
       formatMoney,
       hourLabel,
     });

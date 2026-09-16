@@ -8,6 +8,7 @@ import ejs from 'ejs';
 import { randomBytes } from 'node:crypto';
 import { resolve } from 'node:path';
 import type Database from 'better-sqlite3';
+import { cleanupExpiredSessions } from './db.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerPublicRoutes } from './routes/public.js';
 import { checkAndAutoCompleteBookings } from './domain/bookings.js';
@@ -48,7 +49,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     if (process.env.NODE_ENV === 'production') reply.header('Strict-Transport-Security', 'max-age=31536000');
     reply.header(
       'Content-Security-Policy',
-      "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; font-src 'self'; form-action 'self'; frame-ancestors 'none'",
+      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; form-action 'self'; frame-ancestors 'none'",
     );
     return payload;
   });
@@ -68,6 +69,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   const runMaintenance = (): void => {
     try {
       checkAndAutoCompleteBookings(options.db);
+      cleanupExpiredSessions(options.db);
     } catch (error) {
       app.log.error({ err: error }, 'No se pudo ejecutar el mantenimiento automatico');
     }

@@ -1,21 +1,92 @@
 <%- include('partials/head', { title, bodyClass: 'confirmation-page' }) %>
 <main class="confirmation-shell">
-  <a class="public-brand centered-brand" href="/"><span class="brand-mark">DA</span><span><strong>DASAV Car Wash</strong></span></a>
-  <section class="confirmation-card">
-    <div class="success-icon">✓</div>
-    <span class="eyebrow">Reserva registrada</span>
-    <h1>¡Listo! Te esperamos.</h1>
-    <p>Guarda este código para identificar tu reserva.</p>
-    <div class="reservation-code"><small>Código de reserva</small><strong><%= booking.code %></strong></div>
-    <div class="confirmation-details">
-      <div><small>Vehículo</small><strong><%= vehicleLabels[booking.vehicle_type] %> · <%= booking.plate %></strong></div>
-      <div><small>Ingreso</small><strong><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></strong></div>
-      <div><small>Recojo</small><strong><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></strong></div>
-      <div><small>Servicios</small><strong><%= booking.services %></strong></div>
-      <div><small>Pago</small><strong><%= paymentLabels[booking.payment_method] %></strong></div>
-      <div><small>Total</small><strong><%= formatMoney(booking.total_cents) %></strong></div>
+  <header class="tracker-header">
+    <a class="public-brand centered-brand" href="/">
+      <span class="brand-mark">DA</span>
+      <span><strong>DASAV Car Wash</strong><small>Seguimiento en vivo</small></span>
+    </a>
+  </header>
+
+  <section class="confirmation-card tracker-card" data-booking-tracker
+           data-code="<%= booking.code %>"
+           data-status="<%= booking.status %>"
+           data-started-at="<%= booking.started_washing_at || '' %>"
+           data-duration="<%= durationMinutes %>">
+
+    <div class="tracker-top-bar">
+      <span class="reservation-code-pill">Ticket #<%= booking.code %></span>
+      <span id="tracker-status-badge" class="status-badge badge-<%= booking.status %>">
+        <%= statusLabels[booking.status] ?? booking.status %>
+      </span>
     </div>
-    <a class="primary-button block-button" href="/">Hacer otra reserva</a>
+
+    <h1>Seguimiento de tu vehículo</h1>
+    <p class="tracker-subtitle">
+      Vehículo: <strong><%= vehicleLabels[booking.vehicle_type] %> · <%= booking.plate %></strong>
+      <% if (booking.vehicle_model) { %> (<%= booking.vehicle_model %>)<% } %>
+    </p>
+
+    <!-- Barra de etapas interactivas -->
+    <div class="tracker-stepper">
+      <div class="tracker-stepper-line">
+        <div id="tracker-stepper-progress" class="tracker-stepper-progress"
+             style="width: <%= booking.status === 'pending' ? '15%' : booking.status === 'in_progress' ? '55%' : '100%' %>">
+        </div>
+      </div>
+      <div class="tracker-steps-container">
+        <div class="tracker-step <%= booking.status === 'pending' ? 'step-current' : 'step-done' %>">
+          <div class="step-circle">1</div>
+          <span class="step-name">Confirmada</span>
+          <small class="step-desc">En espera de ingreso</small>
+        </div>
+        <div class="tracker-step <%= booking.status === 'in_progress' ? 'step-current' : booking.status === 'completed' ? 'step-done' : 'step-waiting' %>">
+          <div class="step-circle">2</div>
+          <span class="step-name">En pista</span>
+          <small class="step-desc">Lavando tu vehículo</small>
+        </div>
+        <div class="tracker-step <%= booking.status === 'completed' ? 'step-current step-done' : 'step-waiting' %>">
+          <div class="step-circle">3</div>
+          <span class="step-name">¡Listo!</span>
+          <small class="step-desc">Listo para recojo</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tarjeta de temporizador dinámico si está lavando -->
+    <div id="tracker-timer-card" class="tracker-live-timer" style="<%= booking.status === 'in_progress' ? 'display:block;' : 'display:none;' %>">
+      <div class="timer-row">
+        <span>⏳ <strong>Lavado en curso</strong></span>
+        <span id="tracker-timer-remain" class="timer-countdown">Calculando tiempo...</span>
+      </div>
+      <div class="timer-track"><div id="tracker-timer-bar" class="timer-bar" style="width: 20%;"></div></div>
+    </div>
+
+    <div class="confirmation-details">
+      <div><small>Hora de ingreso</small><strong><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></strong></div>
+      <div><small>Recojo estimado</small><strong><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></strong></div>
+      <div><small>Servicio solicitado</small><strong><%= booking.services %></strong></div>
+      <div>
+        <small>Estado de pago</small>
+        <span id="tracker-payment-badge" class="payment-badge badge-<%= booking.payment_status %>">
+          <%= booking.payment_status === 'paid' ? 'Pagado ✓' : 'Por pagar en local' %>
+        </span>
+      </div>
+      <div><small>Método</small><strong><%= paymentLabels[booking.payment_method] %></strong></div>
+      <div><small>Total</small><strong style="font-size: 1.25rem; color: var(--aqua-dark);"><%= formatMoney(booking.total_cents) %></strong></div>
+    </div>
+
+    <div class="tracker-actions">
+      <a class="secondary-button wa-share-btn" target="_blank"
+         href="https://wa.me/?text=<%= encodeURIComponent(`Hola, este es el código de mi reserva #${booking.code} para mi auto ${booking.plate} en DASAV Car Wash.`) %>">
+        📲 Compartir reserva por WhatsApp
+      </a>
+      <a class="primary-button block-button" href="/">Nueva reserva</a>
+    </div>
+
+    <p class="tracker-hint">
+      Esta pantalla se actualiza en tiempo real automáticamente conforme tu vehículo avanza en el lavado.
+    </p>
   </section>
 </main>
+<script src="/public/tracker.js?v=1" defer></script>
 <%- include('partials/footer') %>

@@ -65,13 +65,20 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     return reply.code(500).view('error.ejs', { title: 'Ocurrió un problema' });
   });
 
-  const autoTimer = setInterval(() => {
+  const runMaintenance = (): void => {
     try {
       checkAndAutoCompleteBookings(options.db);
-    } catch {
-      // ignore
+    } catch (error) {
+      app.log.error({ err: error }, 'No se pudo ejecutar el mantenimiento automatico');
     }
-  }, 10000);
+  };
+
+  // Ejecuta una vez al arrancar y vuelve a hacerlo cada 10 segundos mientras
+  // el servidor permanezca activo. La tarea actual es sincrona, por lo que
+  // una ejecucion termina antes de que pueda comenzar la siguiente.
+  runMaintenance();
+  const autoTimer = setInterval(runMaintenance, 10000);
+  autoTimer.unref();
 
   app.addHook('onClose', async () => {
     clearInterval(autoTimer);

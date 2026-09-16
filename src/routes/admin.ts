@@ -25,7 +25,7 @@ import {
   listBookingsForDate,
   updateBookingByAdmin,
 } from '../domain/bookings.js';
-import { allPickupHours, dropoffHours, getLimaNow, pickupHours } from '../time.js';
+import { allPickupHours, dropoffHours, getLimaNow } from '../time.js';
 
 function failRedirect(reply: FastifyReply, path: string, message: string): FastifyReply {
   return reply.redirect(`${path}${path.includes('?') ? '&' : '?'}error=${encodeURIComponent(message)}`);
@@ -113,14 +113,25 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     checkAndAutoCompleteBookings(db);
     const now = getLimaNow();
     const bookings = listBookingsForDate(db, now.date);
-    const baseHours = pickupHours();
-    const extraHours = bookings.map((booking) => booking.pickup_hour).filter((h) => !baseHours.includes(h));
-    const activeHours = Array.from(new Set([...baseHours, ...extraHours])).sort((a, b) => a - b);
+    const activeHours = Array.from(new Set(bookings.map((booking) => booking.pickup_hour))).sort(
+      (a, b) => a - b,
+    );
+    const openBookings = bookings.filter(
+      (booking) => booking.status === 'pending' || booking.status === 'in_progress',
+    );
+    const activeCountByHour = new Map<number, number>();
+    for (const booking of openBookings) {
+      activeCountByHour.set(booking.pickup_hour, (activeCountByHour.get(booking.pickup_hour) ?? 0) + 1);
+    }
     const pickupGroups = activeHours.map((hour) => ({
       hour,
       label: hourLabel(hour),
       bookings: bookings.filter((booking) => booking.pickup_hour === hour),
+      activeCount: activeCountByHour.get(hour) ?? 0,
     }));
+    const hourlySummary = pickupGroups
+      .filter((group) => group.activeCount > 0)
+      .map((group) => ({ hour: group.hour, label: group.label, count: group.activeCount }));
     const summary = {
       total: bookings.filter((booking) => booking.status !== 'cancelled').length,
       pending: bookings.filter((booking) => booking.status === 'pending').length,
@@ -144,6 +155,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       ...baseView(session, request),
       now,
       pickupGroups,
+      hourlySummary,
       summary,
       nextBookingToEnter,
       pendingBookings,

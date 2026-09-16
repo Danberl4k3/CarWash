@@ -53,6 +53,7 @@ En el panel de Railway, ve a tu servicio > pestaña **Variables** y agrega las s
 | Variable | Valor Recomendado | Propósito |
 | :--- | :--- | :--- |
 | `NODE_ENV` | `production` | Activa optimizaciones, cache de estáticos y cookies seguras con HTTPS. |
+| `TZ` | `America/Lima` | Fija explícitamente la zona horaria del negocio en el proceso de Node.js. |
 | `HOST` | `0.0.0.0` | Permite al contenedor escuchar peticiones del proxy de Railway. |
 | `DATABASE_PATH` | `/data/carwash.db` | Apunta al archivo SQLite dentro del volumen montado. |
 | `ADMIN_USERNAME` | `admin` | Usuario administrador inicial. |

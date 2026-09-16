@@ -38,8 +38,9 @@ try {
     title: document.title,
     heading: document.querySelector('h1')?.textContent?.trim(),
     columns: document.querySelectorAll('.pickup-column').length,
+    emptySlots: document.querySelectorAll('.empty-slot').length,
   }));
-  if (dashboard.heading !== 'Panel de recojos' || dashboard.columns !== 11) {
+  if (dashboard.heading !== 'Panel de recojos' || dashboard.emptySlots !== 0) {
     throw new Error(`Unexpected admin dashboard: ${JSON.stringify(dashboard)}`);
   }
   await admin.screenshot({ path: 'artifacts/admin-dashboard.png', fullPage: true });

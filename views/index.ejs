@@ -40,7 +40,23 @@
     <form id="booking-form" class="booking-form" method="post" action="/reservar"
       data-catalog="<%= serviceCatalog %>" data-now-hour="<%= now.hour %>" <%= !openToday ? 'inert' : '' %>>
       <fieldset>
-        <legend><span>1</span> ¿Qué vehículo traes?</legend>
+        <legend><span>1</span> Tus datos</legend>
+        <div class="field-grid two-columns">
+          <label>Placa <b>*</b><input name="plate" maxlength="12" placeholder="ABC-123" autocomplete="off" required></label>
+          <label>Marca / Modelo <small>Sugerencias activas</small><input name="model" list="car-brands" maxlength="100" placeholder="Ej. Toyota, Hyundai, Kia..." autocomplete="off"></label>
+          <label>Nombre <small>Opcional</small><input name="name" maxlength="200" placeholder="¿A nombre de quién?"></label>
+          <label id="phone-field">Teléfono <small id="phone-optional">Opcional</small><input type="tel" name="phone" id="phone" maxlength="20" placeholder="999 999 999"></label>
+          <label>Método de pago
+            <select name="paymentMethod" required>
+              <% Object.entries(paymentLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %>
+            </select>
+          </label>
+        </div>
+        <label>Indicaciones <small>Opcional</small><textarea name="notes" rows="3" maxlength="1000" placeholder="Nivel de suciedad, objetos delicados u otra indicación"></textarea></label>
+      </fieldset>
+
+      <fieldset>
+        <legend><span>2</span> ¿Qué vehículo traes?</legend>
         <div class="choice-grid vehicle-grid">
           <% Object.entries(vehicleLabels).forEach(([value, label], index) => { %>
             <label class="choice-card">
@@ -53,33 +69,7 @@
       </fieldset>
 
       <fieldset>
-        <legend><span>2</span> Elige el lavado</legend>
-        <div class="service-list">
-          <% services.filter(service => service.category === 'base').forEach((service, index) => { %>
-            <label class="service-option">
-              <input type="radio" name="baseServiceId" value="<%= service.id %>" data-slug="<%= service.slug %>" <%= index === 1 ? 'checked' : '' %> required>
-              <span><strong><%= service.name %></strong><small>Servicio principal</small></span>
-              <b class="service-price" data-service-price="<%= service.id %>">—</b>
-            </label>
-          <% }) %>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend><span>3</span> Agrega un cuidado extra</legend>
-        <div class="addon-grid">
-          <% services.filter(service => service.category === 'addon').forEach(service => { %>
-            <label class="addon-option" data-addon-slug="<%= service.slug %>" data-incompatible-interior="<%= service.incompatible_with_interior %>">
-              <input type="checkbox" name="addonServiceIds" value="<%= service.id %>">
-              <span class="check-mark">✓</span>
-              <span><strong><%= service.name %></strong><small class="service-price" data-service-price="<%= service.id %>">—</small></span>
-            </label>
-          <% }) %>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend><span>4</span> Horario</legend>
+        <legend><span>3</span> Horario</legend>
         <div class="field-grid two-columns">
           <label>Hora de ingreso
             <input id="dropoff-display" value="<%= hourLabel(automaticDropoff.hour, automaticDropoff.minute) %> (hora exacta de ingreso)" readonly>
@@ -107,19 +97,29 @@
       </fieldset>
 
       <fieldset>
-        <legend><span>5</span> Tus datos</legend>
-        <div class="field-grid two-columns">
-          <label>Placa <b>*</b><input name="plate" maxlength="12" placeholder="ABC-123" autocomplete="off" required></label>
-          <label>Marca / Modelo <small>Sugerencias activas</small><input name="model" list="car-brands" maxlength="100" placeholder="Ej. Toyota, Hyundai, Kia..." autocomplete="off"></label>
-          <label>Nombre <small>Opcional</small><input name="name" maxlength="200" placeholder="¿A nombre de quién?"></label>
-          <label id="phone-field">Teléfono <small id="phone-optional">Opcional</small><input type="tel" name="phone" id="phone" maxlength="20" placeholder="999 999 999"></label>
-          <label>Método de pago
-            <select name="paymentMethod" required>
-              <% Object.entries(paymentLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %>
-            </select>
-          </label>
+        <legend><span>4</span> Elige el lavado</legend>
+        <div class="service-list">
+          <% services.filter(service => service.category === 'base').forEach((service, index) => { %>
+            <label class="service-option">
+              <input type="radio" name="baseServiceId" value="<%= service.id %>" data-slug="<%= service.slug %>" <%= index === 1 ? 'checked' : '' %> required>
+              <span><strong><%= service.name %></strong><small>Servicio principal</small></span>
+              <b class="service-price" data-service-price="<%= service.id %>">—</b>
+            </label>
+          <% }) %>
         </div>
-        <label>Indicaciones <small>Opcional</small><textarea name="notes" rows="3" maxlength="1000" placeholder="Nivel de suciedad, objetos delicados u otra indicación"></textarea></label>
+      </fieldset>
+
+      <fieldset>
+        <legend><span>5</span> Agrega un cuidado extra</legend>
+        <div class="addon-grid">
+          <% services.filter(service => service.category === 'addon').forEach(service => { %>
+            <label class="addon-option" data-addon-slug="<%= service.slug %>" data-incompatible-interior="<%= service.incompatible_with_interior %>">
+              <input type="checkbox" name="addonServiceIds" value="<%= service.id %>">
+              <span class="check-mark">✓</span>
+              <span><strong><%= service.name %></strong><small class="service-price" data-service-price="<%= service.id %>">—</small></span>
+            </label>
+          <% }) %>
+        </div>
       </fieldset>
 
       <div class="booking-total">
@@ -130,5 +130,5 @@
     </form>
   </section>
 </main>
-<script src="/public/booking.js?v=6" defer></script>
+<script src="/public/booking.js?v=7" defer></script>
 <%- include('partials/footer') %>

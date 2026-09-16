@@ -1,3 +1,6 @@
+// Debe cargarse antes de dotenv para que America/Lima sea la zona horaria
+// efectiva del proceso, aunque el host tenga otra configuracion.
+import './timezone.js';
 import 'dotenv/config';
 import { buildApp } from './app.js';
 import { createDatabase } from './db.js';

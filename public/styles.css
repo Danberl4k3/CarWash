@@ -139,6 +139,11 @@ textarea { resize: vertical; }
 .filter-chip-btn { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: white; color: var(--ink); padding: 6px 12px; border-radius: 999px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all .2s; user-select: none; }
 .filter-chip-btn:hover { border-color: var(--aqua-dark); }
 .filter-chip-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+.hourly-summary { padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.hourly-summary-title { margin: 0 0 9px; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.hourly-summary-empty { margin: 0; color: var(--muted); font-size: 12px; font-style: italic; }
+.hourly-summary-chips { display: flex; gap: 8px; margin: 0; padding: 0 0 2px; overflow-x: auto; list-style: none; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.hourly-chip { flex: 0 0 auto; display: inline-flex; align-items: center; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--canvas); color: var(--ink); font-size: 12px; font-weight: 800; white-space: nowrap; }
 .column-hidden { display: none !important; }
 .plate-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0 2px; }
 .ticket-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; background: #edf2f1; border: 1px solid var(--line); font-size: 14px; text-decoration: none; transition: .2s; }
@@ -927,6 +932,8 @@ textarea { resize: vertical; }
   color: #ffffff;
   border-color: var(--aqua-dark);
 }
+[data-theme="dark"] .hourly-summary { background: #0d1a22; border-color: var(--line); }
+[data-theme="dark"] .hourly-chip { background: var(--canvas); border-color: var(--line); color: var(--ink); }
 [data-theme="dark"] .ticket-btn {
   background: #182833;
   border-color: #243948;

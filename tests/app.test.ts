@@ -76,7 +76,8 @@ describe('aplicación web', () => {
     });
     expect(dashboard.statusCode).toBe(200);
     expect(dashboard.body).toContain('Panel de recojos');
-    expect(dashboard.body).toContain('5:00 p. m.');
+    expect(dashboard.body).toContain('Sin vehículos programados');
+    expect(dashboard.body).not.toContain('class="pickup-column');
   });
 
   it('refleja en el panel una reserva creada para hoy', async () => {
@@ -86,6 +87,16 @@ describe('aplicación web', () => {
       plate: 'TAB-001', vehicleType: 'car', baseServiceId: serviceId, addonServiceIds: [],
       dropoffHour: 7, pickupHour: 8, paymentMethod: 'cash', phone: '999999999', name: 'Panel test', notes: '',
     }, { now: { ...now, weekday: 'Mon' }, allowPastSlot: true });
+    const inProgress = createBooking(db, {
+      plate: 'TAB-002', vehicleType: 'car', baseServiceId: serviceId, addonServiceIds: [],
+      dropoffHour: 7, pickupHour: 8, paymentMethod: 'cash', phone: '999999999', name: 'Panel test 2', notes: '',
+    }, { now: { ...now, weekday: 'Mon' }, allowPastSlot: true });
+    const completed = createBooking(db, {
+      plate: 'TAB-003', vehicleType: 'car', baseServiceId: serviceId, addonServiceIds: [],
+      dropoffHour: 7, pickupHour: 8, paymentMethod: 'cash', phone: '999999999', name: 'Panel test 3', notes: '',
+    }, { now: { ...now, weekday: 'Mon' }, allowPastSlot: true });
+    db.prepare('UPDATE bookings SET status = ?, started_washing_at = NULL WHERE id = ?').run('in_progress', inProgress.id);
+    db.prepare('UPDATE bookings SET status = ? WHERE id = ?').run('completed', completed.id);
     const login = await app.inject({
       method: 'POST', url: '/admin/login',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -98,5 +109,10 @@ describe('aplicación web', () => {
     expect(dashboard.statusCode).toBe(200);
     expect(dashboard.body).toContain('TAB-001');
     expect(dashboard.body).toContain('Panel Test');
+    expect(dashboard.body).toContain('Vehículos por hora');
+    expect(dashboard.body).toContain('TAB-002');
+    expect(dashboard.body).toContain('TAB-003');
+    expect(dashboard.body).toContain('8:00 a. m. (2)');
+    expect(dashboard.body.match(/class="pickup-column/g)?.length).toBe(1);
   });
 });

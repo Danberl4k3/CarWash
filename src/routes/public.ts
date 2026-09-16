@@ -58,8 +58,17 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
       const body = request.body as Record<string, unknown>;
       try {
         const now = getLimaNow();
-        const pickup = String(body.pickupTime || '');
-        const [pickupHour, pickupMinute] = pickup.split(':').map(Number);
+        const pickup = String(body.pickupTime || '').trim();
+        let pickupHour: number | undefined;
+        let pickupMinute: number | undefined;
+        if (pickup && pickup.includes(':')) {
+          const parts = pickup.split(':').map(Number);
+          if (Number.isFinite(parts[0])) pickupHour = parts[0];
+          if (Number.isFinite(parts[1])) pickupMinute = parts[1];
+        } else if (body.pickupHour !== undefined && body.pickupHour !== '') {
+          pickupHour = Number(body.pickupHour);
+          pickupMinute = Number(body.pickupMinute ?? 0);
+        }
         const result = createBooking(db, {
           name: body.name,
           model: body.model,
@@ -70,8 +79,8 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
           addonServiceIds: stringArray(body.addonServiceIds),
           dropoffHour: now.hour,
           dropoffMinute: now.minute,
-          pickupHour: Number.isFinite(pickupHour) ? pickupHour : body.pickupHour,
-          pickupMinute: Number.isFinite(pickupMinute) ? pickupMinute : 0,
+          pickupHour: Number.isFinite(pickupHour) ? (pickupHour as number) : (now.hour + 1) % 24,
+          pickupMinute: Number.isFinite(pickupMinute) ? (pickupMinute as number) : 0,
           paymentMethod: body.paymentMethod,
           notes: body.notes,
         });

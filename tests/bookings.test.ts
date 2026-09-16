@@ -75,27 +75,56 @@ describe('reglas de reserva', () => {
     expect(() => createBooking(db, input, { now: mondayAt(8) })).toThrow(/cera/i);
   });
 
-  it('respeta la capacidad configurada por hora y tiene 6 por defecto', () => {
+  it('permite varias reservas aunque la capacidad configurada sea uno', () => {
     const slot = db.prepare('SELECT max_slots FROM capacity_slots WHERE hour = 10').get() as { max_slots: number };
     expect(slot.max_slots).toBe(6);
 
     db.prepare('UPDATE capacity_slots SET max_slots = 1 WHERE hour = 10').run();
-    createBooking(db, validInput(), { now: mondayAt(8) });
-    expect(() =>
-      createBooking(db, { ...validInput(), plate: 'XYZ-987' }, { now: mondayAt(8) }),
-    ).toThrow(/llenarse/i);
+    const first = createBooking(db, validInput(), { now: mondayAt(8) });
+    const second = createBooking(db, { ...validInput(), plate: 'XYZ-987' }, { now: mondayAt(8) });
+    expect(first.id).toBeGreaterThan(0);
+    expect(second.id).toBeGreaterThan(0);
   });
 
-  it('no permite reservar en domingo', () => {
-    expect(() =>
-      createBooking(db, validInput(), { now: { ...mondayAt(8), weekday: 'Sun' } }),
-    ).toThrow(/lunes a sábado/i);
+  it('permite reservar en domingo, en una hora pasada y no configurada', () => {
+    const booking = createBooking(
+      db,
+      { ...validInput(), dropoffHour: 21, dropoffMinute: 30, pickupHour: 22 },
+      { now: { ...mondayAt(22), weekday: 'Sun' } },
+    );
+    expect(booking.id).toBeGreaterThan(0);
   });
 
-  it('exige teléfono para reservas tardías', () => {
-    expect(() => createBooking(db, { ...validInput(), phone: '', dropoffHour: 15, pickupHour: 16 }, {
+  it('permite reservar sin teléfono en cualquier horario y valida formato si se ingresa', () => {
+    const booking = createBooking(db, { ...validInput(), phone: '', dropoffHour: 15, pickupHour: 16 }, {
       now: mondayAt(14),
-    })).toThrow(/teléfono/i);
+    });
+    expect(booking.id).toBeGreaterThan(0);
+
+    expect(() => createBooking(db, { ...validInput(), phone: '123' }, {
+      now: mondayAt(8),
+    })).toThrow(/teléfono válido/i);
+  });
+
+  it('permite registrar y editar reservas sin restricciones en la hora de recojo', () => {
+    const booking1 = createBooking(db, { ...validInput(), dropoffHour: 15, dropoffMinute: 30, pickupHour: 15, pickupMinute: 30 }, {
+      now: mondayAt(8),
+    });
+    expect(booking1.id).toBeGreaterThan(0);
+
+    const booking2 = createBooking(db, { ...validInput(), dropoffHour: 17, pickupHour: 9 }, {
+      now: mondayAt(8),
+    });
+    expect(booking2.id).toBeGreaterThan(0);
+
+    updateBookingByAdmin(db, booking1.id, {
+      name: 'Ana', model: 'Toyota', phone: '', plate: 'abc-123', vehicleType: 'car',
+      baseServiceId: exteriorId, addonServiceIds: [], dropoffHour: 22, pickupHour: 10,
+      status: 'pending', paymentMethod: 'cash', paymentStatus: 'pending', amountPaid: 0, total: 10, notes: '',
+    });
+    const updated = getBooking(db, booking1.id);
+    expect(updated?.dropoff_hour).toBe(22);
+    expect(updated?.pickup_hour).toBe(10);
   });
 
   it('rechaza datos de pago inconsistentes al editar', () => {

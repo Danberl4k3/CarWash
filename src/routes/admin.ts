@@ -165,7 +165,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       ...baseView(session, request),
       services: getServicesWithPrices(db, true),
       serviceCatalog: JSON.stringify(getServicesWithPrices(db, true)).replaceAll('<', '\\u003c'),
-      dropoffSlots: dropoffHours(),
+      dropoffSlots: allPickupHours(),
       pickupSlots: allPickupHours(),
       paymentMethods: PAYMENT_METHODS,
       nowHour: getLimaNow().hour,
@@ -210,7 +210,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       services: getServicesWithPrices(db),
       serviceCatalog: JSON.stringify(getServicesWithPrices(db)).replaceAll('<', '\\u003c'),
       selectedServices: getBookingServiceIds(db, id),
-      dropoffSlots: dropoffHours(),
+      dropoffSlots: allPickupHours(),
       pickupSlots: allPickupHours(),
     });
   });

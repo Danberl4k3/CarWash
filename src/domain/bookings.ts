@@ -3,7 +3,6 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import {
   BOOKING_STATUSES,
-  BUSINESS,
   PAYMENT_METHODS,
   PAYMENT_STATUSES,
   VEHICLE_TYPES,
@@ -13,7 +12,7 @@ import {
   type VehicleType,
 } from '../constants.js';
 import { getServicesWithPrices, type ServiceWithPrices } from '../db.js';
-import { getLimaNow, isBusinessDay, isDropoffInPast, phoneIsRequired, toMinutes, type LimaNow } from '../time.js';
+import { getLimaNow, toMinutes, type LimaNow } from '../time.js';
 
 function capitalizeWords(value: string | null | undefined): string | null {
   if (!value) return null;
@@ -52,7 +51,7 @@ export const bookingSchema = z.object({
   baseServiceId: z.coerce.number().int().positive('Selecciona un servicio.'),
   addonServiceIds: z.array(z.coerce.number().int().positive()).default([]),
   dropoffHour: z.coerce.number().int().min(0).max(23),
-  pickupHour: z.coerce.number().int().min(0).max(23),
+  pickupHour: z.coerce.number().int().min(0).max(23).default(0),
   dropoffMinute: z.coerce.number().int().min(0).max(59).default(0),
   pickupMinute: z.coerce.number().int().min(0).max(59).default(0),
   paymentMethod: z.enum(PAYMENT_METHODS, { message: 'Selecciona un método de pago.' }),
@@ -124,19 +123,7 @@ function selectedServices(
   return { base, addons: resolvedAddons };
 }
 
-export function validateBookingRules(input: BookingInput, now: LimaNow, allowPastSlot = false): void {
-  if (!isBusinessDay(now)) throw new BookingValidationError('Las reservas están disponibles de lunes a sábado.');
-  const dropoffTotal = toMinutes(input.dropoffHour, input.dropoffMinute);
-  const pickupTotal = toMinutes(input.pickupHour, input.pickupMinute);
-  if (pickupTotal <= dropoffTotal) {
-    throw new BookingValidationError('La hora de recojo debe ser posterior a la hora de ingreso.');
-  }
-  if (!allowPastSlot && dropoffTotal < toMinutes(now.hour, now.minute)) {
-    throw new BookingValidationError('Selecciona una hora de ingreso futura.');
-  }
-  if (phoneIsRequired(now, input.pickupHour, input.pickupMinute) && !input.phone) {
-    throw new BookingValidationError('El teléfono es obligatorio después de las 2 p. m. o para recojos desde las 4 p. m.');
-  }
+export function validateBookingRules(input: BookingInput, _now: LimaNow, _allowPastSlot = false): void {
   if (input.phone && !/^\+?[0-9 ()-]{7,20}$/.test(input.phone)) {
     throw new BookingValidationError('Ingresa un teléfono válido.');
   }
@@ -172,36 +159,7 @@ export function createBooking(
     (total, service) => total + (service.prices[input.vehicleType] ?? 0),
     0,
   );
-  const capacity = db.prepare('SELECT max_slots FROM capacity_slots WHERE hour = ?').get(input.dropoffHour) as
-    | { max_slots: number }
-    | undefined;
-  if (!capacity) throw new BookingValidationError('Ese horario no está configurado.');
-
-  const used = db
-    .prepare(`
-      SELECT COUNT(*) AS count FROM bookings
-      WHERE booking_date = ? AND dropoff_hour = ? AND status != 'cancelled'
-    `)
-    .get(now.date, input.dropoffHour) as { count: number };
-  if (used.count >= capacity.max_slots) {
-    throw new BookingValidationError('Ese horario acaba de llenarse. Elige otro turno.');
-  }
-
   const transaction = db.transaction(() => {
-    // Re-check inside the write transaction so concurrent requests cannot
-    // both reserve the last available slot.
-    const lockedCapacity = db.prepare('SELECT max_slots FROM capacity_slots WHERE hour = ?').get(input.dropoffHour) as
-      | { max_slots: number }
-      | undefined;
-    if (!lockedCapacity) throw new BookingValidationError('Ese horario no estÃ¡ configurado.');
-    const lockedUsed = db.prepare(`
-      SELECT COUNT(*) AS count FROM bookings
-      WHERE booking_date = ? AND dropoff_hour = ? AND status != 'cancelled'
-    `).get(now.date, input.dropoffHour) as { count: number };
-    if (lockedUsed.count >= lockedCapacity.max_slots) {
-      throw new BookingValidationError('Ese horario acaba de llenarse. Elige otro turno.');
-    }
-
     let vehicle = db.prepare('SELECT id, customer_id FROM vehicles WHERE plate = ?').get(input.plate) as
       | { id: number; customer_id: number | null }
       | undefined;
@@ -392,9 +350,6 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
   });
   const parsed = schema.safeParse(raw);
   if (!parsed.success) throw new BookingValidationError(parsed.error.issues[0]?.message ?? 'Datos inválidos.');
-  if (toMinutes(parsed.data.pickupHour, parsed.data.pickupMinute) <= toMinutes(parsed.data.dropoffHour, parsed.data.dropoffMinute)) {
-    throw new BookingValidationError('La hora de recojo debe ser posterior al ingreso.');
-  }
   if (parsed.data.phone && !/^\+?[0-9 ()-]{7,20}$/.test(parsed.data.phone)) {
     throw new BookingValidationError('Ingresa un teléfono válido.');
   }
@@ -408,22 +363,6 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
   }
   if (update.paymentStatus === 'paid' && amountPaidCents !== totalCents) {
     throw new BookingValidationError('Una reserva pagada debe tener el total cancelado.');
-  }
-  if (
-    update.status !== 'cancelled'
-    && (update.dropoffHour !== booking.dropoff_hour || booking.status === 'cancelled')
-  ) {
-    const capacity = db.prepare('SELECT max_slots FROM capacity_slots WHERE hour = ?').get(update.dropoffHour) as
-      | { max_slots: number }
-      | undefined;
-    if (!capacity) throw new BookingValidationError('Ese horario no está configurado.');
-    const used = db.prepare(`
-      SELECT COUNT(*) AS count FROM bookings
-      WHERE booking_date = ? AND dropoff_hour = ? AND status != 'cancelled' AND id != ?
-    `).get(booking.booking_date, update.dropoffHour, id) as { count: number };
-    if (used.count >= capacity.max_slots) {
-      throw new BookingValidationError('No hay cupos disponibles en el nuevo horario.');
-    }
   }
   const selection = selectedServices(getServicesWithPrices(db), update as BookingInput);
   const allSelected = [selection.base, ...selection.addons];

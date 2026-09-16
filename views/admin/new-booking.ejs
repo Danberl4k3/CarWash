@@ -21,7 +21,7 @@
       <label>Recojo<select id="pickup-hour" name="pickupHour" required><% pickupSlots.forEach(hour => { %><option value="<%= hour %>"><%= hourLabel(hour) %></option><% }) %></select></label>
       <label>Método de pago<select name="paymentMethod"><% paymentMethods.forEach(value => { %><option value="<%= value %>"><%= paymentLabels[value] %></option><% }) %></select></label>
       <div class="inline-total"><small>Total calculado</small><strong id="booking-total">S/ 0.00</strong></div>
-    </div><p id="phone-rule" class="phone-rule" hidden>Se requiere teléfono para este horario.</p></div>
+    </div></div>
     <label>Notas<textarea name="notes" rows="4"></textarea></label>
     <div class="form-actions"><a class="secondary-button" href="/admin">Cancelar</a><button class="primary-button" type="submit">Crear reserva</button></div>
   </form>

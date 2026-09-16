@@ -95,7 +95,7 @@
             </select> -->
           </label>
           <label>Hora estimada de recojo
-            <input type="time" name="pickupTime" id="pickup-time" required>
+            <input type="time" name="pickupTime" id="pickup-time">
             <div class="time-buttons">
               <button type="button" data-pickup-offset="30">+ 30 min</button>
               <button type="button" data-pickup-offset="60">+ 1 hora</button>
@@ -104,7 +104,6 @@
             </div>
           </label>
         </div>
-        <p class="field-help">La hora de recojo debe ser posterior al ingreso.</p>
       </fieldset>
 
       <fieldset>
@@ -121,7 +120,6 @@
           </label>
         </div>
         <label>Indicaciones <small>Opcional</small><textarea name="notes" rows="3" maxlength="1000" placeholder="Nivel de suciedad, objetos delicados u otra indicación"></textarea></label>
-        <p id="phone-rule" class="phone-rule" hidden>El teléfono es necesario para reservas tardías o recojos desde las 4 p. m.</p>
       </fieldset>
 
       <div class="booking-total">
@@ -132,5 +130,5 @@
     </form>
   </section>
 </main>
-<script src="/public/booking.js?v=5" defer></script>
+<script src="/public/booking.js?v=6" defer></script>
 <%- include('partials/footer') %>

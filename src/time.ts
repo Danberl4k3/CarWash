@@ -47,14 +47,10 @@ export function timeLabel(hour: number, minute = 0): string {
   return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${suffix}`;
 }
 
-export function phoneIsRequired(createdAt: LimaNow, pickupHour: number, pickupMinute = 0): boolean {
-  return createdAt.hour >= BUSINESS.phoneRequiredFromHour
-    || toMinutes(pickupHour, pickupMinute) >= BUSINESS.latePickupHour * 60;
-}
 
 export function dropoffHours(): number[] {
   return Array.from(
-    { length: 24 - BUSINESS.openHour },
+    { length: BUSINESS.lastDropoffHour - BUSINESS.openHour + 1 },
     (_, index) => BUSINESS.openHour + index,
   );
 }
@@ -68,7 +64,7 @@ export function pickupHours(): number[] {
 
 export function allPickupHours(): number[] {
   return Array.from(
-    { length: 24 - BUSINESS.openHour },
-    (_, index) => BUSINESS.openHour + index + 1,
+    { length: 24 },
+    (_, index) => index,
   );
 }

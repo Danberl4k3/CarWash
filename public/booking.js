@@ -96,13 +96,11 @@
   }
 
   function refreshPickupOptions() {
-    const dropoff = Number(form.querySelector('#dropoff-hour')?.value || 0) * 60 + Number(form.querySelector('#dropoff-minute')?.value || 0);
     const pickup = form.querySelector('#pickup-time');
-    if (!pickup) return;
+    if (!pickup || pickup.tagName !== 'SELECT') return;
     const previous = pickup.value;
     pickup.replaceChildren(new Option('Selecciona una hora', ''));
-    const start = Math.ceil((dropoff + 20) / 10) * 10;
-    for (let total = Math.max(start, dropoff + 10); total <= 18 * 60; total += 10) {
+    for (let total = 0; total < 24 * 60; total += 10) {
       const hour = Math.floor(total / 60); const minute = total % 60;
       const option = document.createElement('option'); option.value = `${hour}:${String(minute).padStart(2, '0')}`;
       option.textContent = `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour >= 12 ? 'p. m.' : 'a. m.'}`;
@@ -172,22 +170,23 @@
     const modelInput = form.querySelector('input[name="model"]');
     if (modelInput && modelInput.value.trim()) modelInput.value = capitalize(modelInput.value);
 
-    const dropoff = Number(form.querySelector('#dropoff-hour')?.value || 0) * 60 + Number(form.querySelector('#dropoff-minute')?.value || 0);
-    const [pickupHour, pickupMinute] = String(form.querySelector('#pickup-time')?.value || '0:0').split(':').map(Number);
-    const pickup = pickupHour * 60 + pickupMinute;
-    if (pickup <= dropoff) {
-      event.preventDefault();
-      form.querySelector('#pickup-time')?.setCustomValidity('El recojo debe ser posterior al ingreso.');
-      form.querySelector('#pickup-time')?.reportValidity();
-    }
   });
-  form.querySelector('#pickup-time')?.addEventListener('input', (event) => event.target.setCustomValidity(''));
   form.querySelectorAll('[data-pickup-offset]').forEach((button) => button.addEventListener('click', () => {
-    const base = Number(form.querySelector('#dropoff-hour').value) * 60 + Number(form.querySelector('#dropoff-minute').value);
-    const target = base + Number(button.dataset.pickupOffset);
-    const select = form.querySelector('#pickup-time');
-    if ([...select.options].some((option) => Number(option.value.split(':')[0]) * 60 + Number(option.value.split(':')[1]) === target)) select.value = `${Math.floor(target / 60)}:${String(target % 60).padStart(2, '0')}`;
-    refreshPhoneRule();
+    const dropoffHour = Number(form.querySelector('#dropoff-hour')?.value || 0);
+    const dropoffMinute = Number(form.querySelector('#dropoff-minute')?.value || 0);
+    const base = dropoffHour * 60 + dropoffMinute;
+    const target = (base + Number(button.dataset.pickupOffset)) % 1440;
+    const pickup = form.querySelector('#pickup-time');
+    if (!pickup) return;
+    const hour = Math.floor(target / 60);
+    const minute = target % 60;
+    if (pickup.tagName === 'SELECT') {
+      pickup.value = `${hour}:${String(minute).padStart(2, '0')}`;
+    } else {
+      pickup.value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+    pickup.dispatchEvent(new Event('input', { bubbles: true }));
+    pickup.dispatchEvent(new Event('change', { bubbles: true }));
   }));
 
   refreshAddonRules();

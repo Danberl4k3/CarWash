@@ -4,8 +4,6 @@ export const BUSINESS = {
   openHour: 7,
   lastDropoffHour: 17,
   closeHour: 18,
-  phoneRequiredFromHour: 14,
-  latePickupHour: 16,
 } as const;
 
 export const VEHICLE_TYPES = ['motorcycle', 'car', 'small_suv', 'large_suv'] as const;

@@ -22,7 +22,7 @@ export interface BuildAppOptions {
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: options.logger ?? false,
-    trustProxy: process.env.TRUST_PROXY === 'true',
+    trustProxy: process.env.TRUST_PROXY === 'true' || Boolean(process.env.RAILWAY_ENVIRONMENT) || process.env.NODE_ENV === 'production',
     bodyLimit: 10 * 1024 * 1024,
   });
   const cookieSecret = options.cookieSecret ?? process.env.COOKIE_SECRET ?? randomBytes(32).toString('hex');

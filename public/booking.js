@@ -181,7 +181,12 @@
   async function performPlateLookup(force = false) {
     if (!plateInput) return;
     const plate = plateInput.value.trim().toUpperCase();
-    if (plate.length < 4) return;
+    if (plate.length < 4) {
+      if (force) {
+        showFeedback('Ingresa una placa de al menos 4 caracteres (ej. ABC-123).', 'warning', 4000);
+      }
+      return;
+    }
     if (!force && plate === lastLookupPlate) return;
     lastLookupPlate = plate;
 
@@ -195,7 +200,12 @@
       });
 
       if (!res.ok) {
-        showFeedback('No se pudo consultar la placa', 'warning', 4000);
+        let errMessage = 'No se pudo consultar la placa';
+        try {
+          const errData = await res.json();
+          if (errData && errData.error) errMessage = errData.error;
+        } catch {}
+        showFeedback(errMessage, 'warning', 4000);
         return;
       }
 
@@ -259,7 +269,12 @@
       });
 
       if (!res.ok) {
-        showFeedback('Error en el servicio de escaneo OCR', 'warning', 5000);
+        let errMessage = 'Error en el servicio de escaneo OCR';
+        try {
+          const errData = await res.json();
+          if (errData && errData.notas) errMessage = errData.notas;
+        } catch {}
+        showFeedback(`⚠️ ${errMessage}`, 'warning', 7000);
         return;
       }
 
@@ -286,17 +301,14 @@
         showFeedback(msg, 'success', 8000);
       } else {
         const errorMsg = ocrResult.notas || 'No se detectó placa legible en la imagen. Intenta enfocar más cerca.';
-        showFeedback(`⚠️ ${errorMsg}`, 'warning', 6000);
+        showFeedback(`⚠️ ${errorMsg}`, 'warning', 7000);
       }
     } catch {
-      showFeedback('No se pudo procesar la imagen para OCR', 'warning', 5000);
+      showFeedback('No se pudo procesar la imagen para OCR. Verifica tu conexión.', 'warning', 5000);
     }
   }
 
-  if (scanBtn && cameraInput) {
-    scanBtn.addEventListener('click', () => {
-      cameraInput.click();
-    });
+  if (cameraInput) {
     cameraInput.addEventListener('change', (e) => {
       const file = e.target.files?.[0];
       if (file) {
@@ -306,8 +318,27 @@
     });
   }
 
+  if (scanBtn) {
+    if (scanBtn.tagName === 'BUTTON') {
+      scanBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        cameraInput?.click();
+      });
+    } else {
+      // Para elemento label con tabindex
+      scanBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          cameraInput?.click();
+        }
+      });
+    }
+  }
+
   if (lookupBtn) {
-    lookupBtn.addEventListener('click', () => {
+    lookupBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       performPlateLookup(true);
     });
   }

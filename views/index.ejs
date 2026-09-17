@@ -45,14 +45,14 @@
             <label for="plate-input">Placa <b>*</b></label>
             <div class="plate-input-group">
               <input name="plate" id="plate-input" maxlength="12" placeholder="ABC-123" autocomplete="off" required>
-              <button type="button" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto">
+              <label for="plate-camera-input" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto" role="button" tabindex="0">
                 📷 <span class="btn-text">Escanear</span>
-              </button>
+              </label>
               <button type="button" id="btn-lookup-plate" class="plate-action-btn plate-lookup-btn" title="Consultar placa en SUNARP">
                 🔍 <span class="btn-text">Consultar</span>
               </button>
             </div>
-            <input type="file" id="plate-camera-input" accept="image/*" capture="environment" style="display: none;">
+            <input type="file" id="plate-camera-input" accept="image/*" capture="environment" class="visually-hidden-file-input">
             <div id="plate-feedback" class="plate-feedback" style="display: none;"></div>
           </div>
           <label>Marca / Modelo <small>Sugerencias activas</small><input name="model" list="car-brands" maxlength="100" placeholder="Ej. Toyota, Hyundai, Kia..." autocomplete="off"></label>
@@ -142,5 +142,5 @@
     </form>
   </section>
 </main>
-<script src="/public/booking.js?v=7" defer></script>
+<script src="/public/booking.js?v=10" defer></script>
 <%- include('partials/footer') %>

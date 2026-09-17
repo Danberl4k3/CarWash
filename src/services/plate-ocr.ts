@@ -130,7 +130,7 @@ export async function processPlateOcr(imageBase64OrDataUri: string): Promise<Pla
       placa: null,
       confianza: 0,
       legible: false,
-      notas: 'Para escanear fotos reales con IA, configura tu GEMINI_API_KEY en el archivo .env',
+      notas: 'Para escanear fotos reales con IA, configura GEMINI_API_KEY en las Variables de Railway o en tu archivo .env',
     };
   }
 

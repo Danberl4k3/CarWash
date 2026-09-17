@@ -1,8 +1,8 @@
-const CACHE_NAME = 'dasav-v1';
+const CACHE_NAME = 'dasav-v4';
 const STATIC_ASSETS = [
-  '/public/styles.css',
+  '/public/styles.css?v=10',
   '/public/theme.js',
-  '/public/booking.js',
+  '/public/booking.js?v=10',
   '/public/admin.js',
   '/public/tracker.js'
 ];
@@ -30,8 +30,14 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Solo aplicar caché a recursos estáticos de /public/
   const url = new URL(event.request.url);
+
+  // NUNCA cachear llamadas a API ni archivos versionados con query params (?v=...)
+  if (url.pathname.startsWith('/api/') || url.searchParams.has('v')) {
+    return;
+  }
+
+  // Solo aplicar caché a recursos estáticos base de /public/
   if (url.pathname.startsWith('/public/')) {
     event.respondWith(
       caches.match(event.request).then((cachedResponse) => {

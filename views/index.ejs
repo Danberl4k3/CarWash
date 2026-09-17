@@ -41,8 +41,20 @@
       data-catalog="<%= serviceCatalog %>" data-now-hour="<%= now.hour %>" <%= !openToday ? 'inert' : '' %>>
       <fieldset>
         <legend><span>1</span> Tus datos</legend>
-        <div class="field-grid two-columns">
-          <label>Placa <b>*</b><input name="plate" maxlength="12" placeholder="ABC-123" autocomplete="off" required></label>
+          <div class="field-wrapper plate-wrapper">
+            <label for="plate-input">Placa <b>*</b></label>
+            <div class="plate-input-group">
+              <input name="plate" id="plate-input" maxlength="12" placeholder="ABC-123" autocomplete="off" required>
+              <button type="button" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto">
+                📷 <span class="btn-text">Escanear</span>
+              </button>
+              <button type="button" id="btn-lookup-plate" class="plate-action-btn plate-lookup-btn" title="Consultar placa en SUNARP">
+                🔍 <span class="btn-text">Consultar</span>
+              </button>
+            </div>
+            <input type="file" id="plate-camera-input" accept="image/*" capture="environment" style="display: none;">
+            <div id="plate-feedback" class="plate-feedback" style="display: none;"></div>
+          </div>
           <label>Marca / Modelo <small>Sugerencias activas</small><input name="model" list="car-brands" maxlength="100" placeholder="Ej. Toyota, Hyundai, Kia..." autocomplete="off"></label>
           <label>Nombre <small>Opcional</small><input name="name" maxlength="200" placeholder="¿A nombre de quién?"></label>
           <label id="phone-field">Teléfono <small id="phone-optional">Opcional</small><input type="tel" name="phone" id="phone" maxlength="20" placeholder="999 999 999"></label>

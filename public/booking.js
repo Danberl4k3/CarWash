@@ -131,46 +131,185 @@
   });
 
   // Uppercase for license plate & auto-lookup
+  // Uppercase for license plate, OCR & auto-lookup
   const plateInput = form.querySelector('input[name="plate"]');
+  const scanBtn = form.querySelector('#btn-scan-plate');
+  const lookupBtn = form.querySelector('#btn-lookup-plate');
+  const cameraInput = form.querySelector('#plate-camera-input');
+  const feedbackEl = form.querySelector('#plate-feedback');
+
+  function showFeedback(html, type = 'info', autoHide = 0) {
+    if (!feedbackEl) return;
+    feedbackEl.className = `plate-feedback plate-feedback-${type}`;
+    feedbackEl.innerHTML = html;
+    feedbackEl.style.display = 'block';
+    if (autoHide > 0) {
+      clearTimeout(feedbackEl._hideTimer);
+      feedbackEl._hideTimer = setTimeout(() => {
+        feedbackEl.style.display = 'none';
+      }, autoHide);
+    }
+  }
+
+  function applyVehicleData(data) {
+    const nameInput = form.querySelector('input[name="name"]');
+    const modelInput = form.querySelector('input[name="model"]');
+    if (nameInput && !nameInput.value && data.name) {
+      nameInput.value = data.name;
+    }
+    const modelText = data.fullModel || data.model || data.modelo;
+    if (modelInput && modelText) {
+      modelInput.value = modelText;
+      modelInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    if (data.vehicleType) {
+      const typeRadio = form.querySelector(`input[name="vehicleType"][value="${data.vehicleType}"]`);
+      if (typeRadio) {
+        typeRadio.checked = true;
+        typeRadio.dispatchEvent(new Event('change', { bubbles: true }));
+      } else {
+        const typeSelect = form.querySelector('select[name="vehicleType"]');
+        if (typeSelect) {
+          typeSelect.value = data.vehicleType;
+          typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      }
+    }
+  }
+
   let lastLookupPlate = '';
-  async function performPlateLookup() {
+  async function performPlateLookup(force = false) {
     if (!plateInput) return;
     const plate = plateInput.value.trim().toUpperCase();
-    if (plate.length < 4 || plate === lastLookupPlate) return;
+    if (plate.length < 4) return;
+    if (!force && plate === lastLookupPlate) return;
     lastLookupPlate = plate;
+
+    showFeedback('<span class="plate-spinner"></span> Consultando placa en SUNARP / Sistema...', 'loading');
+
     try {
-      const res = await fetch(`/api/vehiculo-lookup?plate=${encodeURIComponent(plate)}`);
-      if (!res.ok) return;
+      const res = await fetch('/api/placa/consultar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ placa: plate }),
+      });
+
+      if (!res.ok) {
+        showFeedback('No se pudo consultar la placa', 'warning', 4000);
+        return;
+      }
+
       const data = await res.json();
       if (data && data.found) {
-        const nameInput = form.querySelector('input[name="name"]');
-        const modelInput = form.querySelector('input[name="model"]');
-        if (nameInput && !nameInput.value && data.name) {
-          nameInput.value = data.name;
-        }
-        if (modelInput && !modelInput.value && data.model) {
-          modelInput.value = data.model;
-        }
-        if (data.vehicleType) {
-          const typeRadio = form.querySelector(`input[name="vehicleType"][value="${data.vehicleType}"]`);
-          if (typeRadio && !typeRadio.checked) {
-            typeRadio.checked = true;
-            typeRadio.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        }
-        let badge = document.getElementById('recognized-badge');
-        if (!badge) {
-          badge = document.createElement('small');
-          badge.id = 'recognized-badge';
-          badge.className = 'recognized-badge';
-          plateInput.parentElement?.appendChild(badge);
-        }
-        badge.textContent = '✓ Vehículo registrado reconocido';
-        badge.style.display = 'block';
+        applyVehicleData(data);
+        const sourceLabel = data.source === 'local' ? 'Cliente registrado' : 'SUNARP oficial';
+        const modelDesc = data.fullModel || data.modelo || data.model || '';
+        const typeDesc = data.vehicleTypeLabel ? ` · ${data.vehicleTypeLabel}` : '';
+        showFeedback(`✓ <strong>${sourceLabel}:</strong> ${modelDesc}${typeDesc}`, 'success', 6000);
+      } else {
+        showFeedback(`ℹ️ Placa <strong>${plate}</strong> no encontrada en SUNARP. Puedes continuar con el registro manual.`, 'info', 5000);
       }
     } catch {
-      // Ignorar errores de conexión
+      showFeedback('Error de conexión al consultar la placa', 'warning', 4000);
     }
+  }
+
+  function compressImage(file, maxDimension = 1200, quality = 0.85) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleOcrUpload(file) {
+    if (!file) return;
+    showFeedback('<span class="plate-spinner"></span> Escaneando placa con OCR...', 'loading');
+
+    try {
+      const base64Data = await compressImage(file);
+      const res = await fetch('/api/placa/ocr', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64Data, autoLookup: true }),
+      });
+
+      if (!res.ok) {
+        showFeedback('Error en el servicio de escaneo OCR', 'warning', 5000);
+        return;
+      }
+
+      const ocrResult = await res.json();
+      if (ocrResult.legible && ocrResult.placa) {
+        if (plateInput) {
+          plateInput.value = ocrResult.placa;
+          plateInput.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        const confidencePct = Math.round((ocrResult.confianza || 0.95) * 100);
+        let msg = `✓ Placa: <strong>${ocrResult.placa}</strong> (${confidencePct}% confianza)`;
+        if (ocrResult.notas) {
+          msg += `<br><small style="color:var(--text-muted)">Nota: ${ocrResult.notas}</small>`;
+        }
+
+        if (ocrResult.vehicle && ocrResult.vehicle.found) {
+          applyVehicleData(ocrResult.vehicle);
+          const vehicleDesc = ocrResult.vehicle.fullModel || ocrResult.vehicle.modelo || '';
+          const typeDesc = ocrResult.vehicle.vehicleTypeLabel ? ` · ${ocrResult.vehicle.vehicleTypeLabel}` : '';
+          msg += `<br>🚗 <strong>SUNARP:</strong> ${vehicleDesc}${typeDesc}`;
+        }
+
+        showFeedback(msg, 'success', 8000);
+      } else {
+        const errorMsg = ocrResult.notas || 'No se detectó placa legible en la imagen. Intenta enfocar más cerca.';
+        showFeedback(`⚠️ ${errorMsg}`, 'warning', 6000);
+      }
+    } catch {
+      showFeedback('No se pudo procesar la imagen para OCR', 'warning', 5000);
+    }
+  }
+
+  if (scanBtn && cameraInput) {
+    scanBtn.addEventListener('click', () => {
+      cameraInput.click();
+    });
+    cameraInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        handleOcrUpload(file);
+      }
+      cameraInput.value = '';
+    });
+  }
+
+  if (lookupBtn) {
+    lookupBtn.addEventListener('click', () => {
+      performPlateLookup(true);
+    });
   }
 
   if (plateInput) {
@@ -183,10 +322,10 @@
       }
       if (plateInput.value.trim().length >= 6) {
         clearTimeout(plateInput._timer);
-        plateInput._timer = setTimeout(performPlateLookup, 700);
+        plateInput._timer = setTimeout(() => performPlateLookup(false), 900);
       }
     });
-    plateInput.addEventListener('blur', performPlateLookup);
+    plateInput.addEventListener('blur', () => performPlateLookup(false));
   }
 
   // Auto-capitalization for customer name and model

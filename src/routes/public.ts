@@ -5,6 +5,8 @@ import { getServicesWithPrices } from '../db.js';
 import { BookingValidationError, createBooking, getBookingByCode, lookupVehicleByPlate } from '../domain/bookings.js';
 import { appEvents } from '../events.js';
 import { dropoffHours, getLimaNow, isBusinessDay, isDropoffInPast, pickupHours, roundUpTo10 } from '../time.js';
+import { processPlateOcr } from '../services/plate-ocr.js';
+import { consultarPlacaJsonPe, getVehicleTypeLabel } from '../services/json-pe.js';
 
 function stringArray(value: unknown): string[] {
   if (Array.isArray(value)) return value.map(String);
@@ -54,12 +56,116 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
 
   app.get(
     '/api/vehiculo-lookup',
-    { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } },
+    { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
     async (request, reply) => {
-      const plate = String((request.query as { plate?: unknown })?.plate ?? '');
+      const plate = String((request.query as { plate?: unknown })?.plate ?? '').trim();
       if (!plate) return reply.code(400).send({ error: 'Placa requerida' });
-      const result = lookupVehicleByPlate(db, plate);
+      
+      // 1. Buscar primero en base de datos local (clientes frecuentes)
+      const localResult = lookupVehicleByPlate(db, plate);
+      if (localResult.found) {
+        return reply.send({
+          ...localResult,
+          source: 'local',
+          vehicleTypeLabel: localResult.vehicleType ? getVehicleTypeLabel(localResult.vehicleType) : 'Vehículo',
+        });
+      }
+
+      // 2. Si no está en BD local, consultar API json.pe (SUNARP)
+      const sunarpResult = await consultarPlacaJsonPe(plate);
+      if (sunarpResult.found) {
+        return reply.send({
+          found: true,
+          source: sunarpResult.source,
+          plate: sunarpResult.placa,
+          vehicleType: sunarpResult.vehicleType,
+          vehicleTypeLabel: sunarpResult.vehicleTypeLabel,
+          model: sunarpResult.fullModel || sunarpResult.modelo || null,
+          marca: sunarpResult.marca,
+          color: sunarpResult.color,
+          name: null,
+          details: sunarpResult.details,
+        });
+      }
+
+      return reply.send({ found: false, plate });
+    },
+  );
+
+  app.post(
+    '/api/placa/consultar',
+    { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const body = (request.body || {}) as { placa?: string; plate?: string };
+      const plate = String(body.placa || body.plate || '').trim();
+      if (!plate) return reply.code(400).send({ error: 'Placa requerida' });
+
+      // 1. Base de datos local
+      const localResult = lookupVehicleByPlate(db, plate);
+      if (localResult.found) {
+        return reply.send({
+          found: true,
+          source: 'local',
+          placa: localResult.plate,
+          plate: localResult.plate,
+          vehicleType: localResult.vehicleType,
+          vehicleTypeLabel: localResult.vehicleType ? getVehicleTypeLabel(localResult.vehicleType) : 'Vehículo',
+          modelo: localResult.model,
+          fullModel: localResult.model,
+          name: localResult.name,
+        });
+      }
+
+      // 2. Consulta API json.pe (SUNARP)
+      const result = await consultarPlacaJsonPe(plate);
       return reply.send(result);
+    },
+  );
+
+  app.post(
+    '/api/placa/ocr',
+    { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const body = (request.body || {}) as { image?: string; autoLookup?: boolean };
+      const image = String(body.image || '').trim();
+      if (!image) {
+        return reply.code(400).send({
+          placa: null,
+          confianza: 0,
+          legible: false,
+          notas: 'Imagen no proporcionada',
+        });
+      }
+
+      const ocrResult = await processPlateOcr(image);
+      const autoLookup = body.autoLookup !== false;
+
+      if (autoLookup && ocrResult.placa && ocrResult.legible) {
+        // Consultar vehículo automáticamente
+        const local = lookupVehicleByPlate(db, ocrResult.placa);
+        let vehicleData;
+        if (local.found) {
+          vehicleData = {
+            found: true,
+            source: 'local' as const,
+            placa: local.plate,
+            vehicleType: local.vehicleType,
+            vehicleTypeLabel: local.vehicleType ? getVehicleTypeLabel(local.vehicleType) : 'Vehículo',
+            model: local.model,
+            name: local.name,
+          };
+        } else {
+          const sunarp = await consultarPlacaJsonPe(ocrResult.placa);
+          vehicleData = sunarp;
+        }
+
+        return reply.send({
+          ...ocrResult,
+          vehicle: vehicleData,
+        });
+      }
+
+      return reply.send(ocrResult);
     },
   );
 

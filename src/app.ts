@@ -23,6 +23,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   const app = Fastify({
     logger: options.logger ?? false,
     trustProxy: process.env.TRUST_PROXY === 'true',
+    bodyLimit: 10 * 1024 * 1024,
   });
   const cookieSecret = options.cookieSecret ?? process.env.COOKIE_SECRET ?? randomBytes(32).toString('hex');
 
@@ -45,11 +46,11 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     reply.header('X-Content-Type-Options', 'nosniff');
     reply.header('X-Frame-Options', 'DENY');
     reply.header('Referrer-Policy', 'same-origin');
-    reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    reply.header('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
     if (process.env.NODE_ENV === 'production') reply.header('Strict-Transport-Security', 'max-age=31536000');
     reply.header(
       'Content-Security-Policy',
-      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; form-action 'self'; frame-ancestors 'none'",
+      "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; form-action 'self'; frame-ancestors 'none'",
     );
     return payload;
   });

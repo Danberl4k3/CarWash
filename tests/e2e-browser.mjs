@@ -43,6 +43,17 @@ async function runE2E() {
     console.log(`✓ Modo oscuro activado: ${isDark}`);
     await themeBtn.click(); // Regresar a claro
 
+    console.log('2.5. Probando consulta de placa SUNARP y autocompletado...');
+    await page.fill('input[name="plate"]', 'SUV-001');
+    await page.click('#btn-lookup-plate');
+    await page.waitForTimeout(800);
+    const feedbackText = await page.textContent('#plate-feedback');
+    console.log(`✓ Feedback de consulta de placa: "${feedbackText?.trim()}"`);
+    const modelValue = await page.inputValue('input[name="model"]');
+    console.log(`✓ Modelo autocompletado: "${modelValue}"`);
+    const isSmallSuv = await page.locator('input[name="vehicleType"][value="small_suv"]').isChecked();
+    console.log(`✓ SUV Compacta seleccionada automáticamente: ${isSmallSuv}`);
+
     console.log('3. Llenando formulario de reserva...');
     await page.fill('input[name="plate"]', 'tst-999');
     await page.fill('input[name="model"]', 'toyota yaris');

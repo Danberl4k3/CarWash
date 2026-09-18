@@ -2261,106 +2261,276 @@ textarea { resize: vertical; }
   color: #ffffff;
 }
 
-/* Slider Track dentro de cada tarjeta */
-.slider-viewport {
-  width: 100%;
-  overflow: hidden;
-  position: relative;
-  touch-action: pan-y pinch-zoom;
-}
-
-.slider-track {
+/* ==================== ACORDEÓN VISUAL INTERACTIVO DE VEHÍCULOS ==================== */
+.pcar-accordion {
   display: flex;
-  width: 500%;
-  transform: translateX(0%);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: transform;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
 }
 
-.slider-slide {
-  width: 20%;
-  flex-shrink: 0;
+.pcar-accordion-step {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+[data-theme="dark"] .pcar-accordion-step {
+  border-color: #1a4962;
+  background: #092231;
+}
+
+.pcar-accordion-step.is-open {
+  border-color: rgba(18, 173, 158, 0.45);
+  box-shadow: 0 4px 12px rgba(18, 173, 158, 0.08);
+}
+
+[data-theme="dark"] .pcar-accordion-step.is-open {
+  border-color: rgba(88, 228, 211, 0.45);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Cabecera / Trigger clicable del paso */
+.pcar-step-trigger {
+  width: 100%;
   box-sizing: border-box;
-  padding: 0 2px;
-}
-
-.slider-slide fieldset {
-  margin-bottom: 12px;
-}
-
-/* Pie de navegación por tarjeta */
-.slider-nav-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-
-[data-theme="dark"] .slider-nav-footer {
-  border-color: #174258;
-}
-
-.slider-swipe-tip {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.slider-nav-btn {
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 800;
-  border: none;
+  padding: 12px 16px;
+  margin: 0;
+  background: var(--canvas);
   cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid transparent;
   transition: all 0.2s ease;
 }
 
-.slider-nav-btn.prev-btn {
+[data-theme="dark"] .pcar-step-trigger {
+  background: #0d293b;
+}
+
+.pcar-accordion-step.is-open .pcar-step-trigger {
+  border-bottom-color: var(--line);
   background: var(--canvas);
+}
+
+[data-theme="dark"] .pcar-accordion-step.is-open .pcar-step-trigger {
+  border-bottom-color: #174258;
+  background: #0d2a3c;
+}
+
+.pcar-step-trigger:hover {
+  filter: brightness(0.97);
+}
+
+.pcar-step-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.pcar-step-title .step-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--aqua-dark);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 2px 4px rgba(18, 173, 158, 0.25);
+}
+
+[data-theme="dark"] .pcar-step-title .step-num {
+  background: var(--aqua);
+  color: #061c28;
+}
+
+.pcar-step-title strong {
+  font-size: 14px;
+  font-weight: 800;
   color: var(--ink);
 }
 
-.slider-nav-btn.prev-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-.slider-nav-btn.next-btn {
-  background: var(--aqua-dark);
-  color: #ffffff;
-}
-
-.slider-nav-btn.next-btn:hover {
-  filter: brightness(1.08);
-}
-
-.car-active-summary {
-  margin-top: 12px;
-  padding: 10px 14px;
-  background: var(--ice);
-  border: 1px solid rgba(18, 173, 158, 0.25);
-  border-radius: 12px;
+.pcar-step-right {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 12px;
+  gap: 8px;
+  min-width: 0;
 }
 
-[data-theme="dark"] .car-active-summary {
-  background: #0e3042;
+.pcar-step-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--ice);
+  color: var(--aqua-dark);
+  border: 1px solid rgba(18, 173, 158, 0.25);
+  max-width: 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .pcar-step-pill {
+  background: #11384e;
+  color: var(--aqua);
   border-color: rgba(88, 228, 211, 0.25);
 }
 
-.car-active-summary strong {
-  font-size: 15px;
+.pcar-accordion-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--muted);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 18px;
+  height: 18px;
+}
+
+.pcar-accordion-step.is-open .pcar-accordion-arrow {
+  transform: rotate(180deg);
   color: var(--aqua-dark);
 }
 
-[data-theme="dark"] .car-active-summary strong {
+[data-theme="dark"] .pcar-accordion-step.is-open .pcar-accordion-arrow {
   color: var(--aqua);
+}
+
+/* Cuerpo del paso */
+.pcar-step-body {
+  padding: 12px 16px;
+  display: none;
+  animation: pcarStepFadeIn 0.25s ease-out;
+}
+
+.pcar-accordion-step.is-open .pcar-step-body {
+  display: block;
+}
+
+@keyframes pcarStepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pcar-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .pcar-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Chips y Tarjetas Interactivas de 1 Clic */
+.pcar-vehicle-chips {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 8px !important;
+}
+
+@media (max-width: 600px) {
+  .pcar-vehicle-chips {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+.pcar-veh-chip {
+  padding: 10px 4px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.pcar-veh-chip strong {
+  font-size: 11px !important;
+  margin-top: 4px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+}
+
+.pcar-veh-chip .vehicle-icon {
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.pcar-veh-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.pcar-veh-chip:active {
+  transform: scale(0.97);
+}
+
+.pcar-service-card {
+  padding: 10px 14px !important;
+  border-radius: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.pcar-service-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.06);
+}
+
+.pcar-addon-chip {
+  padding: 8px 12px !important;
+  border-radius: 10px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.pcar-addon-chip:hover {
+  background: var(--ice) !important;
+}
+
+.pcar-time-quick-chips button {
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
 }
 
 /* Multi-booking tickets banner on confirmation page */

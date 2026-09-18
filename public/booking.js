@@ -80,6 +80,7 @@
     if (summaryCost) summaryCost.textContent = money.format(cost / 100);
 
     refreshCardAddonRules(cardIdx);
+    refreshCardStepPills(cardIdx);
     updateGrandTotal();
   }
 
@@ -156,115 +157,127 @@
     });
   }
 
-  // --- NAVEGACIÓN DESLIZABLE HORIZONTAL (1 AL 5) POR TARJETA ---
+  // --- ACORDEÓN VISUAL INTERACTIVO (1 AL 5) POR TARJETA ---
   function slideCardToStep(cardIdx, stepNumber) {
-    if (stepNumber < 1) stepNumber = 1;
-    if (stepNumber > 5) stepNumber = 5;
-    cardSteps[cardIdx] = stepNumber;
-
-    const track = document.querySelector(`#pcar-track-${cardIdx}`);
-    if (track) {
-      const offset = (stepNumber - 1) * 20;
-      track.style.transform = `translateX(-${offset}%)`;
-    }
-
-    const progress = document.querySelector(`#pcar-progress-${cardIdx}`);
-    if (progress) {
-      progress.style.width = `${(stepNumber / 5) * 100}%`;
-    }
-
     const card = getCardElement(cardIdx);
-    if (card) {
-      card.querySelectorAll('.step-tabs-nav .step-btn').forEach((btn) => {
-        const step = parseInt(btn.getAttribute('data-step'), 10);
-        btn.classList.toggle('active', step === stepNumber);
-        btn.classList.toggle('completed', step < stepNumber);
-      });
+    if (!card) return;
+    const step = card.querySelector(`.pcar-accordion-step[data-step="${stepNumber}"]`);
+    if (step) {
+      step.classList.add('is-open');
+      step.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
 
-      const btnPrev = card.querySelector(`[data-nav-prev="${cardIdx}"]`);
-      const btnNext = card.querySelector(`[data-nav-next="${cardIdx}"]`);
-      if (btnPrev) btnPrev.disabled = stepNumber === 1;
-      if (btnNext) {
-        if (stepNumber === 5) {
-          btnNext.innerHTML = `✓ Paso final listo`;
-        } else {
-          btnNext.innerHTML = `Siguiente (${stepNumber + 1}/5) →`;
-        }
+  function refreshCardStepPills(cardIdx) {
+    const card = getCardElement(cardIdx);
+    if (!card) return;
+
+    // 1. Pill Paso 1: Placa y modelo
+    const plateInp = card.querySelector('[data-pcar-field="plate"]');
+    const modelInp = card.querySelector('[data-pcar-field="model"]');
+    const plateVal = plateInp ? plateInp.value.trim().toUpperCase() : '';
+    const modelVal = modelInp ? modelInp.value.trim() : '';
+    const pill1 = card.querySelector(`#pcar-pill-1-${cardIdx}`);
+    if (pill1) {
+      if (plateVal) {
+        pill1.textContent = modelVal ? `${plateVal} · ${modelVal}` : plateVal;
+      } else {
+        pill1.textContent = 'Sin placa';
+      }
+    }
+
+    // 2. Pill Paso 2: Tipo de vehículo
+    const vType = getCardVehicleType(cardIdx);
+    const vLabels = {
+      motorcycle: 'Moto 🏍️',
+      car: 'Auto 🚗',
+      small_suv: 'SUV peq. 🚙',
+      large_suv: 'SUV gde. 🚐',
+    };
+    const pill2 = card.querySelector(`#pcar-pill-2-${cardIdx}`);
+    if (pill2) pill2.textContent = vLabels[vType] || vType;
+
+    // 3. Pill Paso 3: Horario
+    const pickupInp = card.querySelector('[data-pcar-field="pickupTime"]');
+    const pill3 = card.querySelector(`#pcar-pill-3-${cardIdx}`);
+    if (pill3) {
+      pill3.textContent = pickupInp && pickupInp.value ? `⏰ ${pickupInp.value}` : 'Ingreso directo';
+    }
+
+    // 4. Pill Paso 4: Servicio de lavado
+    const base = getCardBaseService(cardIdx);
+    const pill4 = card.querySelector(`#pcar-pill-4-${cardIdx}`);
+    if (pill4) {
+      if (base) {
+        const basePrice = servicePrice(base, vType);
+        pill4.textContent = `${base.name} (${money.format(basePrice / 100)})`;
+      } else {
+        pill4.textContent = 'Elige lavado';
+      }
+    }
+
+    // 5. Pill Paso 5: Extras
+    const addons = getCardAddonServices(cardIdx);
+    const pill5 = card.querySelector(`#pcar-pill-5-${cardIdx}`);
+    if (pill5) {
+      if (addons.length > 0) {
+        const addonsCost = addons.reduce((sum, a) => sum + servicePrice(a, vType), 0);
+        pill5.textContent = `${addons.length} ${addons.length === 1 ? 'extra' : 'extras'} (+${money.format(addonsCost / 100)})`;
+      } else {
+        pill5.textContent = 'Sin extras';
       }
     }
   }
 
   function initCardInteractions(cardIdx) {
-    cardSteps[cardIdx] = 1;
     const card = getCardElement(cardIdx);
     if (!card) return;
 
-    // 1. Clics en la barra de pasos superior
-    card.querySelectorAll('.step-tabs-nav .step-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const step = parseInt(btn.getAttribute('data-step'), 10);
-        slideCardToStep(cardIdx, step);
-      });
-    });
-
-    // 2. Botones Anterior y Siguiente
-    const btnPrev = card.querySelector(`[data-nav-prev="${cardIdx}"]`);
-    const btnNext = card.querySelector(`[data-nav-next="${cardIdx}"]`);
-
-    btnPrev?.addEventListener('click', () => {
-      const cur = cardSteps[cardIdx] || 1;
-      if (cur > 1) slideCardToStep(cardIdx, cur - 1);
-    });
-
-    btnNext?.addEventListener('click', () => {
-      const cur = cardSteps[cardIdx] || 1;
-      if (cur < 5) slideCardToStep(cardIdx, cur + 1);
-    });
-
-    // 3. Gestos táctiles y ratón en el viewport de la tarjeta
-    const viewport = card.querySelector(`.slider-viewport[data-viewport-car="${cardIdx}"]`);
-    if (viewport) {
-      let touchStartX = 0;
-      viewport.addEventListener('touchstart', (e) => {
-        touchStartX = e.changedTouches[0].screenX;
-      }, { passive: true });
-
-      viewport.addEventListener('touchend', (e) => {
-        const touchEndX = e.changedTouches[0].screenX;
-        const diff = touchEndX - touchStartX;
-        const cur = cardSteps[cardIdx] || 1;
-        if (Math.abs(diff) > 40) {
-          if (diff > 0 && cur > 1) slideCardToStep(cardIdx, cur - 1);
-          if (diff < 0 && cur < 5) slideCardToStep(cardIdx, cur + 1);
+    // 1. Clic en las cabeceras del acordeón para colapsar/expandir
+    card.querySelectorAll('.pcar-step-trigger').forEach((trigger) => {
+      trigger.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+        const step = trigger.closest('.pcar-accordion-step');
+        if (step) {
+          step.classList.toggle('is-open');
         }
-      }, { passive: true });
-    }
+      });
+    });
 
-    // 4. Actualización en tiempo real de la placa en el header de la tarjeta
+    // 2. Actualización en tiempo real de la placa y modelo
     const plateInput = card.querySelector('[data-pcar-field="plate"]');
+    const modelInput = card.querySelector('[data-pcar-field="model"]');
     const plateDisplay = card.querySelector(`#pcar-plate-${cardIdx}`) || card.querySelector('.pcar-plate-display');
-    if (plateInput && plateDisplay) {
-      plateInput.addEventListener('input', (e) => {
+    if (plateInput) {
+      plateInput.addEventListener('input', () => {
         plateInput.value = plateInput.value.toUpperCase();
-        plateDisplay.textContent = plateInput.value.trim() || 'Sin placa';
+        if (plateDisplay) plateDisplay.textContent = plateInput.value.trim() || 'Sin placa';
+        refreshCardStepPills(cardIdx);
+      });
+    }
+    if (modelInput) {
+      modelInput.addEventListener('input', () => {
+        refreshCardStepPills(cardIdx);
       });
     }
 
-    // 5. Cambio de tipo de vehículo
+    // 3. Cambio de tipo de vehículo
     card.querySelectorAll('[data-pcar-field="vehicleType"]').forEach((radio) => {
       radio.addEventListener('change', () => {
         refreshCardVehicleRules(cardIdx);
+        refreshCardStepPills(cardIdx);
       });
     });
 
-    // 6. Cambio de servicios y adicionales
+    // 4. Cambio de servicios y adicionales
     card.querySelectorAll('[data-pcar-field="baseServiceId"], [data-pcar-field="addonServiceIds"]').forEach((input) => {
       input.addEventListener('change', () => {
         refreshCardPrices(cardIdx);
+        refreshCardStepPills(cardIdx);
       });
     });
 
-    // 7. Botones de atajo de horario de recojo
+    // 5. Botones de atajo de horario de recojo
     card.querySelectorAll('[data-pickup-offset], [data-pickup-offset-card]').forEach((button) => {
       button.addEventListener('click', () => {
         const offset = Number(button.dataset.pickupOffset || button.dataset.offset || 60);
@@ -278,21 +291,29 @@
           const m = target % 60;
           pickupInput.value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
           pickupInput.dispatchEvent(new Event('change', { bubbles: true }));
+          refreshCardStepPills(cardIdx);
         }
       });
     });
 
-    // 8. Botón Eliminar esta tarjeta
+    const pickupInput = card.querySelector('[data-pcar-field="pickupTime"]');
+    if (pickupInput) {
+      pickupInput.addEventListener('change', () => {
+        refreshCardStepPills(cardIdx);
+      });
+    }
+
+    // 6. Botón Eliminar esta tarjeta
     card.querySelector(`[data-remove-card="${cardIdx}"]`)?.addEventListener('click', () => {
       removeCard(cardIdx);
     });
 
-    // 9. Botón Copiar datos de Carro 1 (si es Carro 2 o 3)
+    // 7. Botón Copiar datos de Carro 1 (si es Carro 2 o 3)
     card.querySelector(`.btn-copy-from-first[data-copy-to="${cardIdx}"]`)?.addEventListener('click', () => {
       copyDataFromCar1(cardIdx);
     });
 
-    // 10. Consulta SUNARP independiente para este carro
+    // 8. Consulta SUNARP independiente para este carro
     const lookupBtn = card.querySelector(`[data-lookup-btn-idx="${cardIdx}"]`) || (cardIdx === 0 ? document.querySelector('#btn-lookup-plate') : null);
     if (lookupBtn) {
       lookupBtn.addEventListener('click', () => {
@@ -301,7 +322,7 @@
     }
 
     refreshCardVehicleRules(cardIdx);
-    slideCardToStep(cardIdx, 1);
+    refreshCardStepPills(cardIdx);
   }
 
   // --- COPIAR DATOS DE CLIENTE DESDE CARRO 1 ---
@@ -405,7 +426,7 @@
     const newIdx = currentCards.length;
     const carNumber = newIdx + 1;
 
-    // Crear la nueva tarjeta clonando la estructura de Carro 2
+    // Crear la nueva tarjeta clonando la estructura de acordeón
     const cardHtml = `
       <div class="parallel-car-card" data-car-card-index="${newIdx}" id="pcar-card-${newIdx}">
         <div class="pcar-header">
@@ -423,38 +444,37 @@
           📋 Copiar datos de cliente de Carro 1
         </button>
 
-        <div class="stepper-header">
-          <div class="stepper-progress-track">
-            <div class="stepper-progress-fill" id="pcar-progress-${newIdx}" style="width: 20%;"></div>
-          </div>
-          <div class="step-tabs-nav" data-car-stepper="${newIdx}">
-            <button type="button" class="step-btn active" data-step="1"><span class="step-badge">1</span><span>Datos</span></button>
-            <button type="button" class="step-btn" data-step="2"><span class="step-badge">2</span><span>Tipo</span></button>
-            <button type="button" class="step-btn" data-step="3"><span class="step-badge">3</span><span>Hora</span></button>
-            <button type="button" class="step-btn" data-step="4"><span class="step-badge">4</span><span>Lavado</span></button>
-            <button type="button" class="step-btn" data-step="5"><span class="step-badge">5</span><span>Extras</span></button>
-          </div>
-        </div>
+        <div class="pcar-accordion" data-car-accordion="${newIdx}">
 
-        <div class="slider-viewport" data-viewport-car="${newIdx}">
-          <div class="slider-track" id="pcar-track-${newIdx}">
-
-            <!-- Paso 1 -->
-            <div class="slider-slide" data-slide-step="1">
-              <fieldset>
-                <legend><span>1</span> Tus datos</legend>
-                <div class="field-wrapper plate-wrapper">
-                  <label for="plate-input-${newIdx}">Placa <b>*</b></label>
-                  <div class="plate-input-group">
-                    <input id="plate-input-${newIdx}" maxlength="12" placeholder="ABC-999" autocomplete="off" data-pcar-field="plate" data-car-idx="${newIdx}">
-                    <button type="button" class="plate-action-btn plate-lookup-btn" data-lookup-btn-idx="${newIdx}" title="Consultar placa en SUNARP">
-                      🔍 <span class="btn-text">Consultar</span>
-                    </button>
-                  </div>
-                  <div id="plate-feedback-${newIdx}" class="plate-feedback" style="display: none;"></div>
+          <!-- PASO 1 -->
+          <fieldset class="pcar-accordion-step is-open" data-step="1" data-car-idx="${newIdx}">
+            <legend class="visually-hidden"><span>1</span> Tus datos</legend>
+            <div class="pcar-step-trigger" data-step-toggle="1" data-car-idx="${newIdx}">
+              <div class="pcar-step-title">
+                <span class="step-num">1</span>
+                <strong>Tus datos</strong>
+              </div>
+              <div class="pcar-step-right">
+                <span class="pcar-step-pill" id="pcar-pill-1-${newIdx}">Sin placa</span>
+                <span class="pcar-accordion-arrow">▾</span>
+              </div>
+            </div>
+            <div class="pcar-step-body">
+              <div class="field-wrapper plate-wrapper">
+                <label for="plate-input-${newIdx}">Placa <b>*</b></label>
+                <div class="plate-input-group">
+                  <input id="plate-input-${newIdx}" maxlength="12" placeholder="ABC-999" autocomplete="off" data-pcar-field="plate" data-car-idx="${newIdx}">
+                  <button type="button" class="plate-action-btn plate-lookup-btn" data-lookup-btn-idx="${newIdx}" title="Consultar placa en SUNARP">
+                    🔍 <span class="btn-text">Consultar</span>
+                  </button>
                 </div>
+                <div id="plate-feedback-${newIdx}" class="plate-feedback" style="display: none;"></div>
+              </div>
+              <div class="pcar-two-col">
                 <label>Marca / Modelo <input list="car-brands" maxlength="100" placeholder="Ej. Kia Sportage" autocomplete="off" data-pcar-field="model" data-car-idx="${newIdx}"></label>
                 <label>Nombre <input maxlength="200" placeholder="Nombre del cliente" data-pcar-field="name" data-car-idx="${newIdx}"></label>
+              </div>
+              <div class="pcar-two-col">
                 <label>Teléfono <input type="tel" maxlength="20" placeholder="999 999 999" data-pcar-field="phone" data-car-idx="${newIdx}"></label>
                 <label>Método de pago
                   <select data-pcar-field="paymentMethod" data-car-idx="${newIdx}">
@@ -463,87 +483,121 @@
                     <option value="cash">Efectivo</option>
                   </select>
                 </label>
-                <label>Indicaciones <textarea rows="2" maxlength="1000" placeholder="Observaciones de este vehículo" data-pcar-field="notes" data-car-idx="${newIdx}"></textarea></label>
-              </fieldset>
+              </div>
+              <label>Indicaciones <textarea rows="1" maxlength="1000" placeholder="Observaciones de este vehículo" data-pcar-field="notes" data-car-idx="${newIdx}"></textarea></label>
             </div>
+          </fieldset>
 
-            <!-- Paso 2 -->
-            <div class="slider-slide" data-slide-step="2">
-              <fieldset>
-                <legend><span>2</span> ¿Qué vehículo traes?</legend>
-                <div class="choice-grid vehicle-grid">
-                  <label class="choice-card"><input type="radio" name="vehicleType_${newIdx}" value="motorcycle" data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-motorcycle"></span><strong>Moto</strong></label>
-                  <label class="choice-card"><input type="radio" name="vehicleType_${newIdx}" value="car" checked data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-car"></span><strong>Auto</strong></label>
-                  <label class="choice-card"><input type="radio" name="vehicleType_${newIdx}" value="small_suv" data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-small_suv"></span><strong>SUV pequeña</strong></label>
-                  <label class="choice-card"><input type="radio" name="vehicleType_${newIdx}" value="large_suv" data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-large_suv"></span><strong>SUV grande</strong></label>
-                </div>
-              </fieldset>
+          <!-- PASO 2 -->
+          <fieldset class="pcar-accordion-step is-open" data-step="2" data-car-idx="${newIdx}">
+            <legend class="visually-hidden"><span>2</span> ¿Qué vehículo traes?</legend>
+            <div class="pcar-step-trigger" data-step-toggle="2" data-car-idx="${newIdx}">
+              <div class="pcar-step-title">
+                <span class="step-num">2</span>
+                <strong>¿Qué vehículo traes?</strong>
+              </div>
+              <div class="pcar-step-right">
+                <span class="pcar-step-pill" id="pcar-pill-2-${newIdx}">Auto</span>
+                <span class="pcar-accordion-arrow">▾</span>
+              </div>
             </div>
+            <div class="pcar-step-body">
+              <div class="choice-grid vehicle-grid pcar-vehicle-chips">
+                <label class="choice-card pcar-veh-chip"><input type="radio" name="vehicleType_${newIdx}" value="motorcycle" data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-motorcycle"></span><strong>Moto</strong></label>
+                <label class="choice-card pcar-veh-chip"><input type="radio" name="vehicleType_${newIdx}" value="car" checked data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-car"></span><strong>Auto</strong></label>
+                <label class="choice-card pcar-veh-chip"><input type="radio" name="vehicleType_${newIdx}" value="small_suv" data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-small_suv"></span><strong>SUV pequeña</strong></label>
+                <label class="choice-card pcar-veh-chip"><input type="radio" name="vehicleType_${newIdx}" value="large_suv" data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-large_suv"></span><strong>SUV grande</strong></label>
+              </div>
+            </div>
+          </fieldset>
 
-            <!-- Paso 3 -->
-            <div class="slider-slide" data-slide-step="3">
-              <fieldset>
-                <legend><span>3</span> Horario</legend>
-                <div class="field-grid two-columns">
-                  <label>Hora de ingreso
-                    <input value="Hora de ingreso" readonly>
+          <!-- PASO 3 -->
+          <fieldset class="pcar-accordion-step is-open" data-step="3" data-car-idx="${newIdx}">
+            <legend class="visually-hidden"><span>3</span> Horario</legend>
+            <div class="pcar-step-trigger" data-step-toggle="3" data-car-idx="${newIdx}">
+              <div class="pcar-step-title">
+                <span class="step-num">3</span>
+                <strong>Horario</strong>
+              </div>
+              <div class="pcar-step-right">
+                <span class="pcar-step-pill" id="pcar-pill-3-${newIdx}">Ingreso directo</span>
+                <span class="pcar-accordion-arrow">▾</span>
+              </div>
+            </div>
+            <div class="pcar-step-body">
+              <div class="field-grid two-columns pcar-time-grid">
+                <label>Hora de ingreso
+                  <input value="Hora de ingreso" readonly>
+                </label>
+                <label>Hora estimada de recojo
+                  <input type="time" data-pcar-field="pickupTime" data-car-idx="${newIdx}">
+                  <div class="time-buttons pcar-time-quick-chips">
+                    <button type="button" data-pickup-offset-card="${newIdx}" data-offset="30">+ 30m</button>
+                    <button type="button" data-pickup-offset-card="${newIdx}" data-offset="60">+ 1h</button>
+                    <button type="button" data-pickup-offset-card="${newIdx}" data-offset="90">+ 1h30</button>
+                    <button type="button" data-pickup-offset-card="${newIdx}" data-offset="120">+ 2h</button>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- PASO 4 -->
+          <fieldset class="pcar-accordion-step is-open" data-step="4" data-car-idx="${newIdx}">
+            <legend class="visually-hidden"><span>4</span> Elige el lavado</legend>
+            <div class="pcar-step-trigger" data-step-toggle="4" data-car-idx="${newIdx}">
+              <div class="pcar-step-title">
+                <span class="step-num">4</span>
+                <strong>Elige el lavado</strong>
+              </div>
+              <div class="pcar-step-right">
+                <span class="pcar-step-pill" id="pcar-pill-4-${newIdx}">Lavado completo</span>
+                <span class="pcar-accordion-arrow">▾</span>
+              </div>
+            </div>
+            <div class="pcar-step-body">
+              <div class="service-list pcar-service-cards">
+                ${catalog.filter((s) => s.category === 'base').map((service, i) => `
+                  <label class="service-option pcar-service-card">
+                    <input type="radio" name="baseServiceId_${newIdx}" value="${service.id}" data-slug="${service.slug}" ${i === 1 ? 'checked' : ''} data-pcar-field="baseServiceId" data-car-idx="${newIdx}">
+                    <span><strong>${service.name}</strong><small>Principal</small></span>
+                    <b class="service-price" data-service-price-card="${newIdx}" data-service-id="${service.id}">—</b>
                   </label>
-                  <label>Hora estimada de recojo
-                    <input type="time" data-pcar-field="pickupTime" data-car-idx="${newIdx}">
-                    <div class="time-buttons">
-                      <button type="button" data-pickup-offset-card="${newIdx}" data-offset="30">+ 30m</button>
-                      <button type="button" data-pickup-offset-card="${newIdx}" data-offset="60">+ 1h</button>
-                      <button type="button" data-pickup-offset-card="${newIdx}" data-offset="90">+ 1h30</button>
-                      <button type="button" data-pickup-offset-card="${newIdx}" data-offset="120">+ 2h</button>
-                    </div>
+                `).join('')}
+              </div>
+            </div>
+          </fieldset>
+
+          <!-- PASO 5 -->
+          <fieldset class="pcar-accordion-step is-open" data-step="5" data-car-idx="${newIdx}">
+            <legend class="visually-hidden"><span>5</span> Agrega un cuidado extra</legend>
+            <div class="pcar-step-trigger" data-step-toggle="5" data-car-idx="${newIdx}">
+              <div class="pcar-step-title">
+                <span class="step-num">5</span>
+                <strong>Agrega un cuidado extra</strong>
+              </div>
+              <div class="pcar-step-right">
+                <span class="pcar-step-pill" id="pcar-pill-5-${newIdx}">Sin extras</span>
+                <span class="pcar-accordion-arrow">▾</span>
+              </div>
+            </div>
+            <div class="pcar-step-body">
+              <div class="addon-grid pcar-addon-chips">
+                ${catalog.filter((s) => s.category === 'addon').map((service) => `
+                  <label class="addon-option pcar-addon-chip" data-addon-slug="${service.slug}">
+                    <input type="checkbox" name="addonServiceIds_${newIdx}" value="${service.id}" data-pcar-field="addonServiceIds" data-car-idx="${newIdx}">
+                    <span class="check-mark">✓</span>
+                    <span><strong>${service.name}</strong><small class="service-price" data-service-price-card="${newIdx}" data-service-id="${service.id}">—</small></span>
                   </label>
-                </div>
-              </fieldset>
+                `).join('')}
+              </div>
+              <div class="car-active-summary">
+                <span>Subtotal Carro ${carNumber}:</span>
+                <strong id="pcar-summary-cost-${newIdx}">S/ 0.00</strong>
+              </div>
             </div>
+          </fieldset>
 
-            <!-- Paso 4 -->
-            <div class="slider-slide" data-slide-step="4">
-              <fieldset>
-                <legend><span>4</span> Elige el lavado</legend>
-                <div class="service-list">
-                  ${catalog.filter((s) => s.category === 'base').map((service, i) => `
-                    <label class="service-option">
-                      <input type="radio" name="baseServiceId_${newIdx}" value="${service.id}" data-slug="${service.slug}" ${i === 1 ? 'checked' : ''} data-pcar-field="baseServiceId" data-car-idx="${newIdx}">
-                      <span><strong>${service.name}</strong><small>Principal</small></span>
-                      <b class="service-price" data-service-price-card="${newIdx}" data-service-id="${service.id}">—</b>
-                    </label>
-                  `).join('')}
-                </div>
-              </fieldset>
-            </div>
-
-            <!-- Paso 5 -->
-            <div class="slider-slide" data-slide-step="5">
-              <fieldset>
-                <legend><span>5</span> Agrega un cuidado extra</legend>
-                <div class="addon-grid">
-                  ${catalog.filter((s) => s.category === 'addon').map((service) => `
-                    <label class="addon-option" data-addon-slug="${service.slug}">
-                      <input type="checkbox" name="addonServiceIds_${newIdx}" value="${service.id}" data-pcar-field="addonServiceIds" data-car-idx="${newIdx}">
-                      <span class="check-mark">✓</span>
-                      <span><strong>${service.name}</strong><small class="service-price" data-service-price-card="${newIdx}" data-service-id="${service.id}">—</small></span>
-                    </label>
-                  `).join('')}
-                </div>
-                <div class="car-active-summary">
-                  <span>Subtotal Carro ${carNumber}:</span>
-                  <strong id="pcar-summary-cost-${newIdx}">S/ 0.00</strong>
-                </div>
-              </fieldset>
-            </div>
-
-          </div>
-        </div>
-
-        <div class="slider-nav-footer">
-          <button type="button" class="slider-nav-btn prev-btn" data-nav-prev="${newIdx}" disabled>← Anterior</button>
-          <span class="slider-swipe-tip">👈 Desliza 1 a 5 👉</span>
-          <button type="button" class="slider-nav-btn next-btn" data-nav-next="${newIdx}">Siguiente (2/5) →</button>
         </div>
       </div>
     `;
@@ -581,7 +635,7 @@
   }
 
   // --- ENVÍO CONSOLIDADO DEL FORMULARIO ---
-  form.addEventListener('submit', () => {
+  form.addEventListener('submit', (e) => {
     const cards = document.querySelectorAll('.parallel-car-card');
     const vehicles = [];
 
@@ -639,6 +693,15 @@
 
   // Botón superior "+ Añadir otro vehículo"
   document.querySelector('#btn-add-car-parallel')?.addEventListener('click', addNewParallelCard);
+
+  // Delegación de clic para eliminar tarjeta de vehículo
+  document.querySelector('#parallel-cars-container')?.addEventListener('click', (e) => {
+    const delBtn = e.target.closest('.btn-delete-car');
+    if (delBtn) {
+      const idx = Number(delBtn.getAttribute('data-remove-card'));
+      removeCard(idx);
+    }
+  });
 
   // Inicializar Carro 1 (índice 0) y Carro 2 (índice 1) presentes por defecto en HTML
   initCardInteractions(0);

@@ -33,29 +33,6 @@ describe('aplicación web', () => {
     expect(response.headers['content-security-policy']).toContain("default-src 'self'");
   });
 
-  it('permite registrar múltiples vehículos simultáneamente con vehiclesPayload', async () => {
-    const serviceId = (db.prepare('SELECT id FROM services WHERE slug = ?').get('complete') as { id: number }).id;
-    const response = await app.inject({
-      method: 'POST',
-      url: '/reservar',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      payload: new URLSearchParams({
-        vehiclesPayload: JSON.stringify([
-          { plate: 'CAR-001', vehicleType: 'car', baseServiceId: serviceId, addonServiceIds: [] },
-          { plate: 'CAR-002', vehicleType: 'small_suv', baseServiceId: serviceId, addonServiceIds: [] },
-        ]),
-      }).toString(),
-    });
-    expect(response.statusCode).toBe(302);
-    expect(response.headers.location).toContain('/reserva/');
-    expect(response.headers.location).toContain('multi=');
-
-    const v1 = db.prepare('SELECT id FROM vehicles WHERE plate = ?').get('CAR-001');
-    const v2 = db.prepare('SELECT id FROM vehicles WHERE plate = ?').get('CAR-002');
-    expect(v1).toBeTruthy();
-    expect(v2).toBeTruthy();
-  });
-
   it('expone un endpoint de salud', async () => {
     const response = await app.inject({ method: 'GET', url: '/salud' });
     expect(response.statusCode).toBe(200);

@@ -70,11 +70,11 @@ async function runE2E() {
     console.log(`✓ Hora estimada de recojo establecida con atajo: "${pickupVal}"`);
 
     // Seleccionar servicio
-    const completeWash = page.locator('input[data-slug="complete"]').first();
+    const completeWash = page.locator('input[data-slug="complete"]');
     await completeWash.check({ force: true });
 
     // Seleccionar adicional cera
-    const waxAddon = page.locator('label[data-addon-slug="wax"] input').first();
+    const waxAddon = page.locator('label[data-addon-slug="wax"] input');
     await waxAddon.check({ force: true });
 
     const totalText = await page.textContent('#booking-total');

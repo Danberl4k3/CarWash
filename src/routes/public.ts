@@ -176,66 +176,6 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
       const body = request.body as Record<string, unknown>;
       try {
         const now = getLimaNow();
-
-        // 1. Soporte para registro de múltiples vehículos
-        let vehiclesPayload = body.vehiclesPayload;
-        if (typeof vehiclesPayload === 'string' && vehiclesPayload.trim()) {
-          try {
-            vehiclesPayload = JSON.parse(vehiclesPayload);
-          } catch {
-            vehiclesPayload = null;
-          }
-        }
-
-        if (Array.isArray(vehiclesPayload) && vehiclesPayload.length > 0) {
-          const validVehicles = vehiclesPayload.filter(
-            (v: any) => v && typeof v.plate === 'string' && v.plate.trim().length > 0,
-          );
-          if (validVehicles.length > 0) {
-            const createdBookings: Array<{ id: number; code: string; totalCents: number }> = [];
-            const transaction = db.transaction(() => {
-              for (const v of validVehicles) {
-                const pickup = String(v.pickupTime || body.pickupTime || '').trim();
-                let pickupHour: number | undefined;
-                let pickupMinute: number | undefined;
-                if (pickup && pickup.includes(':')) {
-                  const parts = pickup.split(':').map(Number);
-                  if (Number.isFinite(parts[0])) pickupHour = parts[0];
-                  if (Number.isFinite(parts[1])) pickupMinute = parts[1];
-                }
-                const b = createBooking(db, {
-                  name: v.name || body.name,
-                  model: v.model,
-                  phone: v.phone || body.phone,
-                  plate: v.plate,
-                  vehicleType: v.vehicleType || 'car',
-                  baseServiceId: v.baseServiceId || body.baseServiceId,
-                  addonServiceIds: stringArray(v.addonServiceIds),
-                  dropoffHour: now.hour,
-                  dropoffMinute: now.minute,
-                  pickupHour: Number.isFinite(pickupHour) ? (pickupHour as number) : (now.hour + 1) % 24,
-                  pickupMinute: Number.isFinite(pickupMinute) ? (pickupMinute as number) : 0,
-                  paymentMethod: v.paymentMethod || body.paymentMethod || 'yape',
-                  notes: v.notes || body.notes,
-                });
-                createdBookings.push(b);
-              }
-            });
-            transaction();
-
-            for (const b of createdBookings) {
-              appEvents.emitAppEvent('booking_created', { code: b.code, id: b.id });
-            }
-
-            if (createdBookings.length === 1) {
-              return reply.redirect(`/reserva/${encodeURIComponent(createdBookings[0].code)}`);
-            }
-            const allCodes = createdBookings.map((b) => b.code).join(',');
-            return reply.redirect(`/reserva/${encodeURIComponent(createdBookings[0].code)}?multi=${encodeURIComponent(allCodes)}`);
-          }
-        }
-
-        // 2. Comportamiento individual tradicional (fallback)
         const pickup = String(body.pickupTime || '').trim();
         let pickupHour: number | undefined;
         let pickupMinute: number | undefined;
@@ -298,19 +238,10 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
     const booking = getBookingByCode(db, code.toUpperCase());
     if (!booking) return reply.code(404).view('not-found.ejs', { title: 'Reserva no encontrada' });
     const durationMinutes = (booking.vehicle_type === 'small_suv' || booking.vehicle_type === 'large_suv') ? 45 : 30;
-
-    const multiParam = String((request.query as { multi?: unknown })?.multi || '').trim();
-    let multiBookings: unknown[] = [];
-    if (multiParam) {
-      const codes = multiParam.split(',').map((c) => c.trim().toUpperCase()).filter(Boolean);
-      multiBookings = codes.map((c) => getBookingByCode(db, c)).filter(Boolean);
-    }
-
     return reply.view('confirmation.ejs', {
       title: `Reserva ${booking.code}`,
       business: BUSINESS,
       booking,
-      multiBookings,
       vehicleLabels: VEHICLE_LABELS,
       paymentLabels: PAYMENT_LABELS,
       statusLabels: STATUS_LABELS,

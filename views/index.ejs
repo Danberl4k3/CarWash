@@ -13,8 +13,8 @@
 <main class="booking-shell">
   <section class="booking-intro">
     <span class="eyebrow">Reserva para hoy</span>
-    <h1>Tus vehículos limpios,<br><em>sin perder tiempo.</em></h1>
-    <p>Registra varios carros en paralelo en una sola orden sin perder de vista los datos de ninguno.</p>
+    <h1>Tu vehículo limpio,<br><em>sin perder tiempo.</em></h1>
+    <p>Elige tu servicio y separa un horario. Nosotros nos encargamos del resto.</p>
     <div class="intro-pills">
       <span>15–20 min por servicio</span>
       <span>Lun–Sáb</span>
@@ -27,10 +27,8 @@
 
   <section class="booking-panel">
     <div class="panel-heading">
-      <div><span class="step-kicker">Reserva simultánea</span><h2>Separa tu turno</h2></div>
-      <div style="display: flex; gap: 10px; align-items: center;">
-        <span class="today-chip"><span></span> Hoy</span>
-      </div>
+      <div><span class="step-kicker">Reserva rápida</span><h2>Separa tu turno</h2></div>
+      <span class="today-chip"><span></span> Hoy</span>
     </div>
     <%- include('partials/alerts', { error, success: null }) %>
     <% if (!openToday) { %>
@@ -39,395 +37,110 @@
         <span>Regresa de lunes a sábado para separar tu turno.</span>
       </div>
     <% } %>
-
-    <!-- BARRA SUPERIOR DE CONTROL PARALELO -->
-    <div class="parallel-top-bar">
-      <span class="parallel-cars-badge" id="parallel-cars-count-label">
-        🚗 2 Vehículos en pantalla (vista simultánea)
-      </span>
-      <button type="button" class="btn-add-parallel-car" id="btn-add-car-parallel">
-        + Añadir otro vehículo (Carro 3)
-      </button>
-    </div>
-
     <form id="booking-form" class="booking-form" method="post" action="/reservar"
       data-catalog="<%= serviceCatalog %>" data-now-hour="<%= now.hour %>" <%= !openToday ? 'inert' : '' %>>
-      <input type="hidden" name="vehiclesPayload" id="vehicles-payload">
-
-      <!-- CONTENEDOR DE TARJETAS PARALELAS LADO A LADO -->
-      <div class="parallel-cars-container" id="parallel-cars-container">
-
-        <!-- ==================== TARJETA CARRO 1 ==================== -->
-        <div class="parallel-car-card" data-car-card-index="0" id="pcar-card-0">
-          <div class="pcar-header">
-            <div class="pcar-title-wrap">
-              <span class="car-number-badge">Carro 1</span>
-              <strong class="pcar-plate-display" id="pcar-plate-0">Sin placa</strong>
+      <fieldset>
+        <legend><span>1</span> Tus datos</legend>
+          <div class="field-wrapper plate-wrapper">
+            <label for="plate-input">Placa <b>*</b></label>
+            <div class="plate-input-group">
+              <input name="plate" id="plate-input" maxlength="12" placeholder="ABC-123" autocomplete="off" required>
+              <label for="plate-camera-input" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto" role="button" tabindex="0">
+                📷 <span class="btn-text">Escanear</span>
+              </label>
+              <button type="button" id="btn-lookup-plate" class="plate-action-btn plate-lookup-btn" title="Consultar placa en SUNARP">
+                🔍 <span class="btn-text">Consultar</span>
+              </button>
             </div>
-            <div class="pcar-actions">
-              <span class="pcar-cost-badge" id="pcar-cost-0">S/ 0.00</span>
-              <button type="button" class="btn-delete-car" title="Eliminar vehículo" data-remove-card="0" style="display:none;">✕</button>
-            </div>
+            <input type="file" id="plate-camera-input" accept="image/*" capture="environment" class="visually-hidden-file-input">
+            <div id="plate-feedback" class="plate-feedback" style="display: none;"></div>
           </div>
-
-          <!-- Acordeón Visual Carro 1 -->
-          <div class="pcar-accordion" data-car-accordion="0">
-
-            <!-- PASO 1 CARRO 1 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="1" data-car-idx="0">
-              <legend class="visually-hidden"><span>1</span> Tus datos</legend>
-              <div class="pcar-step-trigger" data-step-toggle="1" data-car-idx="0">
-                <div class="pcar-step-title">
-                  <span class="step-num">1</span>
-                  <strong>Tus datos</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-1-0">Sin placa</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="pcar-step-body">
-                <div class="field-wrapper plate-wrapper">
-                  <label for="plate-input">Placa <b>*</b></label>
-                  <div class="plate-input-group">
-                    <input name="plate" id="plate-input" maxlength="12" placeholder="ABC-123" autocomplete="off" required data-pcar-field="plate" data-car-idx="0">
-                    <label for="plate-camera-input" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto" role="button" tabindex="0">
-                      📷 <span class="btn-text">Escanear</span>
-                    </label>
-                    <button type="button" id="btn-lookup-plate" class="plate-action-btn plate-lookup-btn" title="Consultar placa en SUNARP">
-                      🔍 <span class="btn-text">Consultar</span>
-                    </button>
-                  </div>
-                  <input type="file" id="plate-camera-input" accept="image/*" capture="environment" class="visually-hidden-file-input">
-                  <div id="plate-feedback" class="plate-feedback" style="display: none;"></div>
-                </div>
-                <div class="pcar-two-col">
-                  <label>Marca / Modelo <input name="model" list="car-brands" maxlength="100" placeholder="Ej. Toyota Yaris" autocomplete="off" data-pcar-field="model" data-car-idx="0"></label>
-                  <label>Nombre <input name="name" maxlength="200" placeholder="Nombre del cliente" data-pcar-field="name" data-car-idx="0"></label>
-                </div>
-                <div class="pcar-two-col">
-                  <label id="phone-field">Teléfono <input type="tel" name="phone" id="phone" maxlength="20" placeholder="999 999 999" data-pcar-field="phone" data-car-idx="0"></label>
-                  <label>Método de pago
-                    <select name="paymentMethod" data-pcar-field="paymentMethod" data-car-idx="0" required>
-                      <% Object.entries(paymentLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %>
-                    </select>
-                  </label>
-                </div>
-                <label>Indicaciones <textarea name="notes" rows="1" maxlength="1000" placeholder="Observaciones de este vehículo" data-pcar-field="notes" data-car-idx="0"></textarea></label>
-              </div>
-            </fieldset>
-
-            <!-- PASO 2 CARRO 1 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="2" data-car-idx="0">
-              <legend class="visually-hidden"><span>2</span> ¿Qué vehículo traes?</legend>
-              <div class="pcar-step-trigger" data-step-toggle="2" data-car-idx="0">
-                <div class="pcar-step-title">
-                  <span class="step-num">2</span>
-                  <strong>¿Qué vehículo traes?</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-2-0">Auto</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="pcar-step-body">
-                <div class="choice-grid vehicle-grid pcar-vehicle-chips">
-                  <% Object.entries(vehicleLabels).forEach(([value, label], index) => { %>
-                    <label class="choice-card pcar-veh-chip">
-                      <input type="radio" name="vehicleType" value="<%= value %>" <%= index === 1 ? 'checked' : '' %> required data-pcar-field="vehicleType" data-car-idx="0">
-                      <span class="vehicle-icon vehicle-<%= value %>"></span>
-                      <strong><%= label %></strong>
-                    </label>
-                  <% }) %>
-                </div>
-              </div>
-            </fieldset>
-
-            <!-- PASO 3 CARRO 1 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="3" data-car-idx="0">
-              <legend class="visually-hidden"><span>3</span> Horario</legend>
-              <div class="pcar-step-trigger" data-step-toggle="3" data-car-idx="0">
-                <div class="pcar-step-title">
-                  <span class="step-num">3</span>
-                  <strong>Horario</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-3-0">Ingreso directo</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="pcar-step-body">
-                <div class="field-grid two-columns pcar-time-grid">
-                  <label>Hora de ingreso
-                    <input id="dropoff-display" value="<%= hourLabel(automaticDropoff.hour, automaticDropoff.minute) %> (ingreso)" readonly>
-                    <input type="hidden" name="dropoffHour" id="dropoff-hour" value="<%= automaticDropoff.hour %>">
-                    <input type="hidden" name="dropoffMinute" id="dropoff-minute" value="<%= automaticDropoff.minute %>">
-                  </label>
-                  <label>Hora estimada de recojo
-                    <input type="time" name="pickupTime" id="pickup-time" data-pcar-field="pickupTime" data-car-idx="0">
-                    <div class="time-buttons pcar-time-quick-chips">
-                      <button type="button" data-pickup-offset="30">+ 30m</button>
-                      <button type="button" data-pickup-offset="60">+ 1h</button>
-                      <button type="button" data-pickup-offset="90">+ 1h30</button>
-                      <button type="button" data-pickup-offset="120">+ 2h</button>
-                    </div>
-                  </label>
-                </div>
-              </div>
-            </fieldset>
-
-            <!-- PASO 4 CARRO 1 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="4" data-car-idx="0">
-              <legend class="visually-hidden"><span>4</span> Elige el lavado</legend>
-              <div class="pcar-step-trigger" data-step-toggle="4" data-car-idx="0">
-                <div class="pcar-step-title">
-                  <span class="step-num">4</span>
-                  <strong>Elige el lavado</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-4-0">Lavado completo</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="pcar-step-body">
-                <div class="service-list pcar-service-cards">
-                  <% services.filter(service => service.category === 'base').forEach((service, index) => { %>
-                    <label class="service-option pcar-service-card">
-                      <input type="radio" name="baseServiceId" value="<%= service.id %>" data-slug="<%= service.slug %>" <%= index === 1 ? 'checked' : '' %> required data-pcar-field="baseServiceId" data-car-idx="0">
-                      <span><strong><%= service.name %></strong><small>Principal</small></span>
-                      <b class="service-price" data-service-price="<%= service.id %>">—</b>
-                    </label>
-                  <% }) %>
-                </div>
-              </div>
-            </fieldset>
-
-            <!-- PASO 5 CARRO 1 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="5" data-car-idx="0">
-              <legend class="visually-hidden"><span>5</span> Agrega un cuidado extra</legend>
-              <div class="pcar-step-trigger" data-step-toggle="5" data-car-idx="0">
-                <div class="pcar-step-title">
-                  <span class="step-num">5</span>
-                  <strong>Agrega un cuidado extra</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-5-0">Sin extras</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="pcar-step-body">
-                <div class="addon-grid pcar-addon-chips">
-                  <% services.filter(service => service.category === 'addon').forEach(service => { %>
-                    <label class="addon-option pcar-addon-chip" data-addon-slug="<%= service.slug %>" data-incompatible-interior="<%= service.incompatible_with_interior %>">
-                      <input type="checkbox" name="addonServiceIds" value="<%= service.id %>" data-pcar-field="addonServiceIds" data-car-idx="0">
-                      <span class="check-mark">✓</span>
-                      <span><strong><%= service.name %></strong><small class="service-price" data-service-price="<%= service.id %>">—</small></span>
-                    </label>
-                  <% }) %>
-                </div>
-                <div class="car-active-summary">
-                  <span>Subtotal Carro 1:</span>
-                  <strong id="pcar-summary-cost-0">S/ 0.00</strong>
-                </div>
-              </div>
-            </fieldset>
-
-          </div>
+          <label>Marca / Modelo <small>Sugerencias activas</small><input name="model" list="car-brands" maxlength="100" placeholder="Ej. Toyota, Hyundai, Kia..." autocomplete="off"></label>
+          <label>Nombre <small>Opcional</small><input name="name" maxlength="200" placeholder="¿A nombre de quién?"></label>
+          <label id="phone-field">Teléfono <small id="phone-optional">Opcional</small><input type="tel" name="phone" id="phone" maxlength="20" placeholder="999 999 999"></label>
+          <label>Método de pago
+            <select name="paymentMethod" required>
+              <% Object.entries(paymentLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %>
+            </select>
+          </label>
         </div>
+        <label>Indicaciones <small>Opcional</small><textarea name="notes" rows="3" maxlength="1000" placeholder="Nivel de suciedad, objetos delicados u otra indicación"></textarea></label>
+      </fieldset>
 
-        <!-- ==================== TARJETA CARRO 2 ==================== -->
-        <div class="parallel-car-card" data-car-card-index="1" id="pcar-card-1">
-          <div class="pcar-header">
-            <div class="pcar-title-wrap">
-              <span class="car-number-badge">Carro 2</span>
-              <strong class="pcar-plate-display" id="pcar-plate-1">Sin placa</strong>
-            </div>
-            <div class="pcar-actions">
-              <span class="pcar-cost-badge" id="pcar-cost-1">S/ 0.00</span>
-              <button type="button" class="btn-delete-car" title="Eliminar vehículo" data-remove-card="1">✕</button>
-            </div>
-          </div>
-
-          <button type="button" class="btn-copy-from-first" data-copy-to="1">
-            📋 Copiar datos de cliente de Carro 1
-          </button>
-
-          <!-- Acordeón Visual Carro 2 -->
-          <div class="pcar-accordion" data-car-accordion="1">
-
-            <!-- PASO 1 CARRO 2 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="1" data-car-idx="1">
-              <legend class="visually-hidden"><span>1</span> Tus datos</legend>
-              <div class="pcar-step-trigger" data-step-toggle="1" data-car-idx="1">
-                <div class="pcar-step-title">
-                  <span class="step-num">1</span>
-                  <strong>Tus datos</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-1-1">Sin placa</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="pcar-step-body">
-                <div class="field-wrapper plate-wrapper">
-                  <label for="plate-input-1">Placa <b>*</b></label>
-                  <div class="plate-input-group">
-                    <input id="plate-input-1" maxlength="12" placeholder="XYZ-789" autocomplete="off" data-pcar-field="plate" data-car-idx="1">
-                    <button type="button" class="plate-action-btn plate-lookup-btn" data-lookup-btn-idx="1" title="Consultar placa en SUNARP">
-                      🔍 <span class="btn-text">Consultar</span>
-                    </button>
-                  </div>
-                  <div id="plate-feedback-1" class="plate-feedback" style="display: none;"></div>
-                </div>
-                <div class="pcar-two-col">
-                  <label>Marca / Modelo <input list="car-brands" maxlength="100" placeholder="Ej. Hyundai Tucson" autocomplete="off" data-pcar-field="model" data-car-idx="1"></label>
-                  <label>Nombre <input maxlength="200" placeholder="Nombre del cliente" data-pcar-field="name" data-car-idx="1"></label>
-                </div>
-                <div class="pcar-two-col">
-                  <label>Teléfono <input type="tel" maxlength="20" placeholder="999 999 999" data-pcar-field="phone" data-car-idx="1"></label>
-                  <label>Método de pago
-                    <select data-pcar-field="paymentMethod" data-car-idx="1">
-                      <% Object.entries(paymentLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %>
-                    </select>
-                  </label>
-                </div>
-                <label>Indicaciones <textarea rows="1" maxlength="1000" placeholder="Observaciones de este vehículo" data-pcar-field="notes" data-car-idx="1"></textarea></label>
-              </div>
-            </fieldset>
-
-            <!-- PASO 2 CARRO 2 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="2" data-car-idx="1">
-              <legend class="visually-hidden"><span>2</span> ¿Qué vehículo traes?</legend>
-              <div class="pcar-step-trigger" data-step-toggle="2" data-car-idx="1">
-                <div class="pcar-step-title">
-                  <span class="step-num">2</span>
-                  <strong>¿Qué vehículo traes?</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-2-1">SUV pequeña</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="pcar-step-body">
-                <div class="choice-grid vehicle-grid pcar-vehicle-chips">
-                  <% Object.entries(vehicleLabels).forEach(([value, label], index) => { %>
-                    <label class="choice-card pcar-veh-chip">
-                      <input type="radio" name="vehicleType_1" value="<%= value %>" <%= index === 2 ? 'checked' : '' %> data-pcar-field="vehicleType" data-car-idx="1">
-                      <span class="vehicle-icon vehicle-<%= value %>"></span>
-                      <strong><%= label %></strong>
-                    </label>
-                  <% }) %>
-                </div>
-              </div>
-            </fieldset>
-
-            <!-- PASO 3 CARRO 2 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="3" data-car-idx="1">
-              <legend class="visually-hidden"><span>3</span> Horario</legend>
-              <div class="pcar-step-trigger" data-step-toggle="3" data-car-idx="1">
-                <div class="pcar-step-title">
-                  <span class="step-num">3</span>
-                  <strong>Horario</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-3-1">Ingreso directo</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="pcar-step-body">
-                <div class="field-grid two-columns pcar-time-grid">
-                  <label>Hora de ingreso
-                    <input value="<%= hourLabel(automaticDropoff.hour, automaticDropoff.minute) %> (ingreso)" readonly>
-                  </label>
-                  <label>Hora estimada de recojo
-                    <input type="time" data-pcar-field="pickupTime" data-car-idx="1">
-                    <div class="time-buttons pcar-time-quick-chips">
-                      <button type="button" data-pickup-offset-card="1" data-offset="30">+ 30m</button>
-                      <button type="button" data-pickup-offset-card="1" data-offset="60">+ 1h</button>
-                      <button type="button" data-pickup-offset-card="1" data-offset="90">+ 1h30</button>
-                      <button type="button" data-pickup-offset-card="1" data-offset="120">+ 2h</button>
-                    </div>
-                  </label>
-                </div>
-              </div>
-            </fieldset>
-
-            <!-- PASO 4 CARRO 2 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="4" data-car-idx="1">
-              <legend class="visually-hidden"><span>4</span> Elige el lavado</legend>
-              <div class="pcar-step-trigger" data-step-toggle="4" data-car-idx="1">
-                <div class="pcar-step-title">
-                  <span class="step-num">4</span>
-                  <strong>Elige el lavado</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-4-1">Lavado completo</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="service-list pcar-service-cards">
-                <% services.filter(service => service.category === 'base').forEach((service, index) => { %>
-                  <label class="service-option pcar-service-card">
-                    <input type="radio" name="baseServiceId_1" value="<%= service.id %>" data-slug="<%= service.slug %>" <%= index === 1 ? 'checked' : '' %> data-pcar-field="baseServiceId" data-car-idx="1">
-                    <span><strong><%= service.name %></strong><small>Principal</small></span>
-                    <b class="service-price" data-service-price-card="1" data-service-id="<%= service.id %>">—</b>
-                  </label>
-                <% }) %>
-              </div>
-            </fieldset>
-
-            <!-- PASO 5 CARRO 2 -->
-            <fieldset class="pcar-accordion-step is-open" data-step="5" data-car-idx="1">
-              <legend class="visually-hidden"><span>5</span> Agrega un cuidado extra</legend>
-              <div class="pcar-step-trigger" data-step-toggle="5" data-car-idx="1">
-                <div class="pcar-step-title">
-                  <span class="step-num">5</span>
-                  <strong>Agrega un cuidado extra</strong>
-                </div>
-                <div class="pcar-step-right">
-                  <span class="pcar-step-pill" id="pcar-pill-5-1">Sin extras</span>
-                  <span class="pcar-accordion-arrow">▾</span>
-                </div>
-              </div>
-              <div class="pcar-step-body">
-                <div class="addon-grid pcar-addon-chips">
-                  <% services.filter(service => service.category === 'addon').forEach(service => { %>
-                    <label class="addon-option pcar-addon-chip" data-addon-slug="<%= service.slug %>">
-                      <input type="checkbox" name="addonServiceIds_1" value="<%= service.id %>" data-pcar-field="addonServiceIds" data-car-idx="1">
-                      <span class="check-mark">✓</span>
-                      <span><strong><%= service.name %></strong><small class="service-price" data-service-price-card="1" data-service-id="<%= service.id %>">—</small></span>
-                    </label>
-                  <% }) %>
-                </div>
-                <div class="car-active-summary">
-                  <span>Subtotal Carro 2:</span>
-                  <strong id="pcar-summary-cost-1">S/ 0.00</strong>
-                </div>
-              </div>
-            </fieldset>
-
-          </div>
+      <fieldset>
+        <legend><span>2</span> ¿Qué vehículo traes?</legend>
+        <div class="choice-grid vehicle-grid">
+          <% Object.entries(vehicleLabels).forEach(([value, label], index) => { %>
+            <label class="choice-card">
+              <input type="radio" name="vehicleType" value="<%= value %>" <%= index === 1 ? 'checked' : '' %> required>
+              <span class="vehicle-icon vehicle-<%= value %>"></span>
+              <strong><%= label %></strong>
+            </label>
+          <% }) %>
         </div>
+      </fieldset>
 
-      </div>
+      <fieldset>
+        <legend><span>3</span> Horario</legend>
+        <div class="field-grid two-columns">
+          <label>Hora de ingreso
+            <input id="dropoff-display" value="<%= hourLabel(automaticDropoff.hour, automaticDropoff.minute) %> (hora exacta de ingreso)" readonly>
+            <input type="hidden" name="dropoffHour" id="dropoff-hour" value="<%= automaticDropoff.hour %>">
+            <input type="hidden" name="dropoffMinute" id="dropoff-minute" value="<%= automaticDropoff.minute %>">
+            <!--
+              <option value="">Selecciona un turno</option>
+              <% slots.forEach(slot => { %>
+                <option value="<%= slot.hour %>" <%= slot.disabled ? 'disabled' : '' %>>
+                  <%= slot.label %> · <%= slot.disabled ? 'No disponible' : `${slot.available} cupo${slot.available === 1 ? '' : 's'}` %>
+                </option>
+              <% }) %>
+            </select> -->
+          </label>
+          <label>Hora estimada de recojo
+            <input type="time" name="pickupTime" id="pickup-time">
+            <div class="time-buttons">
+              <button type="button" data-pickup-offset="30">+ 30 min</button>
+              <button type="button" data-pickup-offset="60">+ 1 hora</button>
+              <button type="button" data-pickup-offset="90">+ 1 h 30</button>
+              <button type="button" data-pickup-offset="120">+ 2 horas</button>
+            </div>
+          </label>
+        </div>
+      </fieldset>
 
-      <!-- RESUMEN GENERAL CONSOLIDADO -->
+      <fieldset>
+        <legend><span>4</span> Elige el lavado</legend>
+        <div class="service-list">
+          <% services.filter(service => service.category === 'base').forEach((service, index) => { %>
+            <label class="service-option">
+              <input type="radio" name="baseServiceId" value="<%= service.id %>" data-slug="<%= service.slug %>" <%= index === 1 ? 'checked' : '' %> required>
+              <span><strong><%= service.name %></strong><small>Servicio principal</small></span>
+              <b class="service-price" data-service-price="<%= service.id %>">—</b>
+            </label>
+          <% }) %>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span>5</span> Agrega un cuidado extra</legend>
+        <div class="addon-grid">
+          <% services.filter(service => service.category === 'addon').forEach(service => { %>
+            <label class="addon-option" data-addon-slug="<%= service.slug %>" data-incompatible-interior="<%= service.incompatible_with_interior %>">
+              <input type="checkbox" name="addonServiceIds" value="<%= service.id %>">
+              <span class="check-mark">✓</span>
+              <span><strong><%= service.name %></strong><small class="service-price" data-service-price="<%= service.id %>">—</small></span>
+            </label>
+          <% }) %>
+        </div>
+      </fieldset>
+
       <div class="booking-total">
-        <div>
-          <small>Vehículos apuntados</small>
-          <strong id="booking-cars-total-count">2 carros en paralelo</strong>
-        </div>
-        <div>
-          <small>Total consolidado</small>
-          <strong id="booking-total">S/ 0.00</strong>
-        </div>
-        <button class="primary-button" type="submit" id="btn-submit-booking" <%= !openToday ? 'disabled' : '' %>>
-          Confirmar reserva de todos los carros <span>→</span>
-        </button>
+        <span><small>Total estimado</small><strong id="booking-total">S/ 0.00</strong></span>
+        <button class="primary-button" type="submit" <%= !openToday ? 'disabled' : '' %>>Confirmar reserva <span>→</span></button>
       </div>
-      <p class="price-note">Los pagos se realizan por Yape, Plin o efectivo en el local.</p>
+      <p class="price-note">Los pagos se realizan por Yape, Plin o efectivo. Si un precio figura en cero, será confirmado en el local.</p>
     </form>
   </section>
 </main>
-<script src="/public/booking.js?v=13" defer></script>
+<script src="/public/booking.js?v=10" defer></script>
 <%- include('partials/footer') %>

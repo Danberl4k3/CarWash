@@ -193,7 +193,7 @@ describe('Nuevas optimizaciones y funcionalidades (Puntos 2, 3, 4 y 5)', () => {
         pickupHour: 9,
         pickupMinute: 0,
         paymentMethod: 'yape',
-      });
+      }, { now: { date: '2026-09-16', hour: 8, minute: 0, dayOfWeek: 3 } });
 
       const res = await app.inject({
         method: 'GET',
@@ -226,7 +226,7 @@ describe('Nuevas optimizaciones y funcionalidades (Puntos 2, 3, 4 y 5)', () => {
         pickupHour: 11,
         pickupMinute: 0,
         paymentMethod: 'cash',
-      });
+      }, { now: { date: '2026-09-16', hour: 10, minute: 0, dayOfWeek: 3 } });
 
       const csvRes = await app.inject({
         method: 'GET',

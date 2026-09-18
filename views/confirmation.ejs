@@ -26,6 +26,26 @@
       <% if (booking.vehicle_model) { %> (<%= booking.vehicle_model %>)<% } %>
     </p>
 
+    <% if (typeof multiBookings !== 'undefined' && multiBookings && multiBookings.length > 1) { %>
+      <div class="multi-tickets-summary">
+        <span class="step-kicker">Reserva Multi-Carros (<%= multiBookings.length %> vehículos)</span>
+        <div class="multi-tickets-grid">
+          <% multiBookings.forEach((mb) => { %>
+            <a href="/reserva/<%= mb.code %>?multi=<%= multiBookings.map(b => b.code).join(',') %>" class="multi-ticket-item <%= mb.code === booking.code ? 'is-current' : '' %>">
+              <div>
+                <strong><%= mb.plate %> · <%= vehicleLabels[mb.vehicle_type] %></strong>
+                <small style="display:block; color:var(--muted); font-size:11px;"><%= mb.services %></small>
+              </div>
+              <div style="text-align: right;">
+                <span class="reservation-code-pill" style="font-size:11px;">#<%= mb.code %></span>
+                <span class="status-badge badge-<%= mb.status %>" style="font-size:11px; margin-left:6px;"><%= statusLabels[mb.status] ?? mb.status %></span>
+              </div>
+            </a>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
+
     <!-- Barra de etapas interactivas -->
     <div class="tracker-stepper">
       <div class="tracker-stepper-line">

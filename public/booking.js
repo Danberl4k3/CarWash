@@ -23,8 +23,8 @@
     .map((input) => catalog.find((service) => service.id === Number(input.value)))
     .filter(Boolean);
 
-  function servicePrice(service) {
-    return Number(service?.prices?.[selectedVehicle()] || 0);
+  function servicePrice(service, vehType = selectedVehicle()) {
+    return Number(service?.prices?.[vehType] || 0);
   }
 
   function refreshPrices() {
@@ -33,9 +33,15 @@
       const cents = servicePrice(service);
       element.textContent = cents ? money.format(cents / 100) : 'Por definir';
     });
-    const total = [selectedBase(), ...selectedAddons()].reduce((sum, service) => sum + servicePrice(service), 0);
-    const totalElement = document.querySelector('#booking-total');
-    if (totalElement) totalElement.textContent = money.format(total / 100);
+    
+    // Total del carro activo
+    const carTotal = [selectedBase(), ...selectedAddons()].reduce((sum, service) => sum + servicePrice(service), 0);
+    const carActiveTotalEl = document.querySelector('#car-active-total');
+    if (carActiveTotalEl) carActiveTotalEl.textContent = money.format(carTotal / 100);
+
+    // Actualizar datos del carro activo en memoria
+    saveActiveCarFromForm();
+    updateGlobalTotals();
   }
 
   function refreshAddonRules() {
@@ -121,6 +127,397 @@
     form.querySelector('#phone-field')?.classList.toggle('required-field', required);
   }
 
+  // =========================================================================
+  // GESTIÓN MULTI-CARROS (POR DEFECTO 2 TARJETITAS)
+  // =========================================================================
+  const defaultDropoffHour = Number(form.querySelector('#dropoff-hour')?.value || form.dataset.nowHour || 8);
+  const defaultDropoffMinute = Number(form.querySelector('#dropoff-minute')?.value || 0);
+
+  let cars = [
+    {
+      id: 1,
+      plate: '',
+      model: '',
+      name: '',
+      phone: '',
+      paymentMethod: 'yape',
+      notes: '',
+      vehicleType: 'car',
+      dropoffHour: defaultDropoffHour,
+      dropoffMinute: defaultDropoffMinute,
+      pickupTime: '',
+      baseServiceId: null,
+      addonServiceIds: [],
+    },
+    {
+      id: 2,
+      plate: '',
+      model: '',
+      name: '',
+      phone: '',
+      paymentMethod: 'yape',
+      notes: '',
+      vehicleType: 'small_suv',
+      dropoffHour: defaultDropoffHour,
+      dropoffMinute: defaultDropoffMinute,
+      pickupTime: '',
+      baseServiceId: null,
+      addonServiceIds: [],
+    },
+  ];
+
+  let activeCarIndex = 0;
+
+  function calculateCarCost(car) {
+    if (!car) return 0;
+    const base = catalog.find((s) => s.id === Number(car.baseServiceId));
+    let cents = servicePrice(base, car.vehicleType);
+    if (car.addonServiceIds && car.addonServiceIds.length) {
+      car.addonServiceIds.forEach((id) => {
+        const addon = catalog.find((s) => s.id === Number(id));
+        cents += servicePrice(addon, car.vehicleType);
+      });
+    }
+    return cents;
+  }
+
+  function updateGlobalTotals() {
+    let grandTotalCents = 0;
+    cars.forEach((car, idx) => {
+      if (idx === activeCarIndex) {
+        const carTotal = [selectedBase(), ...selectedAddons()].reduce((sum, service) => sum + servicePrice(service), 0);
+        grandTotalCents += carTotal;
+      } else {
+        grandTotalCents += calculateCarCost(car);
+      }
+    });
+
+    const totalElement = document.querySelector('#booking-total');
+    if (totalElement) totalElement.textContent = money.format(grandTotalCents / 100);
+
+    const countBadge = document.querySelector('#cars-count-badge');
+    if (countBadge) countBadge.textContent = `${cars.length} ${cars.length === 1 ? 'carro' : 'carros'}`;
+
+    const totalCountEl = document.querySelector('#booking-cars-total-count');
+    if (totalCountEl) totalCountEl.textContent = `${cars.length} ${cars.length === 1 ? 'carro' : 'carros'}`;
+
+    renderCarCardsBadges();
+  }
+
+  function renderCarCards() {
+    const container = document.querySelector('#car-cards-container');
+    if (!container) return;
+
+    let html = '';
+    cars.forEach((car, index) => {
+      const isActive = index === activeCarIndex;
+      const cost = (index === activeCarIndex)
+        ? [selectedBase(), ...selectedAddons()].reduce((sum, s) => sum + servicePrice(s), 0)
+        : calculateCarCost(car);
+      const displayPlate = car.plate.trim() || `Carro #${index + 1}`;
+      const vehLabel = {
+        car: 'Auto',
+        small_suv: 'SUV pequeña',
+        large_suv: 'SUV grande',
+        motorcycle: 'Moto',
+        pickup: 'Pickup',
+      }[car.vehicleType] || 'Auto';
+
+      html += `
+        <div class="car-tab-card ${isActive ? 'active' : ''}" data-car-index="${index}">
+          <div class="car-tab-top">
+            <span class="car-number-badge">Carro ${index + 1}</span>
+            ${cars.length > 1 ? `
+              <button type="button" class="btn-delete-car" title="Eliminar vehículo" data-remove-index="${index}">✕</button>
+            ` : ''}
+          </div>
+          <div class="car-tab-plate">${displayPlate}</div>
+          <div class="car-tab-details">
+            <span>${vehLabel}</span>
+            <span class="car-tab-price">${money.format(cost / 100)}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `
+      <button type="button" class="btn-add-car-card" id="btn-add-car">
+        <div class="plus-icon">+</div>
+        <span>Agregar Carro</span>
+      </button>
+    `;
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.car-tab-card').forEach((card) => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-delete-car')) return;
+        const idx = parseInt(card.getAttribute('data-car-index'), 10);
+        switchActiveCar(idx);
+      });
+    });
+
+    container.querySelectorAll('.btn-delete-car').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.getAttribute('data-remove-index'), 10);
+        removeCar(idx);
+      });
+    });
+
+    document.querySelector('#btn-add-car')?.addEventListener('click', addNewCar);
+  }
+
+  function renderCarCardsBadges() {
+    const cards = document.querySelectorAll('#car-cards-container .car-tab-card');
+    cards.forEach((card, idx) => {
+      const car = cars[idx];
+      if (!car) return;
+      const cost = (idx === activeCarIndex)
+        ? [selectedBase(), ...selectedAddons()].reduce((sum, s) => sum + servicePrice(s), 0)
+        : calculateCarCost(car);
+      const plateEl = card.querySelector('.car-tab-plate');
+      if (plateEl) plateEl.textContent = car.plate.trim() || `Carro #${idx + 1}`;
+      const priceEl = card.querySelector('.car-tab-price');
+      if (priceEl) priceEl.textContent = money.format(cost / 100);
+    });
+  }
+
+  function saveActiveCarFromForm() {
+    const car = cars[activeCarIndex];
+    if (!car) return;
+
+    const plateInput = form.querySelector('input[name="plate"]');
+    if (plateInput) car.plate = plateInput.value.trim().toUpperCase();
+
+    const modelInput = form.querySelector('input[name="model"]');
+    if (modelInput) car.model = modelInput.value.trim();
+
+    const nameInput = form.querySelector('input[name="name"]');
+    if (nameInput) car.name = nameInput.value.trim();
+
+    const phoneInput = form.querySelector('input[name="phone"]');
+    if (phoneInput) car.phone = phoneInput.value.trim();
+
+    const paymentSelect = form.querySelector('select[name="paymentMethod"]');
+    if (paymentSelect) car.paymentMethod = paymentSelect.value;
+
+    const notesText = form.querySelector('textarea[name="notes"]');
+    if (notesText) car.notes = notesText.value.trim();
+
+    car.vehicleType = selectedVehicle();
+    car.baseServiceId = selectedBaseId();
+    car.addonServiceIds = selectedAddons().map((s) => s.id);
+
+    const pickup = form.querySelector('#pickup-time');
+    if (pickup) car.pickupTime = pickup.value;
+  }
+
+  function loadActiveCarIntoForm() {
+    const car = cars[activeCarIndex];
+    if (!car) return;
+
+    const plateInput = form.querySelector('input[name="plate"]');
+    if (plateInput) plateInput.value = car.plate || '';
+
+    const modelInput = form.querySelector('input[name="model"]');
+    if (modelInput) modelInput.value = car.model || '';
+
+    const nameInput = form.querySelector('input[name="name"]');
+    if (nameInput) nameInput.value = car.name || '';
+
+    const phoneInput = form.querySelector('input[name="phone"]');
+    if (phoneInput) phoneInput.value = car.phone || '';
+
+    const paymentSelect = form.querySelector('select[name="paymentMethod"]');
+    if (paymentSelect && car.paymentMethod) paymentSelect.value = car.paymentMethod;
+
+    const notesText = form.querySelector('textarea[name="notes"]');
+    if (notesText) notesText.value = car.notes || '';
+
+    const typeRadio = form.querySelector(`input[name="vehicleType"][value="${car.vehicleType}"]`);
+    if (typeRadio) {
+      typeRadio.checked = true;
+    }
+
+    const pickup = form.querySelector('#pickup-time');
+    if (pickup && car.pickupTime) pickup.value = car.pickupTime;
+
+    refreshVehicleRules();
+
+    if (car.baseServiceId) {
+      const baseRadio = form.querySelector(`input[name="baseServiceId"][value="${car.baseServiceId}"]`);
+      if (baseRadio && !baseRadio.disabled) baseRadio.checked = true;
+    }
+
+    form.querySelectorAll('input[name="addonServiceIds"]').forEach((input) => {
+      input.checked = Boolean(car.addonServiceIds && car.addonServiceIds.includes(Number(input.value)));
+    });
+
+    refreshAddonRules();
+  }
+
+  function switchActiveCar(newIndex) {
+    if (newIndex === activeCarIndex) return;
+    saveActiveCarFromForm();
+    activeCarIndex = newIndex;
+    renderCarCards();
+    loadActiveCarIntoForm();
+  }
+
+  function addNewCar() {
+    saveActiveCarFromForm();
+    const newId = cars.length > 0 ? Math.max(...cars.map((c) => c.id)) + 1 : 1;
+    cars.push({
+      id: newId,
+      plate: '',
+      model: '',
+      name: '',
+      phone: '',
+      paymentMethod: 'yape',
+      notes: '',
+      vehicleType: 'car',
+      dropoffHour: defaultDropoffHour,
+      dropoffMinute: defaultDropoffMinute,
+      pickupTime: '',
+      baseServiceId: null,
+      addonServiceIds: [],
+    });
+    activeCarIndex = cars.length - 1;
+    renderCarCards();
+    loadActiveCarIntoForm();
+    slideToStep(1);
+  }
+
+  function removeCar(index) {
+    if (cars.length <= 1) return;
+    cars.splice(index, 1);
+    if (activeCarIndex >= cars.length) {
+      activeCarIndex = cars.length - 1;
+    }
+    renderCarCards();
+    loadActiveCarIntoForm();
+  }
+
+  // =========================================================================
+  // DESLIZADOR HORIZONTAL DE PASOS 1, 2, 3, 4, 5
+  // =========================================================================
+  let currentStep = 1;
+  const TOTAL_STEPS = 5;
+
+  function slideToStep(stepNumber) {
+    if (stepNumber < 1) stepNumber = 1;
+    if (stepNumber > TOTAL_STEPS) stepNumber = TOTAL_STEPS;
+    currentStep = stepNumber;
+
+    saveActiveCarFromForm();
+    updateGlobalTotals();
+
+    const track = document.querySelector('#slider-track');
+    if (track) {
+      const offsetPercent = (stepNumber - 1) * 20;
+      track.style.transform = `translateX(-${offsetPercent}%)`;
+    }
+
+    const progressFill = document.querySelector('#stepper-progress-fill');
+    if (progressFill) {
+      progressFill.style.width = `${(stepNumber / TOTAL_STEPS) * 100}%`;
+    }
+
+    document.querySelectorAll('#step-tabs-nav .step-btn').forEach((btn) => {
+      const step = parseInt(btn.getAttribute('data-step'), 10);
+      btn.classList.toggle('active', step === currentStep);
+      btn.classList.toggle('completed', step < currentStep);
+    });
+
+    const btnPrev = document.querySelector('#btn-slide-prev');
+    const btnNext = document.querySelector('#btn-slide-next');
+
+    if (btnPrev) btnPrev.disabled = currentStep === 1;
+    if (btnNext) {
+      if (currentStep === TOTAL_STEPS) {
+        if (activeCarIndex < cars.length - 1) {
+          btnNext.innerHTML = `➜ Siguiente Carro (${activeCarIndex + 2}/${cars.length})`;
+        } else {
+          btnNext.innerHTML = `✓ Listo para confirmar`;
+        }
+      } else {
+        btnNext.innerHTML = `Siguiente (${currentStep + 1}/5) →`;
+      }
+    }
+  }
+
+  // Eventos de botones de pasos
+  document.querySelectorAll('#step-tabs-nav .step-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const step = parseInt(btn.getAttribute('data-step'), 10);
+      slideToStep(step);
+    });
+  });
+
+  document.querySelector('#btn-slide-prev')?.addEventListener('click', () => {
+    if (currentStep > 1) slideToStep(currentStep - 1);
+  });
+
+  document.querySelector('#btn-slide-next')?.addEventListener('click', () => {
+    if (currentStep < TOTAL_STEPS) {
+      slideToStep(currentStep + 1);
+    } else {
+      if (activeCarIndex < cars.length - 1) {
+        switchActiveCar(activeCarIndex + 1);
+        slideToStep(1);
+      } else {
+        const submitBtn = document.querySelector('#btn-submit-booking');
+        if (submitBtn) {
+          submitBtn.scrollIntoView({ behavior: 'smooth' });
+          submitBtn.focus();
+        }
+      }
+    }
+  });
+
+  // Gestos táctiles y ratón en el viewport
+  const sliderViewport = document.querySelector('#slider-viewport');
+  if (sliderViewport) {
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    sliderViewport.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    sliderViewport.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      const diff = touchEndX - touchStartX;
+      if (Math.abs(diff) > 45) {
+        if (diff > 0 && currentStep > 1) slideToStep(currentStep - 1);
+        if (diff < 0 && currentStep < TOTAL_STEPS) slideToStep(currentStep + 1);
+      }
+    }, { passive: true });
+
+    let isMouseDown = false;
+    let mouseStartX = 0;
+    sliderViewport.addEventListener('mousedown', (e) => {
+      // Ignorar clicks en inputs
+      if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(e.target?.tagName)) return;
+      isMouseDown = true;
+      mouseStartX = e.clientX;
+    });
+
+    window.addEventListener('mouseup', (e) => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      const diff = e.clientX - mouseStartX;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0 && currentStep > 1) slideToStep(currentStep - 1);
+        if (diff < 0 && currentStep < TOTAL_STEPS) slideToStep(currentStep + 1);
+      }
+    });
+  }
+
+  // =========================================================================
+  // LISTENERS DE FORMULARIO EXISTENTES (OCR, SUNARP, CAMBIO)
+  // =========================================================================
   form.addEventListener('change', (event) => {
     const name = event.target?.name;
     if (name === 'vehicleType') refreshVehicleRules();
@@ -128,10 +525,10 @@
     if (name === 'addonServiceIds') refreshPrices();
     if (name === 'pickupTime') refreshPhoneRule();
     if (name === 'dropoffHour' || name === 'dropoffMinute') refreshPickupOptions();
+    saveActiveCarFromForm();
+    updateGlobalTotals();
   });
 
-  // Uppercase for license plate & auto-lookup
-  // Uppercase for license plate, OCR & auto-lookup
   const plateInput = form.querySelector('input[name="plate"]');
   const scanBtn = form.querySelector('#btn-scan-plate');
   const lookupBtn = form.querySelector('#btn-lookup-plate');
@@ -175,6 +572,8 @@
         }
       }
     }
+    saveActiveCarFromForm();
+    renderCarCards();
   }
 
   let lastLookupPlate = '';
@@ -325,7 +724,6 @@
         cameraInput?.click();
       });
     } else {
-      // Para elemento label con tabindex
       scanBtn.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -351,6 +749,8 @@
       if (start !== null && end !== null) {
         plateInput.setSelectionRange(start, end);
       }
+      cars[activeCarIndex].plate = plateInput.value;
+      renderCarCardsBadges();
       if (plateInput.value.trim().length >= 6) {
         clearTimeout(plateInput._timer);
         plateInput._timer = setTimeout(() => performPlateLookup(false), 900);
@@ -359,7 +759,6 @@
     plateInput.addEventListener('blur', () => performPlateLookup(false));
   }
 
-  // Auto-capitalization for customer name and model
   const capitalize = (str) => {
     return str
       .trim()
@@ -375,18 +774,28 @@
     input.addEventListener('blur', () => {
       if (input.value) {
         input.value = capitalize(input.value);
+        saveActiveCarFromForm();
       }
     });
   });
 
-  form.addEventListener('submit', (event) => {
+  // Envío del formulario: Serializar todos los vehículos configurados
+  form.addEventListener('submit', () => {
+    saveActiveCarFromForm();
     if (plateInput) plateInput.value = plateInput.value.toUpperCase().trim();
     const nameInput = form.querySelector('input[name="name"]');
     if (nameInput && nameInput.value.trim()) nameInput.value = capitalize(nameInput.value);
     const modelInput = form.querySelector('input[name="model"]');
     if (modelInput && modelInput.value.trim()) modelInput.value = capitalize(modelInput.value);
 
+    // Si hay vehículos con placa registrada, guardarlos en el payload
+    const vehiclesWithData = cars.filter((c) => c.plate && c.plate.trim());
+    const payloadInput = form.querySelector('#vehicles-payload');
+    if (payloadInput) {
+      payloadInput.value = JSON.stringify(vehiclesWithData.length > 0 ? vehiclesWithData : cars);
+    }
   });
+
   form.querySelectorAll('[data-pickup-offset]').forEach((button) => button.addEventListener('click', () => {
     const dropoffHour = Number(form.querySelector('#dropoff-hour')?.value || 0);
     const dropoffMinute = Number(form.querySelector('#dropoff-minute')?.value || 0);
@@ -403,11 +812,11 @@
     }
     pickup.dispatchEvent(new Event('input', { bubbles: true }));
     pickup.dispatchEvent(new Event('change', { bubbles: true }));
+    saveActiveCarFromForm();
   }));
 
-  refreshAddonRules();
-  refreshVehicleRules();
-  refreshPickupOptions();
-  form.querySelector('#pickup-time')?.dispatchEvent(new Event('change'));
-  refreshPhoneRule();
+  // Inicialización
+  renderCarCards();
+  loadActiveCarIntoForm();
+  slideToStep(1);
 })();

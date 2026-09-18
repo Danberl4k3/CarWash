@@ -188,7 +188,9 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
         }
 
         if (Array.isArray(vehiclesPayload) && vehiclesPayload.length > 0) {
-          const validVehicles = vehiclesPayload.filter((v: any) => v && (v.plate || v.baseServiceId));
+          const validVehicles = vehiclesPayload.filter(
+            (v: any) => v && typeof v.plate === 'string' && v.plate.trim().length > 0,
+          );
           if (validVehicles.length > 0) {
             const createdBookings: Array<{ id: number; code: string; totalCents: number }> = [];
             const transaction = db.transaction(() => {

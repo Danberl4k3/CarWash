@@ -1929,92 +1929,133 @@ textarea { resize: vertical; }
 }
 
 /* ==========================================================================
-   MULTI-CARROS & DESLIZADOR 1 A 5 (INTEGRACIÓN)
+   MULTI-CARROS EN PARALELO (TARJETAS VISIBLES SIMULTÁNEAMENTE)
    ========================================================================== */
 
-/* 1. SECCIÓN DE TARJETITAS DE CARROS */
-.cars-tabs-section {
-  margin-bottom: 22px;
+@media (min-width: 1200px) {
+  .booking-shell {
+    grid-template-columns: minmax(300px, 0.42fr) minmax(800px, 1.58fr);
+    max-width: 1680px;
+  }
 }
 
-.cars-tabs-header {
+.parallel-top-bar {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
-.cars-tabs-header label {
+.parallel-cars-badge {
   font-size: 13px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--aqua-dark);
-}
-
-.cars-tabs-header small {
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.car-cards-list {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 4px 2px 14px;
-  scrollbar-width: thin;
-}
-
-.car-cards-list::-webkit-scrollbar {
-  height: 5px;
-}
-
-.car-cards-list::-webkit-scrollbar-thumb {
-  background: var(--line);
-  border-radius: 4px;
-}
-
-.car-tab-card {
-  flex: 0 0 190px;
-  background: var(--paper);
-  border: 2px solid var(--line);
-  border-radius: 16px;
-  padding: 12px 14px;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.car-tab-card:hover {
-  border-color: #9edbd4;
-  transform: translateY(-2px);
-}
-
-.car-tab-card.active {
-  border-color: var(--aqua-dark);
-  background: var(--ice);
-  box-shadow: 0 6px 18px rgba(18, 173, 158, 0.15);
-}
-
-[data-theme="dark"] .car-tab-card {
-  background: #0d2838;
-  border-color: #1a4258;
-}
-
-[data-theme="dark"] .car-tab-card.active {
-  border-color: var(--aqua);
-  background: #11374d;
-  box-shadow: 0 6px 20px rgba(88, 228, 211, 0.2);
-}
-
-.car-tab-top {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+[data-theme="dark"] .parallel-cars-badge {
+  color: var(--aqua);
+}
+
+.btn-add-parallel-car {
+  background: rgba(18, 173, 158, 0.1);
+  border: 1.5px solid var(--aqua-dark);
+  color: var(--aqua-dark);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-add-parallel-car:hover {
+  background: var(--aqua-dark);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .btn-add-parallel-car {
+  background: rgba(88, 228, 211, 0.12);
+  border-color: var(--aqua);
+  color: var(--aqua);
+}
+
+[data-theme="dark"] .btn-add-parallel-car:hover {
+  background: var(--aqua);
+  color: #071a26;
+}
+
+/* Contenedor de tarjetas lado a lado */
+.parallel-cars-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 24px;
+  align-items: stretch;
+  margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+  .parallel-cars-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tarjeta independiente para cada carro */
+.parallel-car-card {
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 24px;
+  padding: 22px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  position: relative;
+  display: flex;
+  flex-direction: column;
   justify-content: space-between;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.parallel-car-card:hover {
+  border-color: #a3ded7;
+}
+
+[data-theme="dark"] .parallel-car-card {
+  background: #0b2535;
+  border-color: #174258;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="dark"] .parallel-car-card:hover {
+  border-color: #266585;
+}
+
+/* Cabecera de la tarjeta del carro */
+.pcar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+[data-theme="dark"] .pcar-header {
+  border-color: #174258;
+}
+
+.pcar-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .car-number-badge {
@@ -2022,7 +2063,7 @@ textarea { resize: vertical; }
   font-weight: 800;
   color: var(--aqua-dark);
   background: rgba(18, 173, 158, 0.12);
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 6px;
 }
 
@@ -2031,14 +2072,45 @@ textarea { resize: vertical; }
   background: rgba(88, 228, 211, 0.15);
 }
 
+.pcar-plate-display {
+  font-size: 16px;
+  font-weight: 800;
+  font-family: monospace;
+  color: var(--ink);
+}
+
+[data-theme="dark"] .pcar-plate-display {
+  color: #ffffff;
+}
+
+.pcar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pcar-cost-badge {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--aqua-dark);
+  background: var(--ice);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+[data-theme="dark"] .pcar-cost-badge {
+  color: var(--aqua);
+  background: #11384e;
+}
+
 .btn-delete-car {
   background: transparent;
   border: none;
   color: var(--muted);
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
   display: grid;
   place-items: center;
@@ -2051,83 +2123,47 @@ textarea { resize: vertical; }
   color: var(--danger);
 }
 
-.car-tab-plate {
-  font-size: 16px;
-  font-weight: 800;
+.btn-copy-from-first {
+  background: #f1f5f9;
+  border: 1px solid var(--line);
   color: var(--ink);
-  letter-spacing: 0.03em;
-  font-family: monospace;
-}
-
-[data-theme="dark"] .car-tab-plate {
-  color: #ffffff;
-}
-
-.car-tab-details {
   font-size: 11px;
-  color: var(--muted);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 2px;
-}
-
-.car-tab-price {
-  font-weight: 800;
-  color: var(--aqua-dark);
-}
-
-[data-theme="dark"] .car-tab-price {
-  color: var(--aqua);
-}
-
-.btn-add-car-card {
-  flex: 0 0 140px;
-  background: rgba(18, 173, 158, 0.03);
-  border: 2px dashed rgba(18, 173, 158, 0.35);
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin-bottom: 14px;
+  width: 100%;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: var(--aqua-dark);
-  font-size: 12px;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 12px;
+  transition: all 0.15s ease;
 }
 
-.btn-add-car-card:hover {
-  background: rgba(18, 173, 158, 0.08);
+.btn-copy-from-first:hover {
+  background: var(--ice);
   border-color: var(--aqua-dark);
-  transform: translateY(-2px);
+  color: var(--aqua-dark);
 }
 
-[data-theme="dark"] .btn-add-car-card {
-  background: rgba(88, 228, 211, 0.04);
-  border-color: rgba(88, 228, 211, 0.3);
+[data-theme="dark"] .btn-copy-from-first {
+  background: #103247;
+  border-color: #1a4d6b;
+  color: #d1e4e8;
+}
+
+[data-theme="dark"] .btn-copy-from-first:hover {
+  background: #15425c;
   color: var(--aqua);
 }
 
-.btn-add-car-card .plus-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(18, 173, 158, 0.12);
-  display: grid;
-  place-items: center;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-/* 2. STEPPER HEADER BAR (1 AL 5) */
+/* Stepper horizontal dentro de cada tarjeta */
 .stepper-header {
   background: var(--canvas);
-  border-radius: 16px;
-  padding: 12px 14px 8px;
-  margin-bottom: 24px;
+  border-radius: 14px;
+  padding: 10px 12px 6px;
+  margin-bottom: 18px;
 }
 
 [data-theme="dark"] .stepper-header {
@@ -2138,7 +2174,7 @@ textarea { resize: vertical; }
   height: 4px;
   background: var(--line);
   border-radius: 999px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   overflow: hidden;
 }
 
@@ -2156,7 +2192,7 @@ textarea { resize: vertical; }
 .step-tabs-nav {
   display: flex;
   justify-content: space-between;
-  gap: 4px;
+  gap: 2px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -2170,10 +2206,10 @@ textarea { resize: vertical; }
   border: none;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 5px;
+  padding: 5px 8px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--muted);
   cursor: pointer;
@@ -2189,7 +2225,7 @@ textarea { resize: vertical; }
 .step-btn.active {
   color: var(--ink);
   background: var(--paper);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="dark"] .step-btn.active {
@@ -2198,14 +2234,14 @@ textarea { resize: vertical; }
 }
 
 .step-badge {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--line);
   color: var(--muted);
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   transition: all 0.2s ease;
 }
@@ -2225,7 +2261,7 @@ textarea { resize: vertical; }
   color: #ffffff;
 }
 
-/* 3. SLIDER VIEWPORT Y TRACK HORIZONTAL */
+/* Slider Track dentro de cada tarjeta */
 .slider-viewport {
   width: 100%;
   overflow: hidden;
@@ -2235,9 +2271,9 @@ textarea { resize: vertical; }
 
 .slider-track {
   display: flex;
-  width: 500%; /* 5 pasos */
+  width: 500%;
   transform: translateX(0%);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
 }
 
@@ -2245,22 +2281,25 @@ textarea { resize: vertical; }
   width: 20%;
   flex-shrink: 0;
   box-sizing: border-box;
-  padding: 0 4px;
+  padding: 0 2px;
 }
 
 .slider-slide fieldset {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
-/* 4. FOOTER DE NAVEGACION DEL SLIDER */
+/* Pie de navegación por tarjeta */
 .slider-nav-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 10px 0 24px;
-  padding: 12px 0;
+  margin-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+}
+
+[data-theme="dark"] .slider-nav-footer {
+  border-color: #174258;
 }
 
 .slider-swipe-tip {
@@ -2270,9 +2309,9 @@ textarea { resize: vertical; }
 }
 
 .slider-nav-btn {
-  padding: 9px 18px;
-  border-radius: 12px;
-  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 12px;
   font-weight: 800;
   border: none;
   cursor: pointer;
@@ -2296,19 +2335,18 @@ textarea { resize: vertical; }
 
 .slider-nav-btn.next-btn:hover {
   filter: brightness(1.08);
-  transform: translateY(-1px);
 }
 
 .car-active-summary {
-  margin-top: 16px;
-  padding: 14px 18px;
+  margin-top: 12px;
+  padding: 10px 14px;
   background: var(--ice);
   border: 1px solid rgba(18, 173, 158, 0.25);
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 [data-theme="dark"] .car-active-summary {
@@ -2317,7 +2355,7 @@ textarea { resize: vertical; }
 }
 
 .car-active-summary strong {
-  font-size: 17px;
+  font-size: 15px;
   color: var(--aqua-dark);
 }
 

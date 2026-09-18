@@ -10,586 +10,354 @@
   }
 
   const money = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
-  const selectedValue = (name) => {
-    const checked = form.querySelector(`[name="${name}"]:checked`);
-    if (checked) return checked.value;
-    return form.querySelector(`[name="${name}"]`)?.value || '';
-  };
 
-  const selectedVehicle = () => selectedValue('vehicleType');
-  const selectedBaseId = () => Number(selectedValue('baseServiceId'));
-  const selectedBase = () => catalog.find((service) => service.id === selectedBaseId());
-  const selectedAddons = () => [...form.querySelectorAll('[name="addonServiceIds"]:checked')]
-    .map((input) => catalog.find((service) => service.id === Number(input.value)))
-    .filter(Boolean);
+  // Almacena el paso actual de cada tarjeta de carro
+  const cardSteps = {};
 
-  function servicePrice(service, vehType = selectedVehicle()) {
+  function getCardElement(cardIdx) {
+    return document.querySelector(`.parallel-car-card[data-car-card-index="${cardIdx}"]`);
+  }
+
+  function getCardVehicleType(cardIdx) {
+    const card = getCardElement(cardIdx);
+    if (!card) return 'car';
+    const checked = card.querySelector('[data-pcar-field="vehicleType"]:checked');
+    return checked ? checked.value : 'car';
+  }
+
+  function getCardBaseService(cardIdx) {
+    const card = getCardElement(cardIdx);
+    if (!card) return null;
+    const checked = card.querySelector('[data-pcar-field="baseServiceId"]:checked');
+    if (!checked) return null;
+    return catalog.find((s) => s.id === Number(checked.value)) || null;
+  }
+
+  function getCardAddonServices(cardIdx) {
+    const card = getCardElement(cardIdx);
+    if (!card) return [];
+    return [...card.querySelectorAll('[data-pcar-field="addonServiceIds"]:checked')]
+      .map((input) => catalog.find((s) => s.id === Number(input.value)))
+      .filter(Boolean);
+  }
+
+  function servicePrice(service, vehType) {
     return Number(service?.prices?.[vehType] || 0);
   }
 
-  function refreshPrices() {
-    document.querySelectorAll('[data-service-price]').forEach((element) => {
-      const service = catalog.find((item) => item.id === Number(element.dataset.servicePrice));
-      const cents = servicePrice(service);
-      element.textContent = cents ? money.format(cents / 100) : 'Por definir';
-    });
-    
-    // Total del carro activo
-    const carTotal = [selectedBase(), ...selectedAddons()].reduce((sum, service) => sum + servicePrice(service), 0);
-    const carActiveTotalEl = document.querySelector('#car-active-total');
-    if (carActiveTotalEl) carActiveTotalEl.textContent = money.format(carTotal / 100);
+  // --- CÁLCULO DE COSTO Y TOTALES ---
+  function calculateCardCost(cardIdx) {
+    const vehType = getCardVehicleType(cardIdx);
+    const base = getCardBaseService(cardIdx);
+    const addons = getCardAddonServices(cardIdx);
 
-    // Actualizar datos del carro activo en memoria
-    saveActiveCarFromForm();
-    updateGlobalTotals();
+    let cost = base ? servicePrice(base, vehType) : 0;
+    addons.forEach((addon) => {
+      cost += servicePrice(addon, vehType);
+    });
+    return cost;
   }
 
-  function refreshAddonRules() {
-    const base = selectedBase();
-    form.querySelectorAll('[data-incompatible-interior="1"]').forEach((label) => {
+  function refreshCardPrices(cardIdx) {
+    const card = getCardElement(cardIdx);
+    if (!card) return;
+
+    const vehType = getCardVehicleType(cardIdx);
+
+    // Actualizar precios de servicios base en la tarjeta
+    card.querySelectorAll('[data-service-price], [data-service-price-card]').forEach((el) => {
+      const serviceId = Number(el.dataset.servicePrice || el.dataset.serviceId);
+      const service = catalog.find((s) => s.id === serviceId);
+      const cents = servicePrice(service, vehType);
+      el.textContent = cents ? money.format(cents / 100) : 'Por definir';
+    });
+
+    const cost = calculateCardCost(cardIdx);
+    const costBadge = card.querySelector(`#pcar-cost-${cardIdx}`) || card.querySelector('.pcar-cost-badge');
+    if (costBadge) costBadge.textContent = money.format(cost / 100);
+
+    const summaryCost = card.querySelector(`#pcar-summary-cost-${cardIdx}`) || card.querySelector('.car-active-summary strong');
+    if (summaryCost) summaryCost.textContent = money.format(cost / 100);
+
+    refreshCardAddonRules(cardIdx);
+    updateGrandTotal();
+  }
+
+  function refreshCardAddonRules(cardIdx) {
+    const card = getCardElement(cardIdx);
+    if (!card) return;
+
+    const base = getCardBaseService(cardIdx);
+    card.querySelectorAll('[data-incompatible-interior="1"], [data-addon-slug="wax"]').forEach((label) => {
       const input = label.querySelector('input');
+      if (!input) return;
       const disabled = base?.slug === 'interior';
       input.disabled = disabled;
       if (disabled) input.checked = false;
       label.classList.toggle('is-disabled', disabled);
       label.title = disabled ? 'No disponible con lavado interior' : '';
     });
-    refreshPrices();
   }
 
-  function refreshVehicleRules() {
-    const motorcycle = selectedVehicle() === 'motorcycle';
-    const baseInputs = [...form.querySelectorAll('[name="baseServiceId"]')];
-    const baseChoices = baseInputs.flatMap((input) =>
-      input.tagName === 'SELECT' ? [...input.querySelectorAll('option')] : [input],
-    );
-    baseChoices.forEach((input) => {
+  function refreshCardVehicleRules(cardIdx) {
+    const card = getCardElement(cardIdx);
+    if (!card) return;
+
+    const motorcycle = getCardVehicleType(cardIdx) === 'motorcycle';
+    const baseInputs = [...card.querySelectorAll('[data-pcar-field="baseServiceId"]')];
+
+    baseInputs.forEach((input) => {
       const isMotorcycleService = input.dataset.slug === 'motorcycle-wash';
-      const option = input.tagName === 'OPTION' ? input : input.closest('label');
+      const option = input.closest('label');
       const hidden = motorcycle ? !isMotorcycleService : isMotorcycleService;
       if (option) {
         option.hidden = hidden;
         option.style.display = hidden ? 'none' : '';
       }
-      if (input.tagName !== 'OPTION') input.disabled = hidden;
+      input.disabled = hidden;
     });
 
-    // Moto solo tiene lavado simple (ocultar adicionales para motos)
-    const addonFieldset = form.querySelector('.addon-grid')?.closest('fieldset');
-    if (addonFieldset) {
-      addonFieldset.hidden = motorcycle;
-      addonFieldset.style.display = motorcycle ? 'none' : '';
-      if (motorcycle) {
-        form.querySelectorAll('[name="addonServiceIds"]').forEach((input) => {
-          input.checked = false;
-        });
-      }
+    // Ocultar adicionales para moto
+    const addonGrid = card.querySelector('.addon-grid');
+    if (addonGrid) {
+      addonGrid.closest('fieldset')?.classList.toggle('moto-disabled', motorcycle);
     }
 
-    const selected = baseChoices.find((input) =>
-      !input.disabled
-      && (input.tagName === 'OPTION' ? input.selected : input.checked)
-      && !(input.tagName === 'OPTION' ? input.hidden : input.closest('label')?.hidden),
-    );
+    const selected = baseInputs.find((input) => !input.disabled && input.checked && !input.closest('label')?.hidden);
     if (!selected) {
-      const next = baseChoices.find((input) => !input.disabled && !input.hidden);
-      if (next) {
-        if (next.tagName === 'OPTION') next.selected = true;
-        else next.checked = true;
-      }
-    }
-    refreshAddonRules();
-  }
-
-  function refreshPickupOptions() {
-    const pickup = form.querySelector('#pickup-time');
-    if (!pickup || pickup.tagName !== 'SELECT') return;
-    const previous = pickup.value;
-    pickup.replaceChildren(new Option('Selecciona una hora', ''));
-    for (let total = 0; total < 24 * 60; total += 10) {
-      const hour = Math.floor(total / 60); const minute = total % 60;
-      const option = document.createElement('option'); option.value = `${hour}:${String(minute).padStart(2, '0')}`;
-      option.textContent = `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour >= 12 ? 'p. m.' : 'a. m.'}`;
-      pickup.appendChild(option);
-    }
-    if ([...pickup.options].some((o) => o.value === previous)) pickup.value = previous;
-    refreshPhoneRule();
-  }
-
-  function refreshPhoneRule() {
-    const required = false;
-    const phone = form.querySelector('#phone');
-    const optional = form.querySelector('#phone-optional');
-    const rule = form.querySelector('#phone-rule');
-    if (phone) phone.required = required;
-    if (optional) optional.textContent = required ? 'Obligatorio' : 'Opcional';
-    if (rule) rule.hidden = !required;
-    form.querySelector('#phone-field')?.classList.toggle('required-field', required);
-  }
-
-  // =========================================================================
-  // GESTIÓN MULTI-CARROS (POR DEFECTO 2 TARJETITAS)
-  // =========================================================================
-  const defaultDropoffHour = Number(form.querySelector('#dropoff-hour')?.value || form.dataset.nowHour || 8);
-  const defaultDropoffMinute = Number(form.querySelector('#dropoff-minute')?.value || 0);
-
-  let cars = [
-    {
-      id: 1,
-      plate: '',
-      model: '',
-      name: '',
-      phone: '',
-      paymentMethod: 'yape',
-      notes: '',
-      vehicleType: 'car',
-      dropoffHour: defaultDropoffHour,
-      dropoffMinute: defaultDropoffMinute,
-      pickupTime: '',
-      baseServiceId: null,
-      addonServiceIds: [],
-    },
-    {
-      id: 2,
-      plate: '',
-      model: '',
-      name: '',
-      phone: '',
-      paymentMethod: 'yape',
-      notes: '',
-      vehicleType: 'small_suv',
-      dropoffHour: defaultDropoffHour,
-      dropoffMinute: defaultDropoffMinute,
-      pickupTime: '',
-      baseServiceId: null,
-      addonServiceIds: [],
-    },
-  ];
-
-  let activeCarIndex = 0;
-
-  function calculateCarCost(car) {
-    if (!car) return 0;
-    const base = catalog.find((s) => s.id === Number(car.baseServiceId));
-    let cents = servicePrice(base, car.vehicleType);
-    if (car.addonServiceIds && car.addonServiceIds.length) {
-      car.addonServiceIds.forEach((id) => {
-        const addon = catalog.find((s) => s.id === Number(id));
-        cents += servicePrice(addon, car.vehicleType);
-      });
-    }
-    return cents;
-  }
-
-  function updateGlobalTotals() {
-    let grandTotalCents = 0;
-    cars.forEach((car, idx) => {
-      if (idx === activeCarIndex) {
-        const carTotal = [selectedBase(), ...selectedAddons()].reduce((sum, service) => sum + servicePrice(service), 0);
-        grandTotalCents += carTotal;
-      } else {
-        grandTotalCents += calculateCarCost(car);
-      }
-    });
-
-    const totalElement = document.querySelector('#booking-total');
-    if (totalElement) totalElement.textContent = money.format(grandTotalCents / 100);
-
-    const countBadge = document.querySelector('#cars-count-badge');
-    if (countBadge) countBadge.textContent = `${cars.length} ${cars.length === 1 ? 'carro' : 'carros'}`;
-
-    const totalCountEl = document.querySelector('#booking-cars-total-count');
-    if (totalCountEl) totalCountEl.textContent = `${cars.length} ${cars.length === 1 ? 'carro' : 'carros'}`;
-
-    renderCarCardsBadges();
-  }
-
-  function renderCarCards() {
-    const container = document.querySelector('#car-cards-container');
-    if (!container) return;
-
-    let html = '';
-    cars.forEach((car, index) => {
-      const isActive = index === activeCarIndex;
-      const cost = (index === activeCarIndex)
-        ? [selectedBase(), ...selectedAddons()].reduce((sum, s) => sum + servicePrice(s), 0)
-        : calculateCarCost(car);
-      const displayPlate = car.plate.trim() || `Carro #${index + 1}`;
-      const vehLabel = {
-        car: 'Auto',
-        small_suv: 'SUV pequeña',
-        large_suv: 'SUV grande',
-        motorcycle: 'Moto',
-        pickup: 'Pickup',
-      }[car.vehicleType] || 'Auto';
-
-      html += `
-        <div class="car-tab-card ${isActive ? 'active' : ''}" data-car-index="${index}">
-          <div class="car-tab-top">
-            <span class="car-number-badge">Carro ${index + 1}</span>
-            ${cars.length > 1 ? `
-              <button type="button" class="btn-delete-car" title="Eliminar vehículo" data-remove-index="${index}">✕</button>
-            ` : ''}
-          </div>
-          <div class="car-tab-plate">${displayPlate}</div>
-          <div class="car-tab-details">
-            <span>${vehLabel}</span>
-            <span class="car-tab-price">${money.format(cost / 100)}</span>
-          </div>
-        </div>
-      `;
-    });
-
-    html += `
-      <button type="button" class="btn-add-car-card" id="btn-add-car">
-        <div class="plus-icon">+</div>
-        <span>Agregar Carro</span>
-      </button>
-    `;
-
-    container.innerHTML = html;
-
-    container.querySelectorAll('.car-tab-card').forEach((card) => {
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-delete-car')) return;
-        const idx = parseInt(card.getAttribute('data-car-index'), 10);
-        switchActiveCar(idx);
-      });
-    });
-
-    container.querySelectorAll('.btn-delete-car').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const idx = parseInt(btn.getAttribute('data-remove-index'), 10);
-        removeCar(idx);
-      });
-    });
-
-    document.querySelector('#btn-add-car')?.addEventListener('click', addNewCar);
-  }
-
-  function renderCarCardsBadges() {
-    const cards = document.querySelectorAll('#car-cards-container .car-tab-card');
-    cards.forEach((card, idx) => {
-      const car = cars[idx];
-      if (!car) return;
-      const cost = (idx === activeCarIndex)
-        ? [selectedBase(), ...selectedAddons()].reduce((sum, s) => sum + servicePrice(s), 0)
-        : calculateCarCost(car);
-      const plateEl = card.querySelector('.car-tab-plate');
-      if (plateEl) plateEl.textContent = car.plate.trim() || `Carro #${idx + 1}`;
-      const priceEl = card.querySelector('.car-tab-price');
-      if (priceEl) priceEl.textContent = money.format(cost / 100);
-    });
-  }
-
-  function saveActiveCarFromForm() {
-    const car = cars[activeCarIndex];
-    if (!car) return;
-
-    const plateInput = form.querySelector('input[name="plate"]');
-    if (plateInput) car.plate = plateInput.value.trim().toUpperCase();
-
-    const modelInput = form.querySelector('input[name="model"]');
-    if (modelInput) car.model = modelInput.value.trim();
-
-    const nameInput = form.querySelector('input[name="name"]');
-    if (nameInput) car.name = nameInput.value.trim();
-
-    const phoneInput = form.querySelector('input[name="phone"]');
-    if (phoneInput) car.phone = phoneInput.value.trim();
-
-    const paymentSelect = form.querySelector('select[name="paymentMethod"]');
-    if (paymentSelect) car.paymentMethod = paymentSelect.value;
-
-    const notesText = form.querySelector('textarea[name="notes"]');
-    if (notesText) car.notes = notesText.value.trim();
-
-    car.vehicleType = selectedVehicle();
-    car.baseServiceId = selectedBaseId();
-    car.addonServiceIds = selectedAddons().map((s) => s.id);
-
-    const pickup = form.querySelector('#pickup-time');
-    if (pickup) car.pickupTime = pickup.value;
-  }
-
-  function loadActiveCarIntoForm() {
-    const car = cars[activeCarIndex];
-    if (!car) return;
-
-    const plateInput = form.querySelector('input[name="plate"]');
-    if (plateInput) plateInput.value = car.plate || '';
-
-    const modelInput = form.querySelector('input[name="model"]');
-    if (modelInput) modelInput.value = car.model || '';
-
-    const nameInput = form.querySelector('input[name="name"]');
-    if (nameInput) nameInput.value = car.name || '';
-
-    const phoneInput = form.querySelector('input[name="phone"]');
-    if (phoneInput) phoneInput.value = car.phone || '';
-
-    const paymentSelect = form.querySelector('select[name="paymentMethod"]');
-    if (paymentSelect && car.paymentMethod) paymentSelect.value = car.paymentMethod;
-
-    const notesText = form.querySelector('textarea[name="notes"]');
-    if (notesText) notesText.value = car.notes || '';
-
-    const typeRadio = form.querySelector(`input[name="vehicleType"][value="${car.vehicleType}"]`);
-    if (typeRadio) {
-      typeRadio.checked = true;
+      const next = baseInputs.find((input) => !input.disabled && !input.closest('label')?.hidden);
+      if (next) next.checked = true;
     }
 
-    const pickup = form.querySelector('#pickup-time');
-    if (pickup && car.pickupTime) pickup.value = car.pickupTime;
+    refreshCardPrices(cardIdx);
+  }
 
-    refreshVehicleRules();
-
-    if (car.baseServiceId) {
-      const baseRadio = form.querySelector(`input[name="baseServiceId"][value="${car.baseServiceId}"]`);
-      if (baseRadio && !baseRadio.disabled) baseRadio.checked = true;
-    }
-
-    form.querySelectorAll('input[name="addonServiceIds"]').forEach((input) => {
-      input.checked = Boolean(car.addonServiceIds && car.addonServiceIds.includes(Number(input.value)));
+  function updateGrandTotal() {
+    const cards = document.querySelectorAll('.parallel-car-card');
+    let grandTotal = 0;
+    cards.forEach((card) => {
+      const idx = card.getAttribute('data-car-card-index');
+      grandTotal += calculateCardCost(idx);
     });
 
-    refreshAddonRules();
-  }
+    const totalEl = document.querySelector('#booking-total');
+    if (totalEl) totalEl.textContent = money.format(grandTotal / 100);
 
-  function switchActiveCar(newIndex) {
-    if (newIndex === activeCarIndex) return;
-    saveActiveCarFromForm();
-    activeCarIndex = newIndex;
-    renderCarCards();
-    loadActiveCarIntoForm();
-  }
+    const countLabel = document.querySelector('#booking-cars-total-count');
+    if (countLabel) countLabel.textContent = `${cards.length} ${cards.length === 1 ? 'carro' : 'carros'} en paralelo`;
 
-  function addNewCar() {
-    saveActiveCarFromForm();
-    const newId = cars.length > 0 ? Math.max(...cars.map((c) => c.id)) + 1 : 1;
-    cars.push({
-      id: newId,
-      plate: '',
-      model: '',
-      name: '',
-      phone: '',
-      paymentMethod: 'yape',
-      notes: '',
-      vehicleType: 'car',
-      dropoffHour: defaultDropoffHour,
-      dropoffMinute: defaultDropoffMinute,
-      pickupTime: '',
-      baseServiceId: null,
-      addonServiceIds: [],
+    const topCountLabel = document.querySelector('#parallel-cars-count-label');
+    if (topCountLabel) topCountLabel.textContent = `🚗 ${cards.length} Vehículos en pantalla (vista simultánea)`;
+
+    // Mostrar/ocultar botones de eliminar si hay más de 1 carro
+    const deleteButtons = document.querySelectorAll('.btn-delete-car');
+    deleteButtons.forEach((btn) => {
+      btn.style.display = cards.length > 1 ? 'grid' : 'none';
     });
-    activeCarIndex = cars.length - 1;
-    renderCarCards();
-    loadActiveCarIntoForm();
-    slideToStep(1);
   }
 
-  function removeCar(index) {
-    if (cars.length <= 1) return;
-    cars.splice(index, 1);
-    if (activeCarIndex >= cars.length) {
-      activeCarIndex = cars.length - 1;
-    }
-    renderCarCards();
-    loadActiveCarIntoForm();
-  }
-
-  // =========================================================================
-  // DESLIZADOR HORIZONTAL DE PASOS 1, 2, 3, 4, 5
-  // =========================================================================
-  let currentStep = 1;
-  const TOTAL_STEPS = 5;
-
-  function slideToStep(stepNumber) {
+  // --- NAVEGACIÓN DESLIZABLE HORIZONTAL (1 AL 5) POR TARJETA ---
+  function slideCardToStep(cardIdx, stepNumber) {
     if (stepNumber < 1) stepNumber = 1;
-    if (stepNumber > TOTAL_STEPS) stepNumber = TOTAL_STEPS;
-    currentStep = stepNumber;
+    if (stepNumber > 5) stepNumber = 5;
+    cardSteps[cardIdx] = stepNumber;
 
-    saveActiveCarFromForm();
-    updateGlobalTotals();
-
-    const track = document.querySelector('#slider-track');
+    const track = document.querySelector(`#pcar-track-${cardIdx}`);
     if (track) {
-      const offsetPercent = (stepNumber - 1) * 20;
-      track.style.transform = `translateX(-${offsetPercent}%)`;
+      const offset = (stepNumber - 1) * 20;
+      track.style.transform = `translateX(-${offset}%)`;
     }
 
-    const progressFill = document.querySelector('#stepper-progress-fill');
-    if (progressFill) {
-      progressFill.style.width = `${(stepNumber / TOTAL_STEPS) * 100}%`;
+    const progress = document.querySelector(`#pcar-progress-${cardIdx}`);
+    if (progress) {
+      progress.style.width = `${(stepNumber / 5) * 100}%`;
     }
 
-    document.querySelectorAll('#step-tabs-nav .step-btn').forEach((btn) => {
-      const step = parseInt(btn.getAttribute('data-step'), 10);
-      btn.classList.toggle('active', step === currentStep);
-      btn.classList.toggle('completed', step < currentStep);
-    });
+    const card = getCardElement(cardIdx);
+    if (card) {
+      card.querySelectorAll('.step-tabs-nav .step-btn').forEach((btn) => {
+        const step = parseInt(btn.getAttribute('data-step'), 10);
+        btn.classList.toggle('active', step === stepNumber);
+        btn.classList.toggle('completed', step < stepNumber);
+      });
 
-    const btnPrev = document.querySelector('#btn-slide-prev');
-    const btnNext = document.querySelector('#btn-slide-next');
-
-    if (btnPrev) btnPrev.disabled = currentStep === 1;
-    if (btnNext) {
-      if (currentStep === TOTAL_STEPS) {
-        if (activeCarIndex < cars.length - 1) {
-          btnNext.innerHTML = `➜ Siguiente Carro (${activeCarIndex + 2}/${cars.length})`;
+      const btnPrev = card.querySelector(`[data-nav-prev="${cardIdx}"]`);
+      const btnNext = card.querySelector(`[data-nav-next="${cardIdx}"]`);
+      if (btnPrev) btnPrev.disabled = stepNumber === 1;
+      if (btnNext) {
+        if (stepNumber === 5) {
+          btnNext.innerHTML = `✓ Paso final listo`;
         } else {
-          btnNext.innerHTML = `✓ Listo para confirmar`;
-        }
-      } else {
-        btnNext.innerHTML = `Siguiente (${currentStep + 1}/5) →`;
-      }
-    }
-  }
-
-  // Eventos de botones de pasos
-  document.querySelectorAll('#step-tabs-nav .step-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const step = parseInt(btn.getAttribute('data-step'), 10);
-      slideToStep(step);
-    });
-  });
-
-  document.querySelector('#btn-slide-prev')?.addEventListener('click', () => {
-    if (currentStep > 1) slideToStep(currentStep - 1);
-  });
-
-  document.querySelector('#btn-slide-next')?.addEventListener('click', () => {
-    if (currentStep < TOTAL_STEPS) {
-      slideToStep(currentStep + 1);
-    } else {
-      if (activeCarIndex < cars.length - 1) {
-        switchActiveCar(activeCarIndex + 1);
-        slideToStep(1);
-      } else {
-        const submitBtn = document.querySelector('#btn-submit-booking');
-        if (submitBtn) {
-          submitBtn.scrollIntoView({ behavior: 'smooth' });
-          submitBtn.focus();
+          btnNext.innerHTML = `Siguiente (${stepNumber + 1}/5) →`;
         }
       }
     }
-  });
-
-  // Gestos táctiles y ratón en el viewport
-  const sliderViewport = document.querySelector('#slider-viewport');
-  if (sliderViewport) {
-    let touchStartX = 0;
-    let touchEndX = 0;
-
-    sliderViewport.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-
-    sliderViewport.addEventListener('touchend', (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      const diff = touchEndX - touchStartX;
-      if (Math.abs(diff) > 45) {
-        if (diff > 0 && currentStep > 1) slideToStep(currentStep - 1);
-        if (diff < 0 && currentStep < TOTAL_STEPS) slideToStep(currentStep + 1);
-      }
-    }, { passive: true });
-
-    let isMouseDown = false;
-    let mouseStartX = 0;
-    sliderViewport.addEventListener('mousedown', (e) => {
-      // Ignorar clicks en inputs
-      if (['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(e.target?.tagName)) return;
-      isMouseDown = true;
-      mouseStartX = e.clientX;
-    });
-
-    window.addEventListener('mouseup', (e) => {
-      if (!isMouseDown) return;
-      isMouseDown = false;
-      const diff = e.clientX - mouseStartX;
-      if (Math.abs(diff) > 50) {
-        if (diff > 0 && currentStep > 1) slideToStep(currentStep - 1);
-        if (diff < 0 && currentStep < TOTAL_STEPS) slideToStep(currentStep + 1);
-      }
-    });
   }
 
-  // =========================================================================
-  // LISTENERS DE FORMULARIO EXISTENTES (OCR, SUNARP, CAMBIO)
-  // =========================================================================
-  form.addEventListener('change', (event) => {
-    const name = event.target?.name;
-    if (name === 'vehicleType') refreshVehicleRules();
-    if (name === 'baseServiceId') refreshAddonRules();
-    if (name === 'addonServiceIds') refreshPrices();
-    if (name === 'pickupTime') refreshPhoneRule();
-    if (name === 'dropoffHour' || name === 'dropoffMinute') refreshPickupOptions();
-    saveActiveCarFromForm();
-    updateGlobalTotals();
-  });
+  function initCardInteractions(cardIdx) {
+    cardSteps[cardIdx] = 1;
+    const card = getCardElement(cardIdx);
+    if (!card) return;
 
-  const plateInput = form.querySelector('input[name="plate"]');
-  const scanBtn = form.querySelector('#btn-scan-plate');
-  const lookupBtn = form.querySelector('#btn-lookup-plate');
-  const cameraInput = form.querySelector('#plate-camera-input');
-  const feedbackEl = form.querySelector('#plate-feedback');
+    // 1. Clics en la barra de pasos superior
+    card.querySelectorAll('.step-tabs-nav .step-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const step = parseInt(btn.getAttribute('data-step'), 10);
+        slideCardToStep(cardIdx, step);
+      });
+    });
 
-  function showFeedback(html, type = 'info', autoHide = 0) {
-    if (!feedbackEl) return;
-    feedbackEl.className = `plate-feedback plate-feedback-${type}`;
-    feedbackEl.innerHTML = html;
-    feedbackEl.style.display = 'block';
-    if (autoHide > 0) {
-      clearTimeout(feedbackEl._hideTimer);
-      feedbackEl._hideTimer = setTimeout(() => {
-        feedbackEl.style.display = 'none';
-      }, autoHide);
-    }
-  }
+    // 2. Botones Anterior y Siguiente
+    const btnPrev = card.querySelector(`[data-nav-prev="${cardIdx}"]`);
+    const btnNext = card.querySelector(`[data-nav-next="${cardIdx}"]`);
 
-  function applyVehicleData(data) {
-    const nameInput = form.querySelector('input[name="name"]');
-    const modelInput = form.querySelector('input[name="model"]');
-    if (nameInput && !nameInput.value && data.name) {
-      nameInput.value = data.name;
-    }
-    const modelText = data.fullModel || data.model || data.modelo;
-    if (modelInput && modelText) {
-      modelInput.value = modelText;
-      modelInput.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    if (data.vehicleType) {
-      const typeRadio = form.querySelector(`input[name="vehicleType"][value="${data.vehicleType}"]`);
-      if (typeRadio) {
-        typeRadio.checked = true;
-        typeRadio.dispatchEvent(new Event('change', { bubbles: true }));
-      } else {
-        const typeSelect = form.querySelector('select[name="vehicleType"]');
-        if (typeSelect) {
-          typeSelect.value = data.vehicleType;
-          typeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    btnPrev?.addEventListener('click', () => {
+      const cur = cardSteps[cardIdx] || 1;
+      if (cur > 1) slideCardToStep(cardIdx, cur - 1);
+    });
+
+    btnNext?.addEventListener('click', () => {
+      const cur = cardSteps[cardIdx] || 1;
+      if (cur < 5) slideCardToStep(cardIdx, cur + 1);
+    });
+
+    // 3. Gestos táctiles y ratón en el viewport de la tarjeta
+    const viewport = card.querySelector(`.slider-viewport[data-viewport-car="${cardIdx}"]`);
+    if (viewport) {
+      let touchStartX = 0;
+      viewport.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', (e) => {
+        const touchEndX = e.changedTouches[0].screenX;
+        const diff = touchEndX - touchStartX;
+        const cur = cardSteps[cardIdx] || 1;
+        if (Math.abs(diff) > 40) {
+          if (diff > 0 && cur > 1) slideCardToStep(cardIdx, cur - 1);
+          if (diff < 0 && cur < 5) slideCardToStep(cardIdx, cur + 1);
         }
-      }
+      }, { passive: true });
     }
-    saveActiveCarFromForm();
-    renderCarCards();
+
+    // 4. Actualización en tiempo real de la placa en el header de la tarjeta
+    const plateInput = card.querySelector('[data-pcar-field="plate"]');
+    const plateDisplay = card.querySelector(`#pcar-plate-${cardIdx}`) || card.querySelector('.pcar-plate-display');
+    if (plateInput && plateDisplay) {
+      plateInput.addEventListener('input', (e) => {
+        plateInput.value = plateInput.value.toUpperCase();
+        plateDisplay.textContent = plateInput.value.trim() || 'Sin placa';
+      });
+    }
+
+    // 5. Cambio de tipo de vehículo
+    card.querySelectorAll('[data-pcar-field="vehicleType"]').forEach((radio) => {
+      radio.addEventListener('change', () => {
+        refreshCardVehicleRules(cardIdx);
+      });
+    });
+
+    // 6. Cambio de servicios y adicionales
+    card.querySelectorAll('[data-pcar-field="baseServiceId"], [data-pcar-field="addonServiceIds"]').forEach((input) => {
+      input.addEventListener('change', () => {
+        refreshCardPrices(cardIdx);
+      });
+    });
+
+    // 7. Botones de atajo de horario de recojo
+    card.querySelectorAll('[data-pickup-offset], [data-pickup-offset-card]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const offset = Number(button.dataset.pickupOffset || button.dataset.offset || 60);
+        const dropoffHour = Number(document.querySelector('#dropoff-hour')?.value || 8);
+        const dropoffMinute = Number(document.querySelector('#dropoff-minute')?.value || 0);
+        const base = dropoffHour * 60 + dropoffMinute;
+        const target = (base + offset) % 1440;
+        const pickupInput = card.querySelector('[data-pcar-field="pickupTime"]');
+        if (pickupInput) {
+          const h = Math.floor(target / 60);
+          const m = target % 60;
+          pickupInput.value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          pickupInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+    });
+
+    // 8. Botón Eliminar esta tarjeta
+    card.querySelector(`[data-remove-card="${cardIdx}"]`)?.addEventListener('click', () => {
+      removeCard(cardIdx);
+    });
+
+    // 9. Botón Copiar datos de Carro 1 (si es Carro 2 o 3)
+    card.querySelector(`.btn-copy-from-first[data-copy-to="${cardIdx}"]`)?.addEventListener('click', () => {
+      copyDataFromCar1(cardIdx);
+    });
+
+    // 10. Consulta SUNARP independiente para este carro
+    const lookupBtn = card.querySelector(`[data-lookup-btn-idx="${cardIdx}"]`) || (cardIdx === 0 ? document.querySelector('#btn-lookup-plate') : null);
+    if (lookupBtn) {
+      lookupBtn.addEventListener('click', () => {
+        performLookupForCard(cardIdx);
+      });
+    }
+
+    refreshCardVehicleRules(cardIdx);
+    slideCardToStep(cardIdx, 1);
   }
 
-  let lastLookupPlate = '';
-  async function performPlateLookup(force = false) {
-    if (!plateInput) return;
-    const plate = plateInput.value.trim().toUpperCase();
+  // --- COPIAR DATOS DE CLIENTE DESDE CARRO 1 ---
+  function copyDataFromCar1(targetIdx) {
+    const card0 = getCardElement(0);
+    const targetCard = getCardElement(targetIdx);
+    if (!card0 || !targetCard) return;
+
+    const name = card0.querySelector('[data-pcar-field="name"]')?.value || '';
+    const phone = card0.querySelector('[data-pcar-field="phone"]')?.value || '';
+    const payment = card0.querySelector('[data-pcar-field="paymentMethod"]')?.value || 'yape';
+
+    const targetName = targetCard.querySelector('[data-pcar-field="name"]');
+    const targetPhone = targetCard.querySelector('[data-pcar-field="phone"]');
+    const targetPayment = targetCard.querySelector('[data-pcar-field="paymentMethod"]');
+
+    if (targetName) targetName.value = name;
+    if (targetPhone) targetPhone.value = phone;
+    if (targetPayment) targetPayment.value = payment;
+
+    const copyBtn = targetCard.querySelector(`.btn-copy-from-first[data-copy-to="${targetIdx}"]`);
+    if (copyBtn) {
+      const originalText = copyBtn.innerHTML;
+      copyBtn.innerHTML = '✓ ¡Datos de Carro 1 copiados!';
+      copyBtn.style.background = '#ecfdf5';
+      copyBtn.style.color = '#10b981';
+      setTimeout(() => {
+        copyBtn.innerHTML = originalText;
+        copyBtn.style.background = '';
+        copyBtn.style.color = '';
+      }, 2500);
+    }
+  }
+
+  // --- CONSULTA SUNARP / LOCAL PARA TARJETA ESPECÍFICA ---
+  async function performLookupForCard(cardIdx) {
+    const card = getCardElement(cardIdx);
+    if (!card) return;
+    const plateInput = card.querySelector('[data-pcar-field="plate"]');
+    const plate = plateInput?.value.trim().toUpperCase() || '';
+    const feedback = card.querySelector(`#plate-feedback-${cardIdx}`) || card.querySelector('#plate-feedback');
+
     if (plate.length < 4) {
-      if (force) {
-        showFeedback('Ingresa una placa de al menos 4 caracteres (ej. ABC-123).', 'warning', 4000);
+      if (feedback) {
+        feedback.className = 'plate-feedback plate-feedback-warning';
+        feedback.innerHTML = 'Ingresa una placa válida de al menos 4 caracteres.';
+        feedback.style.display = 'block';
       }
       return;
     }
-    if (!force && plate === lastLookupPlate) return;
-    lastLookupPlate = plate;
 
-    showFeedback('<span class="plate-spinner"></span> Consultando placa en SUNARP / Sistema...', 'loading');
+    if (feedback) {
+      feedback.className = 'plate-feedback plate-feedback-loading';
+      feedback.innerHTML = '<span class="plate-spinner"></span> Consultando placa en SUNARP...';
+      feedback.style.display = 'block';
+    }
 
     try {
       const res = await fetch('/api/placa/consultar', {
@@ -597,226 +365,283 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ placa: plate }),
       });
-
-      if (!res.ok) {
-        let errMessage = 'No se pudo consultar la placa';
-        try {
-          const errData = await res.json();
-          if (errData && errData.error) errMessage = errData.error;
-        } catch {}
-        showFeedback(errMessage, 'warning', 4000);
-        return;
-      }
-
       const data = await res.json();
       if (data && data.found) {
-        applyVehicleData(data);
-        const sourceLabel = data.source === 'local' ? 'Cliente registrado' : 'SUNARP oficial';
-        const modelDesc = data.fullModel || data.modelo || data.model || '';
-        const typeDesc = data.vehicleTypeLabel ? ` · ${data.vehicleTypeLabel}` : '';
-        showFeedback(`✓ <strong>${sourceLabel}:</strong> ${modelDesc}${typeDesc}`, 'success', 6000);
-      } else {
-        showFeedback(`ℹ️ Placa <strong>${plate}</strong> no encontrada en SUNARP. Puedes continuar con el registro manual.`, 'info', 5000);
+        const modelInput = card.querySelector('[data-pcar-field="model"]');
+        const nameInput = card.querySelector('[data-pcar-field="name"]');
+        if (modelInput && (data.fullModel || data.modelo)) modelInput.value = data.fullModel || data.modelo;
+        if (nameInput && !nameInput.value && data.name) nameInput.value = data.name;
+
+        if (data.vehicleType) {
+          const radio = card.querySelector(`[data-pcar-field="vehicleType"][value="${data.vehicleType}"]`);
+          if (radio) {
+            radio.checked = true;
+            refreshCardVehicleRules(cardIdx);
+          }
+        }
+        if (feedback) {
+          const src = data.source === 'local' ? 'Cliente frecuente' : 'SUNARP oficial';
+          feedback.className = 'plate-feedback plate-feedback-success';
+          feedback.innerHTML = `✓ <strong>${src}:</strong> ${data.fullModel || data.modelo || ''}`;
+        }
+      } else if (feedback) {
+        feedback.className = 'plate-feedback plate-feedback-info';
+        feedback.innerHTML = `ℹ️ Placa <strong>${plate}</strong> no encontrada. Continúa el llenado manual.`;
       }
     } catch {
-      showFeedback('Error de conexión al consultar la placa', 'warning', 4000);
+      if (feedback) {
+        feedback.className = 'plate-feedback plate-feedback-warning';
+        feedback.innerHTML = 'Error al consultar placa.';
+      }
     }
   }
 
-  function compressImage(file, maxDimension = 1200, quality = 0.85) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = reject;
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onerror = reject;
-        img.onload = () => {
-          let width = img.width;
-          let height = img.height;
-          if (width > maxDimension || height > maxDimension) {
-            if (width > height) {
-              height = Math.round((height * maxDimension) / width);
-              width = maxDimension;
-            } else {
-              width = Math.round((width * maxDimension) / height);
-              height = maxDimension;
-            }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
+  // --- AGREGAR Y ELIMINAR TARJETAS EN PARALELO ---
+  function addNewParallelCard() {
+    const container = document.querySelector('#parallel-cars-container');
+    if (!container) return;
+
+    const currentCards = container.querySelectorAll('.parallel-car-card');
+    const newIdx = currentCards.length;
+    const carNumber = newIdx + 1;
+
+    // Crear la nueva tarjeta clonando la estructura de Carro 2
+    const cardHtml = `
+      <div class="parallel-car-card" data-car-card-index="${newIdx}" id="pcar-card-${newIdx}">
+        <div class="pcar-header">
+          <div class="pcar-title-wrap">
+            <span class="car-number-badge">Carro ${carNumber}</span>
+            <strong class="pcar-plate-display" id="pcar-plate-${newIdx}">Sin placa</strong>
+          </div>
+          <div class="pcar-actions">
+            <span class="pcar-cost-badge" id="pcar-cost-${newIdx}">S/ 0.00</span>
+            <button type="button" class="btn-delete-car" title="Eliminar vehículo" data-remove-card="${newIdx}">✕</button>
+          </div>
+        </div>
+
+        <button type="button" class="btn-copy-from-first" data-copy-to="${newIdx}">
+          📋 Copiar datos de cliente de Carro 1
+        </button>
+
+        <div class="stepper-header">
+          <div class="stepper-progress-track">
+            <div class="stepper-progress-fill" id="pcar-progress-${newIdx}" style="width: 20%;"></div>
+          </div>
+          <div class="step-tabs-nav" data-car-stepper="${newIdx}">
+            <button type="button" class="step-btn active" data-step="1"><span class="step-badge">1</span><span>Datos</span></button>
+            <button type="button" class="step-btn" data-step="2"><span class="step-badge">2</span><span>Tipo</span></button>
+            <button type="button" class="step-btn" data-step="3"><span class="step-badge">3</span><span>Hora</span></button>
+            <button type="button" class="step-btn" data-step="4"><span class="step-badge">4</span><span>Lavado</span></button>
+            <button type="button" class="step-btn" data-step="5"><span class="step-badge">5</span><span>Extras</span></button>
+          </div>
+        </div>
+
+        <div class="slider-viewport" data-viewport-car="${newIdx}">
+          <div class="slider-track" id="pcar-track-${newIdx}">
+
+            <!-- Paso 1 -->
+            <div class="slider-slide" data-slide-step="1">
+              <fieldset>
+                <legend><span>1</span> Tus datos</legend>
+                <div class="field-wrapper plate-wrapper">
+                  <label for="plate-input-${newIdx}">Placa <b>*</b></label>
+                  <div class="plate-input-group">
+                    <input id="plate-input-${newIdx}" maxlength="12" placeholder="ABC-999" autocomplete="off" data-pcar-field="plate" data-car-idx="${newIdx}">
+                    <button type="button" class="plate-action-btn plate-lookup-btn" data-lookup-btn-idx="${newIdx}" title="Consultar placa en SUNARP">
+                      🔍 <span class="btn-text">Consultar</span>
+                    </button>
+                  </div>
+                  <div id="plate-feedback-${newIdx}" class="plate-feedback" style="display: none;"></div>
+                </div>
+                <label>Marca / Modelo <input list="car-brands" maxlength="100" placeholder="Ej. Kia Sportage" autocomplete="off" data-pcar-field="model" data-car-idx="${newIdx}"></label>
+                <label>Nombre <input maxlength="200" placeholder="Nombre del cliente" data-pcar-field="name" data-car-idx="${newIdx}"></label>
+                <label>Teléfono <input type="tel" maxlength="20" placeholder="999 999 999" data-pcar-field="phone" data-car-idx="${newIdx}"></label>
+                <label>Método de pago
+                  <select data-pcar-field="paymentMethod" data-car-idx="${newIdx}">
+                    <option value="yape">Yape</option>
+                    <option value="plin">Plin</option>
+                    <option value="cash">Efectivo</option>
+                  </select>
+                </label>
+                <label>Indicaciones <textarea rows="2" maxlength="1000" placeholder="Observaciones de este vehículo" data-pcar-field="notes" data-car-idx="${newIdx}"></textarea></label>
+              </fieldset>
+            </div>
+
+            <!-- Paso 2 -->
+            <div class="slider-slide" data-slide-step="2">
+              <fieldset>
+                <legend><span>2</span> ¿Qué vehículo traes?</legend>
+                <div class="choice-grid vehicle-grid">
+                  <label class="choice-card"><input type="radio" name="vehicleType_${newIdx}" value="motorcycle" data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-motorcycle"></span><strong>Moto</strong></label>
+                  <label class="choice-card"><input type="radio" name="vehicleType_${newIdx}" value="car" checked data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-car"></span><strong>Auto</strong></label>
+                  <label class="choice-card"><input type="radio" name="vehicleType_${newIdx}" value="small_suv" data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-small_suv"></span><strong>SUV pequeña</strong></label>
+                  <label class="choice-card"><input type="radio" name="vehicleType_${newIdx}" value="large_suv" data-pcar-field="vehicleType" data-car-idx="${newIdx}"><span class="vehicle-icon vehicle-large_suv"></span><strong>SUV grande</strong></label>
+                </div>
+              </fieldset>
+            </div>
+
+            <!-- Paso 3 -->
+            <div class="slider-slide" data-slide-step="3">
+              <fieldset>
+                <legend><span>3</span> Horario</legend>
+                <div class="field-grid two-columns">
+                  <label>Hora de ingreso
+                    <input value="Hora de ingreso" readonly>
+                  </label>
+                  <label>Hora estimada de recojo
+                    <input type="time" data-pcar-field="pickupTime" data-car-idx="${newIdx}">
+                    <div class="time-buttons">
+                      <button type="button" data-pickup-offset-card="${newIdx}" data-offset="30">+ 30m</button>
+                      <button type="button" data-pickup-offset-card="${newIdx}" data-offset="60">+ 1h</button>
+                      <button type="button" data-pickup-offset-card="${newIdx}" data-offset="90">+ 1h30</button>
+                      <button type="button" data-pickup-offset-card="${newIdx}" data-offset="120">+ 2h</button>
+                    </div>
+                  </label>
+                </div>
+              </fieldset>
+            </div>
+
+            <!-- Paso 4 -->
+            <div class="slider-slide" data-slide-step="4">
+              <fieldset>
+                <legend><span>4</span> Elige el lavado</legend>
+                <div class="service-list">
+                  ${catalog.filter((s) => s.category === 'base').map((service, i) => `
+                    <label class="service-option">
+                      <input type="radio" name="baseServiceId_${newIdx}" value="${service.id}" data-slug="${service.slug}" ${i === 1 ? 'checked' : ''} data-pcar-field="baseServiceId" data-car-idx="${newIdx}">
+                      <span><strong>${service.name}</strong><small>Principal</small></span>
+                      <b class="service-price" data-service-price-card="${newIdx}" data-service-id="${service.id}">—</b>
+                    </label>
+                  `).join('')}
+                </div>
+              </fieldset>
+            </div>
+
+            <!-- Paso 5 -->
+            <div class="slider-slide" data-slide-step="5">
+              <fieldset>
+                <legend><span>5</span> Agrega un cuidado extra</legend>
+                <div class="addon-grid">
+                  ${catalog.filter((s) => s.category === 'addon').map((service) => `
+                    <label class="addon-option" data-addon-slug="${service.slug}">
+                      <input type="checkbox" name="addonServiceIds_${newIdx}" value="${service.id}" data-pcar-field="addonServiceIds" data-car-idx="${newIdx}">
+                      <span class="check-mark">✓</span>
+                      <span><strong>${service.name}</strong><small class="service-price" data-service-price-card="${newIdx}" data-service-id="${service.id}">—</small></span>
+                    </label>
+                  `).join('')}
+                </div>
+                <div class="car-active-summary">
+                  <span>Subtotal Carro ${carNumber}:</span>
+                  <strong id="pcar-summary-cost-${newIdx}">S/ 0.00</strong>
+                </div>
+              </fieldset>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="slider-nav-footer">
+          <button type="button" class="slider-nav-btn prev-btn" data-nav-prev="${newIdx}" disabled>← Anterior</button>
+          <span class="slider-swipe-tip">👈 Desliza 1 a 5 👉</span>
+          <button type="button" class="slider-nav-btn next-btn" data-nav-next="${newIdx}">Siguiente (2/5) →</button>
+        </div>
+      </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', cardHtml);
+    initCardInteractions(newIdx);
+    updateGrandTotal();
+
+    // Actualizar texto del botón superior
+    const addBtn = document.querySelector('#btn-add-car-parallel');
+    if (addBtn) addBtn.textContent = `+ Añadir otro vehículo (Carro ${newIdx + 2})`;
   }
 
-  async function handleOcrUpload(file) {
-    if (!file) return;
-    showFeedback('<span class="plate-spinner"></span> Escaneando placa con OCR...', 'loading');
+  function removeCard(cardIdx) {
+    const cards = document.querySelectorAll('.parallel-car-card');
+    if (cards.length <= 1) return;
 
-    try {
-      const base64Data = await compressImage(file);
-      const res = await fetch('/api/placa/ocr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: base64Data, autoLookup: true }),
+    const card = getCardElement(cardIdx);
+    if (card) card.remove();
+
+    // Reordenar índices restantes
+    const remaining = document.querySelectorAll('.parallel-car-card');
+    remaining.forEach((c, idx) => {
+      c.setAttribute('data-car-card-index', idx);
+      c.id = `pcar-card-${idx}`;
+      const badge = c.querySelector('.car-number-badge');
+      if (badge) badge.textContent = `Carro ${idx + 1}`;
+      const delBtn = c.querySelector('.btn-delete-car');
+      if (delBtn) delBtn.setAttribute('data-remove-card', idx);
+    });
+
+    updateGrandTotal();
+    const addBtn = document.querySelector('#btn-add-car-parallel');
+    if (addBtn) addBtn.textContent = `+ Añadir otro vehículo (Carro ${remaining.length + 1})`;
+  }
+
+  // --- ENVÍO CONSOLIDADO DEL FORMULARIO ---
+  form.addEventListener('submit', () => {
+    const cards = document.querySelectorAll('.parallel-car-card');
+    const vehicles = [];
+
+    cards.forEach((card, idx) => {
+      const plate = card.querySelector('[data-pcar-field="plate"]')?.value.trim().toUpperCase() || '';
+      const model = card.querySelector('[data-pcar-field="model"]')?.value.trim() || '';
+      const name = card.querySelector('[data-pcar-field="name"]')?.value.trim() || '';
+      const phone = card.querySelector('[data-pcar-field="phone"]')?.value.trim() || '';
+      const paymentMethod = card.querySelector('[data-pcar-field="paymentMethod"]')?.value || 'yape';
+      const notes = card.querySelector('[data-pcar-field="notes"]')?.value.trim() || '';
+      const vehicleType = getCardVehicleType(idx);
+      const baseService = getCardBaseService(idx);
+      const baseServiceId = baseService ? baseService.id : null;
+      const addonServiceIds = getCardAddonServices(idx).map((s) => s.id);
+      const pickupTime = card.querySelector('[data-pcar-field="pickupTime"]')?.value || '';
+
+      vehicles.push({
+        plate,
+        model,
+        name,
+        phone,
+        paymentMethod,
+        notes,
+        vehicleType,
+        baseServiceId,
+        addonServiceIds,
+        pickupTime,
       });
+    });
 
-      if (!res.ok) {
-        let errMessage = 'Error en el servicio de escaneo OCR';
-        try {
-          const errData = await res.json();
-          if (errData && errData.notas) errMessage = errData.notas;
-        } catch {}
-        showFeedback(`⚠️ ${errMessage}`, 'warning', 7000);
+    // Filtrar vehículos que tengan placa ingresada
+    const filledVehicles = vehicles.filter((v) => Boolean(v.plate && v.plate.trim()));
+    
+    // Si un vehículo tiene modelo/nombre pero olvidó la placa, alertar
+    for (let i = 0; i < vehicles.length; i++) {
+      const v = vehicles[i];
+      if (!v.plate && (v.model || v.name || v.phone)) {
+        e.preventDefault();
+        alert(`Por favor ingresa la placa para el Carro ${i + 1}`);
+        const plateInp = cards[i]?.querySelector('[data-pcar-field="plate"]');
+        if (plateInp) {
+          slideCardToStep(i, 1);
+          plateInp.focus();
+        }
         return;
       }
-
-      const ocrResult = await res.json();
-      if (ocrResult.legible && ocrResult.placa) {
-        if (plateInput) {
-          plateInput.value = ocrResult.placa;
-          plateInput.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-
-        const confidencePct = Math.round((ocrResult.confianza || 0.95) * 100);
-        let msg = `✓ Placa: <strong>${ocrResult.placa}</strong> (${confidencePct}% confianza)`;
-        if (ocrResult.notas) {
-          msg += `<br><small style="color:var(--text-muted)">Nota: ${ocrResult.notas}</small>`;
-        }
-
-        if (ocrResult.vehicle && ocrResult.vehicle.found) {
-          applyVehicleData(ocrResult.vehicle);
-          const vehicleDesc = ocrResult.vehicle.fullModel || ocrResult.vehicle.modelo || '';
-          const typeDesc = ocrResult.vehicle.vehicleTypeLabel ? ` · ${ocrResult.vehicle.vehicleTypeLabel}` : '';
-          msg += `<br>🚗 <strong>SUNARP:</strong> ${vehicleDesc}${typeDesc}`;
-        }
-
-        showFeedback(msg, 'success', 8000);
-      } else {
-        const errorMsg = ocrResult.notas || 'No se detectó placa legible en la imagen. Intenta enfocar más cerca.';
-        showFeedback(`⚠️ ${errorMsg}`, 'warning', 7000);
-      }
-    } catch {
-      showFeedback('No se pudo procesar la imagen para OCR. Verifica tu conexión.', 'warning', 5000);
     }
-  }
 
-  if (cameraInput) {
-    cameraInput.addEventListener('change', (e) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        handleOcrUpload(file);
-      }
-      cameraInput.value = '';
-    });
-  }
-
-  if (scanBtn) {
-    if (scanBtn.tagName === 'BUTTON') {
-      scanBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        cameraInput?.click();
-      });
-    } else {
-      scanBtn.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          cameraInput?.click();
-        }
-      });
-    }
-  }
-
-  if (lookupBtn) {
-    lookupBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      performPlateLookup(true);
-    });
-  }
-
-  if (plateInput) {
-    plateInput.addEventListener('input', () => {
-      const start = plateInput.selectionStart;
-      const end = plateInput.selectionEnd;
-      plateInput.value = plateInput.value.toUpperCase();
-      if (start !== null && end !== null) {
-        plateInput.setSelectionRange(start, end);
-      }
-      cars[activeCarIndex].plate = plateInput.value;
-      renderCarCardsBadges();
-      if (plateInput.value.trim().length >= 6) {
-        clearTimeout(plateInput._timer);
-        plateInput._timer = setTimeout(() => performPlateLookup(false), 900);
-      }
-    });
-    plateInput.addEventListener('blur', () => performPlateLookup(false));
-  }
-
-  const capitalize = (str) => {
-    return str
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean)
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-  };
-
-  [form.querySelector('input[name="name"]'), form.querySelector('input[name="model"]')].forEach((input) => {
-    if (!input) return;
-    input.addEventListener('blur', () => {
-      if (input.value) {
-        input.value = capitalize(input.value);
-        saveActiveCarFromForm();
-      }
-    });
-  });
-
-  // Envío del formulario: Serializar todos los vehículos configurados
-  form.addEventListener('submit', () => {
-    saveActiveCarFromForm();
-    if (plateInput) plateInput.value = plateInput.value.toUpperCase().trim();
-    const nameInput = form.querySelector('input[name="name"]');
-    if (nameInput && nameInput.value.trim()) nameInput.value = capitalize(nameInput.value);
-    const modelInput = form.querySelector('input[name="model"]');
-    if (modelInput && modelInput.value.trim()) modelInput.value = capitalize(modelInput.value);
-
-    // Si hay vehículos con placa registrada, guardarlos en el payload
-    const vehiclesWithData = cars.filter((c) => c.plate && c.plate.trim());
-    const payloadInput = form.querySelector('#vehicles-payload');
+    const payloadInput = document.querySelector('#vehicles-payload');
     if (payloadInput) {
-      payloadInput.value = JSON.stringify(vehiclesWithData.length > 0 ? vehiclesWithData : cars);
+      const toSend = filledVehicles.length > 0 ? filledVehicles : (vehicles.length > 0 ? [vehicles[0]] : []);
+      payloadInput.value = JSON.stringify(toSend);
     }
   });
 
-  form.querySelectorAll('[data-pickup-offset]').forEach((button) => button.addEventListener('click', () => {
-    const dropoffHour = Number(form.querySelector('#dropoff-hour')?.value || 0);
-    const dropoffMinute = Number(form.querySelector('#dropoff-minute')?.value || 0);
-    const base = dropoffHour * 60 + dropoffMinute;
-    const target = (base + Number(button.dataset.pickupOffset)) % 1440;
-    const pickup = form.querySelector('#pickup-time');
-    if (!pickup) return;
-    const hour = Math.floor(target / 60);
-    const minute = target % 60;
-    if (pickup.tagName === 'SELECT') {
-      pickup.value = `${hour}:${String(minute).padStart(2, '0')}`;
-    } else {
-      pickup.value = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-    }
-    pickup.dispatchEvent(new Event('input', { bubbles: true }));
-    pickup.dispatchEvent(new Event('change', { bubbles: true }));
-    saveActiveCarFromForm();
-  }));
+  // Botón superior "+ Añadir otro vehículo"
+  document.querySelector('#btn-add-car-parallel')?.addEventListener('click', addNewParallelCard);
 
-  // Inicialización
-  renderCarCards();
-  loadActiveCarIntoForm();
-  slideToStep(1);
+  // Inicializar Carro 1 (índice 0) y Carro 2 (índice 1) presentes por defecto en HTML
+  initCardInteractions(0);
+  initCardInteractions(1);
+  updateGrandTotal();
 })();

@@ -113,6 +113,7 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
           modelo: localResult.model,
           fullModel: localResult.model,
           name: localResult.name,
+          phone: localResult.phone,
         });
       }
 
@@ -153,6 +154,7 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
             vehicleTypeLabel: local.vehicleType ? getVehicleTypeLabel(local.vehicleType) : 'Vehículo',
             model: local.model,
             name: local.name,
+            phone: local.phone,
           };
         } else {
           const sunarp = await consultarPlacaJsonPe(ocrResult.placa);

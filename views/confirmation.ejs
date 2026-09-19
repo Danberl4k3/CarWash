@@ -75,6 +75,35 @@
       <div><small>Total</small><strong style="font-size: 1.25rem; color: var(--aqua-dark);"><%= formatMoney(booking.total_cents) %></strong></div>
     </div>
 
+    <!-- Sección de Pago por Yape con botones para Hugo y Roxana -->
+    <div class="tracker-yape-pay-box">
+      <div class="tracker-yape-title">
+        <span class="yape-pill-icon">🟣</span>
+        <div>
+          <strong>Pagar con Yape</strong>
+          <small>Elige a quién transferir para abrir su código QR:</small>
+        </div>
+      </div>
+      <div class="yape-buttons-row">
+        <button type="button" class="btn-yape-trigger" data-open-qr="hugo">
+          <span class="btn-yape-logo">🟣</span>
+          <span class="btn-yape-text">
+            <strong>Hugo</strong>
+            <small>Hugo Velasquez</small>
+          </span>
+          <span class="btn-yape-arrow">↗</span>
+        </button>
+        <button type="button" class="btn-yape-trigger" data-open-qr="roxana">
+          <span class="btn-yape-logo">🟣</span>
+          <span class="btn-yape-text">
+            <strong>Roxana</strong>
+            <small>Roxana Perez</small>
+          </span>
+          <span class="btn-yape-arrow">↗</span>
+        </button>
+      </div>
+    </div>
+
     <div class="tracker-actions">
       <a class="secondary-button wa-share-btn" target="_blank"
          href="https://wa.me/?text=<%= encodeURIComponent(`Hola, este es el código de mi reserva #${booking.code} para mi auto ${booking.plate} en DASAV Car Wash.`) %>">

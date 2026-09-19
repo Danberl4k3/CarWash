@@ -453,6 +453,7 @@ export interface VehicleLookupResult {
   vehicleType?: VehicleType;
   model?: string | null;
   name?: string | null;
+  phone?: string | null;
 }
 
 export function lookupVehicleByPlate(db: Database.Database, plate: string): VehicleLookupResult {
@@ -460,12 +461,12 @@ export function lookupVehicleByPlate(db: Database.Database, plate: string): Vehi
   if (normalized.length < 3) return { found: false };
 
   const row = db.prepare(`
-    SELECT v.plate, v.vehicle_type, v.model, c.name AS customer_name
+    SELECT v.plate, v.vehicle_type, v.model, c.name AS customer_name, c.phone AS customer_phone
     FROM vehicles v
     LEFT JOIN customers c ON c.id = v.customer_id
     WHERE v.plate = ?
     LIMIT 1
-  `).get(normalized) as { plate: string; vehicle_type: VehicleType; model: string | null; customer_name: string | null } | undefined;
+  `).get(normalized) as { plate: string; vehicle_type: VehicleType; model: string | null; customer_name: string | null; customer_phone: string | null } | undefined;
 
   if (!row) return { found: false };
   return {
@@ -474,6 +475,7 @@ export function lookupVehicleByPlate(db: Database.Database, plate: string): Vehi
     vehicleType: row.vehicle_type,
     model: row.model,
     name: row.customer_name,
+    phone: row.customer_phone,
   };
 }
 

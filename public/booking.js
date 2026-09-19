@@ -153,9 +153,14 @@
 
   function applyVehicleData(data) {
     const nameInput = form.querySelector('input[name="name"]');
+    const phoneInput = form.querySelector('input[name="phone"]');
     const modelInput = form.querySelector('input[name="model"]');
-    if (nameInput && !nameInput.value && data.name) {
+    if (nameInput && (!nameInput.value || !nameInput.value.trim()) && data.name) {
       nameInput.value = data.name;
+    }
+    if (phoneInput && (!phoneInput.value || !phoneInput.value.trim()) && data.phone) {
+      phoneInput.value = data.phone;
+      phoneInput.dispatchEvent(new Event('input', { bubbles: true }));
     }
     const modelText = data.fullModel || data.model || data.modelo;
     if (modelInput && modelText) {

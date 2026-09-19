@@ -1,0 +1,118 @@
+<!-- Modal global para mostrar los códigos QR de Yape (Hugo y Roxana) -->
+<div id="yape-qr-modal" class="qr-modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
+  <div class="qr-modal-container">
+    <button type="button" class="qr-modal-close-btn" id="qr-modal-close" aria-label="Cerrar">&times;</button>
+    
+    <div class="qr-modal-header">
+      <div class="qr-yape-badge">
+        <span class="qr-yape-dot">🟣</span>
+        <span>Yape</span>
+      </div>
+      <h3 id="qr-modal-title" class="qr-modal-title">Paga con Yape</h3>
+      <p id="qr-modal-subtitle" class="qr-modal-sub">Escanea el código QR desde tu app Yape</p>
+    </div>
+
+    <div class="qr-modal-image-wrapper">
+      <img id="qr-modal-img" src="/public/img/qr-hugo.jpg" alt="Código QR de Yape" class="qr-modal-img" loading="eager">
+    </div>
+
+    <div class="qr-modal-owner-card">
+      <span class="qr-owner-label">Titular de la cuenta</span>
+      <strong id="qr-modal-owner-name" class="qr-owner-name">Hugo Heber Velasquez Ayala</strong>
+    </div>
+
+    <div class="qr-modal-steps">
+      <div class="qr-step-item">
+        <span class="qr-step-num">1</span>
+        <span>Abre <strong>Yape</strong></span>
+      </div>
+      <div class="qr-step-item">
+        <span class="qr-step-num">2</span>
+        <span>Escanea el QR</span>
+      </div>
+      <div class="qr-step-item">
+        <span class="qr-step-num">3</span>
+        <span>Confirma el pago</span>
+      </div>
+    </div>
+
+    <div class="qr-modal-actions">
+      <a id="qr-modal-download" href="/public/img/qr-hugo.jpg" download="yape-qr.jpg" class="qr-action-btn btn-secondary">
+        💾 Descargar imagen
+      </a>
+      <button type="button" class="qr-action-btn btn-primary" id="qr-modal-done">
+        Listo, cerrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const modal = document.getElementById('yape-qr-modal');
+    if (!modal) return;
+
+    const img = document.getElementById('qr-modal-img');
+    const ownerName = document.getElementById('qr-modal-owner-name');
+    const subtitle = document.getElementById('qr-modal-subtitle');
+    const downloadBtn = document.getElementById('qr-modal-download');
+    const closeBtn = document.getElementById('qr-modal-close');
+    const doneBtn = document.getElementById('qr-modal-done');
+
+    const qrData = {
+      hugo: {
+        name: 'Hugo Heber Velasquez Ayala',
+        file: '/public/img/qr-hugo.jpg',
+        title: 'Yape a Hugo',
+        download: 'yape-hugo-velasquez.jpg'
+      },
+      roxana: {
+        name: 'Roxana Pilar Perez Lopez',
+        file: '/public/img/qr-roxana.jpg',
+        title: 'Yape a Roxana',
+        download: 'yape-roxana-perez.jpg'
+      }
+    };
+
+    function openQr(target) {
+      const data = qrData[target] || qrData.hugo;
+      if (img) img.src = data.file;
+      if (ownerName) ownerName.textContent = data.name;
+      if (subtitle) subtitle.textContent = `Transfiere directamente a ${data.name}`;
+      if (downloadBtn) {
+        downloadBtn.href = data.file;
+        downloadBtn.download = data.download;
+      }
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeQr() {
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+    }
+
+    // Delegación de eventos para cualquier botón con [data-open-qr]
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-open-qr]');
+      if (btn) {
+        e.preventDefault();
+        const target = btn.getAttribute('data-open-qr');
+        openQr(target);
+      }
+    });
+
+    closeBtn?.addEventListener('click', closeQr);
+    doneBtn?.addEventListener('click', closeQr);
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeQr();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display === 'flex') {
+        closeQr();
+      }
+    });
+  })();
+</script>

@@ -138,6 +138,17 @@
         <span><small>Total estimado</small><strong id="booking-total">S/ 0.00</strong></span>
         <button class="primary-button" type="submit" <%= !openToday ? 'disabled' : '' %>>Confirmar reserva <span>→</span></button>
       </div>
+      <div class="index-yape-bar">
+        <span class="index-yape-prompt">🟣 <strong>Pagar con Yape:</strong></span>
+        <div class="index-yape-buttons">
+          <button type="button" class="btn-yape-pill" data-open-qr="hugo" title="Abrir código QR de Yape de Hugo">
+            <span>🟣</span> <b>Hugo</b>
+          </button>
+          <button type="button" class="btn-yape-pill" data-open-qr="roxana" title="Abrir código QR de Yape de Roxana">
+            <span>🟣</span> <b>Roxana</b>
+          </button>
+        </div>
+      </div>
       <p class="price-note">Los pagos se realizan por Yape, Plin o efectivo. Si un precio figura en cero, será confirmado en el local.</p>
     </form>
   </section>

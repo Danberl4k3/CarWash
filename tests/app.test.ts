@@ -30,6 +30,9 @@ describe('aplicación web', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body).toContain('Separa tu turno');
     expect(response.body).toContain('Lavado completo');
+    expect(response.body).toContain('Hugo');
+    expect(response.body).toContain('Roxana');
+    expect(response.body).toContain('yape-qr-modal');
     expect(response.headers['content-security-policy']).toContain("default-src 'self'");
   });
 
@@ -114,5 +117,43 @@ describe('aplicación web', () => {
     expect(dashboard.body).toContain('TAB-003');
     expect(dashboard.body).toContain('8:00 a. m. (2)');
     expect(dashboard.body.match(/class="pickup-column/g)?.length).toBe(1);
+  });
+
+  it('muestra botones de pago Yape para Hugo y Roxana en la página de confirmación y autocompleta teléfono', async () => {
+    const serviceId = (db.prepare('SELECT id FROM services WHERE slug = ?').get('complete') as { id: number }).id;
+    const booking = createBooking(db, {
+      plate: 'YAP-100',
+      name: 'Carlos Yapeador',
+      phone: '987654321',
+      model: 'Toyota Corolla',
+      vehicleType: 'car',
+      baseServiceId: serviceId,
+      addonServiceIds: [],
+      dropoffHour: 8,
+      pickupHour: 9,
+      paymentMethod: 'yape',
+    });
+
+    // 1. Verificar confirmación
+    const confRes = await app.inject({ method: 'GET', url: `/reserva/${booking.code}` });
+    expect(confRes.statusCode).toBe(200);
+    expect(confRes.body).toContain('Hugo');
+    expect(confRes.body).toContain('Roxana');
+    expect(confRes.body).toContain('data-open-qr="hugo"');
+    expect(confRes.body).toContain('data-open-qr="roxana"');
+    expect(confRes.body).toContain('yape-qr-modal');
+
+    // 2. Verificar que lookupVehicleByPlate devuelve teléfono y nombre
+    const lookupRes = await app.inject({
+      method: 'POST',
+      url: '/api/placa/consultar',
+      payload: { placa: 'YAP-100' },
+    });
+    expect(lookupRes.statusCode).toBe(200);
+    const data = JSON.parse(lookupRes.payload);
+    expect(data.found).toBe(true);
+    expect(data.name).toBe('Carlos Yapeador');
+    expect(data.phone).toBe('987654321');
+    expect(data.modelo).toBe('Toyota Corolla');
   });
 });

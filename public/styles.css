@@ -1927,3 +1927,462 @@ textarea { resize: vertical; }
     font-size: 1.05rem;
   }
 }
+
+/* ==========================================================================
+   MÓDULO YAPE QR (HUGO Y ROXANA)
+   ========================================================================== */
+
+/* Botones en la página de confirmación / tracker */
+.tracker-yape-pay-box {
+  margin-top: 18px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(116, 34, 132, 0.08), rgba(138, 37, 156, 0.03));
+  border: 1.5px solid rgba(116, 34, 132, 0.25);
+  border-radius: 14px;
+}
+
+.tracker-yape-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.tracker-yape-title strong {
+  font-size: 1rem;
+  color: #742284;
+}
+
+.tracker-yape-title small {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted, #64748b);
+}
+
+.yape-buttons-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btn-yape-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #742284;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 14px rgba(116, 34, 132, 0.28);
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-yape-trigger:hover {
+  background: #87289a;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(116, 34, 132, 0.38);
+}
+
+.btn-yape-trigger:active {
+  transform: scale(0.98);
+}
+
+.btn-yape-logo {
+  font-size: 1.25rem;
+}
+
+.btn-yape-text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.btn-yape-text strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.btn-yape-text small {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+.btn-yape-arrow {
+  font-size: 1.1rem;
+  opacity: 0.8;
+  font-weight: bold;
+}
+
+/* Barra Yape en el formulario de inicio */
+.index-yape-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0 6px 0;
+  padding: 10px 14px;
+  background: rgba(116, 34, 132, 0.06);
+  border: 1px solid rgba(116, 34, 132, 0.2);
+  border-radius: 10px;
+}
+
+.index-yape-prompt {
+  font-size: 0.88rem;
+  color: #742284;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.index-yape-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-yape-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #742284;
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(116, 34, 132, 0.25);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-yape-pill:hover {
+  background: #87289a;
+  transform: translateY(-1px);
+}
+
+.btn-yape-pill:active {
+  transform: scale(0.97);
+}
+
+/* Barra en Dashboard de administración */
+.admin-qr-quick-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(116, 34, 132, 0.25);
+  flex-wrap: wrap;
+}
+
+.admin-qr-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #742284;
+}
+
+.admin-qr-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-yape-btn {
+  padding: 5px 12px;
+  background: #742284;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.admin-yape-btn:hover {
+  background: #87289a;
+}
+
+/* Modal Overlay & Card */
+.qr-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(10, 15, 25, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: qrBackdropFade 0.2s ease-out;
+}
+
+@keyframes qrBackdropFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.qr-modal-container {
+  position: relative;
+  background: #ffffff;
+  color: #0f172a;
+  width: 100%;
+  max-width: 380px;
+  max-height: 92vh;
+  overflow-y: auto;
+  border-radius: 20px;
+  padding: 20px 18px 18px 18px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: qrCardSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes qrCardSlide {
+  from { transform: scale(0.92) translateY(10px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.qr-modal-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 1.4rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.qr-modal-close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.qr-modal-header {
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.qr-yape-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: #742284;
+  color: #ffffff;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.qr-modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #742284;
+}
+
+.qr-modal-sub {
+  margin: 4px 0 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.qr-modal-image-wrapper {
+  background: #742284;
+  padding: 8px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(116, 34, 132, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  max-width: 270px;
+  width: 100%;
+}
+
+.qr-modal-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.qr-modal-owner-card {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.qr-owner-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.qr-owner-name {
+  display: block;
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
+.qr-modal-steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.qr-step-item {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 0.7rem;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.qr-step-num {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #742284;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-modal-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.qr-action-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  transition: filter 0.15s ease;
+}
+
+.qr-action-btn.btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+.qr-action-btn.btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.qr-action-btn.btn-primary {
+  background: #742284;
+  color: #ffffff;
+}
+
+.qr-action-btn.btn-primary:hover {
+  background: #87289a;
+}
+
+/* Modo oscuro */
+[data-theme="dark"] .tracker-yape-pay-box {
+  background: linear-gradient(135deg, rgba(116, 34, 132, 0.22), rgba(138, 37, 156, 0.08));
+  border-color: rgba(168, 85, 247, 0.35);
+}
+
+[data-theme="dark"] .tracker-yape-title strong {
+  color: #c084fc;
+}
+
+[data-theme="dark"] .index-yape-bar {
+  background: rgba(116, 34, 132, 0.18);
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="dark"] .index-yape-prompt {
+  color: #c084fc;
+}
+
+[data-theme="dark"] .qr-modal-container {
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+}
+
+[data-theme="dark"] .qr-modal-close-btn {
+  background: #1e293b;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .qr-modal-close-btn:hover {
+  background: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .qr-modal-title {
+  color: #c084fc;
+}
+
+[data-theme="dark"] .qr-modal-owner-card,
+[data-theme="dark"] .qr-step-item {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .qr-owner-name {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .qr-action-btn.btn-secondary {
+  background: #1e293b;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .qr-action-btn.btn-secondary:hover {
+  background: #334155;
+}
+

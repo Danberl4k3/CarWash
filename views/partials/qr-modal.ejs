@@ -1,11 +1,233 @@
 <!-- Modal global para mostrar los códigos QR de Yape (Hugo y Roxana) -->
+<style>
+  /* Estilos inline autónomos para garantizar funcionamiento en celulares sin depender de caché */
+  .qr-modal-backdrop {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 999999 !important;
+    background: rgba(10, 15, 25, 0.82) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    display: none;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 16px !important;
+    box-sizing: border-box !important;
+    animation: qrBackdropFade 0.2s ease-out;
+  }
+  .qr-modal-container {
+    position: relative !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    width: 100% !important;
+    max-width: 360px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 20px !important;
+    padding: 18px 16px 16px 16px !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+  }
+  .qr-modal-close-btn {
+    position: absolute !important;
+    top: 10px !important;
+    right: 12px !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+    font-size: 1.6rem !important;
+    line-height: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    z-index: 2 !important;
+  }
+  .qr-modal-header {
+    text-align: center !important;
+    margin-bottom: 8px !important;
+    width: 100% !important;
+  }
+  .qr-yape-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    padding: 4px 12px !important;
+    background: #742284 !important;
+    color: #ffffff !important;
+    border-radius: 20px !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    margin-bottom: 4px !important;
+  }
+  .qr-modal-title {
+    margin: 0 !important;
+    font-size: 1.2rem !important;
+    font-weight: 800 !important;
+    color: #742284 !important;
+  }
+  .qr-modal-sub {
+    margin: 3px 0 0 0 !important;
+    font-size: 0.78rem !important;
+    color: #64748b !important;
+  }
+  .qr-modal-image-wrapper {
+    background: #742284 !important;
+    padding: 6px !important;
+    border-radius: 14px !important;
+    box-shadow: 0 6px 20px rgba(116, 34, 132, 0.28) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 8px 0 !important;
+    max-width: 240px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .qr-modal-img {
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+  }
+  .qr-modal-owner-card {
+    width: 100% !important;
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    padding: 8px 10px !important;
+    text-align: center !important;
+    margin-bottom: 10px !important;
+    box-sizing: border-box !important;
+  }
+  .qr-owner-label {
+    display: block !important;
+    font-size: 0.7rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #64748b !important;
+    font-weight: 600 !important;
+  }
+  .qr-owner-name {
+    display: block !important;
+    font-size: 0.95rem !important;
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    margin-top: 2px !important;
+  }
+  .qr-modal-steps {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    gap: 6px !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+    box-sizing: border-box !important;
+  }
+  .qr-step-item {
+    background: #f8fafc !important;
+    border-radius: 8px !important;
+    padding: 5px 2px !important;
+    text-align: center !important;
+    font-size: 0.68rem !important;
+    color: #475569 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 2px !important;
+  }
+  .qr-step-num {
+    display: inline-flex !important;
+    width: 18px !important;
+    height: 18px !important;
+    border-radius: 50 !important;
+    background: #742284 !important;
+    color: #ffffff !important;
+    font-size: 0.65rem !important;
+    font-weight: 800 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  .qr-modal-actions {
+    display: flex !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  .qr-action-btn {
+    flex: 1 !important;
+    padding: 10px 8px !important;
+    border-radius: 10px !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    border: none !important;
+    box-sizing: border-box !important;
+  }
+  .qr-action-btn.btn-secondary {
+    background: #f1f5f9 !important;
+    color: #334155 !important;
+  }
+  .qr-action-btn.btn-primary {
+    background: #742284 !important;
+    color: #ffffff !important;
+  }
+  /* Prevenir que los toques en hijos del botón interfieran */
+  [data-open-qr] * {
+    pointer-events: none !important;
+  }
+  [data-open-qr] {
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  /* Modo oscuro */
+  [data-theme="dark"] .qr-modal-container {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+  }
+  [data-theme="dark"] .qr-modal-close-btn {
+    background: #1e293b !important;
+    color: #cbd5e1 !important;
+  }
+  [data-theme="dark"] .qr-modal-owner-card,
+  [data-theme="dark"] .qr-step-item {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+  }
+  [data-theme="dark"] .qr-owner-name {
+    color: #f8fafc !important;
+  }
+  [data-theme="dark"] .qr-action-btn.btn-secondary {
+    background: #1e293b !important;
+    color: #e2e8f0 !important;
+  }
+</style>
+
 <div id="yape-qr-modal" class="qr-modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
   <div class="qr-modal-container">
-    <button type="button" class="qr-modal-close-btn" id="qr-modal-close" aria-label="Cerrar">&times;</button>
+    <button type="button" class="qr-modal-close-btn" id="qr-modal-close" onclick="closeYapeQr()" aria-label="Cerrar">&times;</button>
     
     <div class="qr-modal-header">
       <div class="qr-yape-badge">
-        <span class="qr-yape-dot">🟣</span>
+        <span>🟣</span>
         <span>Yape</span>
       </div>
       <h3 id="qr-modal-title" class="qr-modal-title">Paga con Yape</h3>
@@ -38,9 +260,9 @@
 
     <div class="qr-modal-actions">
       <a id="qr-modal-download" href="/public/img/qr-hugo.jpg" download="yape-qr.jpg" class="qr-action-btn btn-secondary">
-        💾 Descargar imagen
+        💾 Descargar
       </a>
-      <button type="button" class="qr-action-btn btn-primary" id="qr-modal-done">
+      <button type="button" class="qr-action-btn btn-primary" id="qr-modal-done" onclick="closeYapeQr()">
         Listo, cerrar
       </button>
     </div>
@@ -49,16 +271,6 @@
 
 <script>
   (() => {
-    const modal = document.getElementById('yape-qr-modal');
-    if (!modal) return;
-
-    const img = document.getElementById('qr-modal-img');
-    const ownerName = document.getElementById('qr-modal-owner-name');
-    const subtitle = document.getElementById('qr-modal-subtitle');
-    const downloadBtn = document.getElementById('qr-modal-download');
-    const closeBtn = document.getElementById('qr-modal-close');
-    const doneBtn = document.getElementById('qr-modal-done');
-
     const qrData = {
       hugo: {
         name: 'Hugo Heber Velasquez Ayala',
@@ -74,8 +286,15 @@
       }
     };
 
-    function openQr(target) {
+    window.openYapeQr = function(target) {
+      const modal = document.getElementById('yape-qr-modal');
+      if (!modal) return;
       const data = qrData[target] || qrData.hugo;
+      const img = document.getElementById('qr-modal-img');
+      const ownerName = document.getElementById('qr-modal-owner-name');
+      const subtitle = document.getElementById('qr-modal-subtitle');
+      const downloadBtn = document.getElementById('qr-modal-download');
+
       if (img) img.src = data.file;
       if (ownerName) ownerName.textContent = data.name;
       if (subtitle) subtitle.textContent = `Transfiere directamente a ${data.name}`;
@@ -85,34 +304,46 @@
       }
       modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
-    }
+    };
 
-    function closeQr() {
-      modal.style.display = 'none';
-      document.body.style.overflow = '';
-    }
+    window.closeYapeQr = function() {
+      const modal = document.getElementById('yape-qr-modal');
+      if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    };
 
-    // Delegación de eventos para cualquier botón con [data-open-qr]
-    document.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-open-qr]');
+    // Soporte tanto para click como touchend en celulares
+    function handleEvent(e) {
+      const btn = e.target && e.target.closest ? e.target.closest('[data-open-qr]') : null;
       if (btn) {
         e.preventDefault();
+        e.stopPropagation();
         const target = btn.getAttribute('data-open-qr');
-        openQr(target);
+        window.openYapeQr(target);
       }
-    });
+    }
 
-    closeBtn?.addEventListener('click', closeQr);
-    doneBtn?.addEventListener('click', closeQr);
+    document.addEventListener('click', handleEvent, { passive: false });
+    document.addEventListener('touchend', handleEvent, { passive: false });
 
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeQr();
-    });
+    // Cerrar al pulsar el fondo oscuro
+    const modal = document.getElementById('yape-qr-modal');
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) window.closeYapeQr();
+      });
+      modal.addEventListener('touchend', (e) => {
+        if (e.target === modal) {
+          e.preventDefault();
+          window.closeYapeQr();
+        }
+      });
+    }
 
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modal.style.display === 'flex') {
-        closeQr();
-      }
+      if (e.key === 'Escape') window.closeYapeQr();
     });
   })();
 </script>

@@ -694,6 +694,37 @@ describe('pruebas exhaustivas del sistema', () => {
       expect(prices.length).toBe(0);
     });
 
+    it('permite eliminar un registro de reserva con confirmación en /admin/reservas/:id/eliminar', async () => {
+      const exteriorId = (db.prepare('SELECT id FROM services WHERE slug = ?').get('exterior') as { id: number }).id;
+      const b = createBooking(db, {
+        plate: 'DEL-999',
+        vehicleType: 'car',
+        baseServiceId: exteriorId,
+        addonServiceIds: [],
+        dropoffHour: 10,
+        pickupHour: 11,
+        paymentMethod: 'cash',
+      });
+
+      expect(getBooking(db, b.id)).not.toBeNull();
+
+      const delRes = await app.inject({
+        method: 'POST',
+        url: `/admin/reservas/${b.id}/eliminar`,
+        headers: { cookie: authCookie, 'content-type': 'application/x-www-form-urlencoded' },
+        payload: new URLSearchParams({ _csrf: csrfToken }).toString(),
+      });
+
+      expect(delRes.statusCode).toBe(302);
+      expect(delRes.headers.location).toContain('/admin');
+      expect(decodeURIComponent(delRes.headers.location || '')).toContain('eliminado correctamente');
+
+      // Verificar que ya no existe en la base de datos ni sus servicios asociados
+      expect(getBooking(db, b.id)).toBeUndefined();
+      const services = db.prepare('SELECT * FROM booking_services WHERE booking_id = ?').all(b.id);
+      expect(services.length).toBe(0);
+    });
+
     it('actualiza la contraseña del administrador en /admin/seguridad', async () => {
       const res = await app.inject({
         method: 'POST',

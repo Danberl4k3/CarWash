@@ -28,8 +28,15 @@
       <label>Total (S/)<input name="total" type="number" min="0" step="0.01" value="<%= (booking.total_cents / 100).toFixed(2) %>"></label>
     </div></div>
     <label>Notas<textarea name="notes" rows="4"><%= booking.notes || '' %></textarea></label>
-    <div class="audit-line">Creada <%= booking.created_at %> · Última edición <%= booking.updated_at %></div>
-    <div class="form-actions"><a class="secondary-button" href="/admin">Cancelar</a><button class="primary-button" type="submit">Guardar cambios</button></div>
+    <div class="form-actions form-actions-split">
+      <div class="form-actions-left">
+        <button class="danger-button-outline delete-booking-btn" type="submit" formaction="/admin/reservas/<%= booking.id %>/eliminar" formnovalidate onclick="return confirm('¿Estás seguro de que deseas eliminar permanentemente el registro de <%= booking.plate %>? Esta acción no se puede deshacer.');">🗑️ Eliminar registro</button>
+      </div>
+      <div class="form-actions-right">
+        <a class="secondary-button" href="/admin">Cancelar</a>
+        <button class="primary-button" type="submit">Guardar cambios</button>
+      </div>
+    </div>
   </form>
 </main>
 <script src="/public/booking.js" defer></script>

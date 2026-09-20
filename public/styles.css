@@ -2792,5 +2792,88 @@ textarea { resize: vertical; }
   color: #6a8b98;
 }
 
+/* Botones y acciones de eliminación de registros */
+.plate-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
+.card-delete-form {
+  display: inline-flex;
+  margin: 0;
+  padding: 0;
+}
 
+.card-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.card-delete-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  transform: scale(1.06);
+}
+
+.card-delete-btn:active {
+  transform: scale(0.92);
+}
+
+[data-theme="dark"] .card-delete-btn {
+  background: rgba(220, 38, 38, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .card-delete-btn:hover {
+  background: rgba(220, 38, 38, 0.3);
+  border-color: #ef4444;
+}
+
+.form-actions-split {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.form-actions-left {
+  display: flex;
+  align-items: center;
+}
+
+.form-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .form-actions-split {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+  .form-actions-left,
+  .form-actions-right {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    width: 100%;
+  }
+  .delete-booking-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

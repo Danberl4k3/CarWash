@@ -20,6 +20,7 @@ import {
   BookingValidationError,
   checkAndAutoCompleteBookings,
   createBooking,
+  deleteBooking,
   getBooking,
   getBookingServiceIds,
   getDailyPaymentBreakdown,
@@ -364,6 +365,35 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       const message = error instanceof BookingValidationError ? error.message : 'No se pudieron guardar los cambios.';
       request.log.error(error);
       return failRedirect(reply, `/admin/reservas/${id}`, message);
+    }
+  });
+
+  app.post('/admin/reservas/:id/eliminar', async (request, reply) => {
+    const session = requirePostAuth(db, request, reply);
+    if (!session) return;
+    const id = Number((request.params as { id: string }).id);
+    const booking = getBooking(db, id);
+    if (!booking) return failRedirect(reply, '/admin', 'Reserva no encontrada.');
+
+    const body = request.body as Record<string, unknown>;
+    const redirectDate = typeof body.redirectDate === 'string' && body.redirectDate ? body.redirectDate : booking.booking_date;
+
+    try {
+      deleteBooking(db, id);
+      appEvents.emitAppEvent('booking_updated', { id, deleted: true });
+      appEvents.emitAppEvent('refresh');
+      return okRedirect(
+        reply,
+        `/admin?date=${encodeURIComponent(redirectDate)}`,
+        `Registro del vehículo ${booking.plate} (${booking.code}) eliminado correctamente.`
+      );
+    } catch (error) {
+      request.log.error(error);
+      return failRedirect(
+        reply,
+        `/admin?date=${encodeURIComponent(redirectDate)}`,
+        'No se pudo eliminar el registro.'
+      );
     }
   });
 

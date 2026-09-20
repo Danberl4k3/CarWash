@@ -523,3 +523,12 @@ export function getDailyPaymentBreakdown(db: Database.Database, date: string): P
     totalExpectedCents,
   };
 }
+
+export function deleteBooking(db: Database.Database, id: number): boolean {
+  const txn = db.transaction(() => {
+    db.prepare('DELETE FROM booking_services WHERE booking_id = ?').run(id);
+    const result = db.prepare('DELETE FROM bookings WHERE id = ?').run(id);
+    return result.changes > 0;
+  });
+  return txn();
+}

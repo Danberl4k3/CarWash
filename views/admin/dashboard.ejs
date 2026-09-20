@@ -190,7 +190,14 @@
               </div>
               <div class="plate-row">
                 <a href="/admin/reservas/<%= booking.id %>" class="plate-number"><%= booking.plate %></a>
-                <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" class="ticket-btn">🖨️</a>
+                <div class="plate-actions">
+                  <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" class="ticket-btn">🖨️</a>
+                  <form method="post" action="/admin/reservas/<%= booking.id %>/eliminar" class="card-delete-form" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente el registro de <%= booking.plate %>? Esta acción no se puede deshacer.');">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <input type="hidden" name="redirectDate" value="<%= selectedDate %>">
+                    <button type="submit" class="card-delete-btn" title="Eliminar registro" aria-label="Eliminar registro">🗑️</button>
+                  </form>
+                </div>
               </div>
               <p>
                 <% if (booking.customer_id) { %>

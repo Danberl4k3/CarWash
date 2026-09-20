@@ -2586,4 +2586,211 @@ textarea { resize: vertical; }
   transform: translateY(-8px);
 }
 
+/* ==========================================================================
+   Filtros del Tablero (En proceso, Terminados, Pagados, Ocultar terminados)
+   ========================================================================== */
+
+.summary-clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.summary-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(7, 26, 38, 0.08);
+}
+.summary-clickable:active {
+  transform: translateY(0);
+}
+
+.board-filters-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.status-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid #dce5e3;
+  background: white;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+  border-color: var(--aqua-dark);
+  color: var(--navy);
+  transform: translateY(-1px);
+}
+
+.filter-pill.active {
+  background: var(--navy);
+  color: white;
+  border-color: var(--navy);
+  box-shadow: 0 4px 12px rgba(7, 26, 38, 0.15);
+}
+
+.filter-pill.pill-progress.active {
+  background: #8a72db;
+  border-color: #8a72db;
+  box-shadow: 0 4px 12px rgba(138, 114, 219, 0.3);
+}
+
+.filter-pill.pill-completed.active {
+  background: #12ad9e;
+  border-color: #12ad9e;
+  box-shadow: 0 4px 12px rgba(18, 173, 158, 0.3);
+}
+
+.filter-pill.pill-paid.active {
+  background: #2bb381;
+  border-color: #2bb381;
+  box-shadow: 0 4px 12px rgba(43, 179, 129, 0.3);
+}
+
+.filter-pill.pill-pending-pay.active {
+  background: #db5b62;
+  border-color: #db5b62;
+  box-shadow: 0 4px 12px rgba(219, 91, 98, 0.3);
+}
+
+.board-filter-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 6px 4px 2px;
+}
+
+.hide-completed-paid-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #485b63;
+  cursor: pointer;
+  user-select: none;
+}
+
+.hide-completed-paid-toggle input {
+  display: none;
+}
+
+.toggle-slider {
+  width: 34px;
+  height: 20px;
+  background: #ccd7d5;
+  border-radius: 999px;
+  position: relative;
+  transition: background 0.25s ease;
+}
+
+.toggle-slider::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.hide-completed-paid-toggle input:checked + .toggle-slider {
+  background: #12ad9e;
+}
+
+.hide-completed-paid-toggle input:checked + .toggle-slider::after {
+  transform: translateX(14px);
+}
+
+.filtered-counter {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6a7e86;
+}
+.filtered-counter b {
+  color: var(--navy);
+}
+
+.empty-filter-note {
+  grid-column: 1 / -1;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #cad5d3;
+  border-radius: 12px;
+  color: #8c9fa4;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 16px;
+}
+
+/* Dark mode styles for filters */
+[data-theme="dark"] .filter-pill {
+  background: #0f2736;
+  border-color: #1a425a;
+  color: #a0b6bf;
+}
+
+[data-theme="dark"] .filter-pill:hover {
+  border-color: var(--aqua);
+  color: var(--aqua);
+}
+
+[data-theme="dark"] .filter-pill.active {
+  background: var(--aqua);
+  color: var(--navy);
+  border-color: var(--aqua);
+}
+
+[data-theme="dark"] .hide-completed-paid-toggle {
+  color: #a0b6bf;
+}
+
+[data-theme="dark"] .toggle-slider {
+  background: #1a3c50;
+}
+
+[data-theme="dark"] .hide-completed-paid-toggle input:checked + .toggle-slider {
+  background: var(--aqua);
+}
+
+[data-theme="dark"] .hide-completed-paid-toggle input:checked + .toggle-slider::after {
+  background: var(--navy);
+}
+
+[data-theme="dark"] .filtered-counter {
+  color: #8fa7b0;
+}
+
+[data-theme="dark"] .filtered-counter b {
+  color: var(--aqua);
+}
+
+[data-theme="dark"] .empty-filter-note {
+  border-color: #1e455e;
+  color: #6a8b98;
+}
+
+
 

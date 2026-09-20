@@ -76,11 +76,8 @@
       const currentNextUp = document.querySelector('.next-up-card-container');
       if (newNextUp && currentNextUp) currentNextUp.innerHTML = newNextUp.innerHTML;
 
-      // Reaplicar filtro de búsqueda si está activo
-      const searchInput = document.getElementById('board-search');
-      if (searchInput && searchInput.value) {
-        searchInput.dispatchEvent(new Event('input'));
-      }
+      // Reaplicar filtros activos
+      applyFilters();
       applyEmptyHoursFilter();
       updateWashTimers();
     } catch (e) {
@@ -188,24 +185,135 @@
     }
   });
 
+  // Sistema de filtrado por estado, pago, búsqueda y ocultar terminados+pagados
+  let currentFilter = 'all';
+  const toggleHideDonePaid = document.getElementById('toggle-hide-done-paid');
+
+  function applyFilters() {
+    const searchInput = document.getElementById('board-search');
+    const term = searchInput ? searchInput.value.toLowerCase().trim() : '';
+    const hideDonePaid = toggleHideDonePaid ? toggleHideDonePaid.checked : true;
+
+    const cards = document.querySelectorAll('.vehicle-card');
+    let visibleCount = 0;
+    let hiddenDonePaidCount = 0;
+
+    cards.forEach((card) => {
+      const status = card.dataset.status || '';
+      const paymentStatus = card.dataset.paymentStatus || '';
+      const plate = card.querySelector('.plate-number')?.textContent?.toLowerCase() || '';
+      const name = card.querySelector('p')?.textContent?.toLowerCase() || '';
+
+      const matchesSearch = !term || plate.includes(term) || name.includes(term);
+
+      let matchesCategory = true;
+      if (currentFilter === 'in_progress') {
+        matchesCategory = status === 'in_progress';
+      } else if (currentFilter === 'completed') {
+        matchesCategory = status === 'completed';
+      } else if (currentFilter === 'paid') {
+        matchesCategory = paymentStatus === 'paid';
+      } else if (currentFilter === 'pending_payment') {
+        matchesCategory = paymentStatus !== 'paid';
+      } else if (currentFilter === 'pending') {
+        matchesCategory = status === 'pending';
+      }
+
+      const isDoneAndPaid = status === 'completed' && paymentStatus === 'paid';
+      let shouldHideDonePaid = false;
+      // Ocultar si está activo el toggle y el auto está terminado y pagado
+      if (hideDonePaid && isDoneAndPaid && currentFilter === 'all') {
+        shouldHideDonePaid = true;
+        hiddenDonePaidCount++;
+      }
+
+      if (matchesSearch && matchesCategory && !shouldHideDonePaid) {
+        card.style.display = '';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // Actualizar contadores en la cabecera de cada columna de hora
+    document.querySelectorAll('.pickup-column').forEach((col) => {
+      const cardsInCol = col.querySelectorAll('.vehicle-card');
+      const visibleInCol = Array.from(cardsInCol).filter((c) => c.style.display !== 'none').length;
+      const countSpan = col.querySelector('header > span');
+      if (countSpan) countSpan.textContent = visibleInCol;
+
+      let emptyNote = col.querySelector('.empty-filter-note');
+      if (visibleInCol === 0 && cardsInCol.length > 0) {
+        if (!emptyNote) {
+          emptyNote = document.createElement('div');
+          emptyNote.className = 'empty-filter-note';
+          col.querySelector('.pickup-stack')?.appendChild(emptyNote);
+        }
+        emptyNote.textContent = 'Sin autos en este filtro';
+        emptyNote.style.display = '';
+      } else if (emptyNote) {
+        emptyNote.style.display = 'none';
+      }
+    });
+
+    // Actualizar texto del contador de estado
+    const counterEl = document.getElementById('filtered-counter');
+    if (counterEl) {
+      if (hiddenDonePaidCount > 0 && currentFilter === 'all') {
+        counterEl.innerHTML = `👁️ <b>${hiddenDonePaidCount}</b> terminados y cobrados ocultos`;
+      } else {
+        counterEl.textContent = `${visibleCount} vehículo${visibleCount === 1 ? '' : 's'}`;
+      }
+    }
+  }
+
+  function setFilter(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-pill').forEach((btn) => {
+      btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+    applyFilters();
+  }
+
+  // Clicks en píldoras de filtro
+  document.querySelectorAll('.filter-pill').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      setFilter(btn.dataset.filter);
+    });
+  });
+
+  // Clicks en tarjetas de resumen superior (Vehículos, Pendientes, En proceso, Terminados, Cobrado)
+  document.querySelectorAll('[data-summary-filter]').forEach((item) => {
+    item.addEventListener('click', () => {
+      const filterTarget = item.dataset.summaryFilter;
+      setFilter(filterTarget);
+      document.querySelector('.board-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Toggle de ocultar terminados y pagados (activado por defecto)
+  if (toggleHideDonePaid) {
+    const savedToggle = localStorage.getItem('hideDonePaidBookings');
+    if (savedToggle !== null) {
+      toggleHideDonePaid.checked = savedToggle === 'true';
+    } else {
+      toggleHideDonePaid.checked = true;
+    }
+    toggleHideDonePaid.addEventListener('change', () => {
+      localStorage.setItem('hideDonePaidBookings', String(toggleHideDonePaid.checked));
+      applyFilters();
+    });
+  }
+
   // Búsqueda en el tablero
   const searchInput = document.getElementById('board-search');
   if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase().trim();
-      const cards = document.querySelectorAll('.vehicle-card');
-
-      cards.forEach((card) => {
-        const plate = card.querySelector('.plate-number')?.textContent?.toLowerCase() || '';
-        const name = card.querySelector('p')?.textContent?.toLowerCase() || '';
-        if (plate.includes(term) || name.includes(term)) {
-          card.style.display = '';
-        } else {
-          card.style.display = 'none';
-        }
-      });
+    searchInput.addEventListener('input', () => {
+      applyFilters();
     });
   }
+
+  applyFilters();
 
   // Ocultar horas vacías
   const filterBtn = document.getElementById('toggle-empty-hours');

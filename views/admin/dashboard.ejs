@@ -39,12 +39,12 @@
   </section>
 
   <section class="summary-grid">
-    <article><span class="summary-dot dot-blue"></span><small>Vehículos</small><strong><%= summary.total %></strong></article>
-    <article><span class="summary-dot dot-amber"></span><small>Pendientes</small><strong><%= summary.pending %></strong></article>
-    <article><span class="summary-dot dot-purple"></span><small>En proceso</small><strong><%= summary.inProgress %></strong></article>
-    <article><span class="summary-dot dot-green"></span><small>Terminados</small><strong><%= summary.completed %></strong></article>
+    <article class="summary-clickable" data-summary-filter="all" title="Ver todos los vehículos"><span class="summary-dot dot-blue"></span><small>Vehículos</small><strong><%= summary.total %></strong></article>
+    <article class="summary-clickable" data-summary-filter="pending" title="Filtrar vehículos pendientes"><span class="summary-dot dot-amber"></span><small>Pendientes</small><strong><%= summary.pending %></strong></article>
+    <article class="summary-clickable" data-summary-filter="in_progress" title="Filtrar vehículos en proceso"><span class="summary-dot dot-purple"></span><small>En proceso</small><strong><%= summary.inProgress %></strong></article>
+    <article class="summary-clickable" data-summary-filter="completed" title="Filtrar vehículos terminados"><span class="summary-dot dot-green"></span><small>Terminados</small><strong><%= summary.completed %></strong></article>
     <article><span class="summary-dot" style="background: #9fb4bb"></span><small>Total (Proyectado)</small><strong><%= formatMoney(summary.expected) %></strong></article>
-    <article><span class="summary-dot dot-mint"></span><small>Cobrado</small><strong><%= formatMoney(summary.collected) %></strong></article>
+    <article class="summary-clickable" data-summary-filter="paid" title="Filtrar vehículos pagados"><span class="summary-dot dot-mint"></span><small>Cobrado</small><strong><%= formatMoney(summary.collected) %></strong></article>
   </section>
 
   <!-- Módulo de cierre de caja -->
@@ -139,7 +139,24 @@
         <span class="board-date"><%= selectedDate %></span>
       </div>
     </div>
-    <input type="search" id="board-search" class="board-search" placeholder="🔍 Buscar placa o cliente...">
+    <div class="board-filters-container">
+      <input type="search" id="board-search" class="board-search" placeholder="🔍 Buscar placa o cliente...">
+      <div class="status-filter-pills" id="board-status-filters">
+        <button type="button" class="filter-pill active" data-filter="all">Todos</button>
+        <button type="button" class="filter-pill pill-progress" data-filter="in_progress">⏳ En proceso</button>
+        <button type="button" class="filter-pill pill-completed" data-filter="completed">✅ Terminados</button>
+        <button type="button" class="filter-pill pill-paid" data-filter="paid">💵 Pagados</button>
+        <button type="button" class="filter-pill pill-pending-pay" data-filter="pending_payment">🔴 Por cobrar</button>
+      </div>
+      <div class="board-filter-toggle-row">
+        <label class="hide-completed-paid-toggle" title="Ocultar del tablero los vehículos que ya están terminados y cobrados para dejar solo los autos activos">
+          <input type="checkbox" id="toggle-hide-done-paid" checked>
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">Ocultar terminados y pagados</span>
+        </label>
+        <span class="filtered-counter" id="filtered-counter"></span>
+      </div>
+    </div>
   </div>
   <section class="pickup-board" data-live-board>
     <div class="hourly-summary">
@@ -161,7 +178,9 @@
           <% group.bookings.forEach(booking => { %>
             <div class="vehicle-card status-<%= booking.status %>" id="booking-<%= booking.id %>"
                  data-started-at="<%= booking.started_washing_at || '' %>"
-                 data-vehicle-type="<%= booking.vehicle_type %>">
+                 data-vehicle-type="<%= booking.vehicle_type %>"
+                 data-status="<%= booking.status %>"
+                 data-payment-status="<%= booking.payment_status %>">
               <div class="vehicle-card-top">
                 <div>
                   <span class="vehicle-badge"><%= vehicleLabels[booking.vehicle_type] %></span>
@@ -228,5 +247,5 @@
     <% }) %>
   </section>
 </main>
-<script src="/public/admin.js?v=9" defer></script>
+<script src="/public/admin.js?v=10" defer></script>
 <%- include('../partials/footer') %>

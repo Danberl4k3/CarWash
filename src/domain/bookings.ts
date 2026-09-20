@@ -367,22 +367,103 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
   const selection = selectedServices(getServicesWithPrices(db), update as BookingInput);
   const allSelected = [selection.base, ...selection.addons];
   db.transaction(() => {
-    db.prepare(`UPDATE customers SET name = ?, phone = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(
-      update.name,
-      update.phone,
-      booking.customer_id,
-    );
-    db.prepare(`UPDATE vehicles SET plate = ?, vehicle_type = ?, model = COALESCE(?, model), updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(
-      update.plate,
-      update.vehicleType,
-      update.model ?? null,
-      booking.vehicle_id,
-    );
+    // 1. Manejo seguro de cliente sin afectar otras reservas duplicadas o compartidas
+    let targetCustomerId: number | null = booking.customer_id;
+
+    if (update.phone || update.name) {
+      const existingCustomer = update.phone
+        ? (db.prepare('SELECT id FROM customers WHERE phone = ?').get(update.phone) as { id: number } | undefined)
+        : undefined;
+
+      if (existingCustomer) {
+        targetCustomerId = existingCustomer.id;
+        if (update.name) {
+          db.prepare('UPDATE customers SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(
+            update.name,
+            targetCustomerId,
+          );
+        }
+      } else if (booking.customer_id) {
+        const otherBookingsWithCustomer = (
+          db.prepare('SELECT COUNT(*) AS count FROM bookings WHERE customer_id = ? AND id != ?').get(booking.customer_id, id) as { count: number }
+        ).count;
+
+        if (otherBookingsWithCustomer === 0) {
+          targetCustomerId = booking.customer_id;
+          db.prepare('UPDATE customers SET name = COALESCE(?, name), phone = COALESCE(?, phone), updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(
+            update.name,
+            update.phone,
+            targetCustomerId,
+          );
+        } else {
+          const insertCust = db.prepare('INSERT INTO customers (name, phone) VALUES (?, ?)').run(
+            update.name,
+            update.phone,
+          );
+          targetCustomerId = Number(insertCust.lastInsertRowid);
+        }
+      } else {
+        const insertCust = db.prepare('INSERT INTO customers (name, phone) VALUES (?, ?)').run(
+          update.name,
+          update.phone,
+        );
+        targetCustomerId = Number(insertCust.lastInsertRowid);
+      }
+    }
+
+    // 2. Manejo seguro de vehículo: si se comparte o duplica, aislar solo esta reserva
+    const otherBookingsWithVehicle = (
+      db.prepare('SELECT COUNT(*) AS count FROM bookings WHERE vehicle_id = ? AND id != ?').get(booking.vehicle_id, id) as { count: number }
+    ).count;
+
+    const targetVehicle = db.prepare('SELECT id, customer_id FROM vehicles WHERE plate = ?').get(update.plate) as
+      | { id: number; customer_id: number | null }
+      | undefined;
+
+    let targetVehicleId: number;
+
+    if (targetVehicle) {
+      targetVehicleId = targetVehicle.id;
+      db.prepare(`
+        UPDATE vehicles
+        SET vehicle_type = ?, model = COALESCE(?, model), customer_id = COALESCE(?, customer_id), updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(update.vehicleType, update.model ?? null, targetCustomerId, targetVehicleId);
+    } else if (otherBookingsWithVehicle === 0) {
+      targetVehicleId = booking.vehicle_id;
+      db.prepare(`
+        UPDATE vehicles
+        SET plate = ?, vehicle_type = ?, model = COALESCE(?, model), customer_id = COALESCE(?, customer_id), updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(update.plate, update.vehicleType, update.model ?? null, targetCustomerId, targetVehicleId);
+    } else {
+      const insertVeh = db.prepare(`
+        INSERT INTO vehicles (plate, vehicle_type, model, customer_id)
+        VALUES (?, ?, ?, ?)
+      `).run(update.plate, update.vehicleType, update.model ?? null, targetCustomerId);
+      targetVehicleId = Number(insertVeh.lastInsertRowid);
+    }
+
+    // 3. Actualizar exclusivamente la reserva
     db.prepare(`
-      UPDATE bookings SET dropoff_hour = ?, pickup_hour = ?, dropoff_minute = ?, pickup_minute = ?, status = ?, payment_method = ?,
-        payment_status = ?, amount_paid_cents = ?, total_cents = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+      UPDATE bookings SET
+        vehicle_id = ?,
+        customer_id = ?,
+        dropoff_hour = ?,
+        pickup_hour = ?,
+        dropoff_minute = ?,
+        pickup_minute = ?,
+        status = ?,
+        payment_method = ?,
+        payment_status = ?,
+        amount_paid_cents = ?,
+        total_cents = ?,
+        notes = ?,
+        updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
+      targetVehicleId,
+      targetCustomerId,
       update.dropoffHour,
       update.pickupHour,
       toMinutes(update.dropoffHour, update.dropoffMinute),
@@ -395,6 +476,8 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
       update.notes,
       id,
     );
+
+    // 4. Actualizar los servicios seleccionados exclusivamente para esta reserva
     db.prepare('DELETE FROM booking_services WHERE booking_id = ?').run(id);
     const insertBookingService = db.prepare(`
       INSERT INTO booking_services (booking_id, service_id, service_name, category, price_cents)

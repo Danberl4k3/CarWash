@@ -206,4 +206,64 @@ describe('reglas de reserva', () => {
     expect(completedCount).toBe(1);
     expect(getBooking(db, suvRes.id)?.status).toBe('completed');
   });
+
+  it('al editar una de dos reservas duplicadas, solo se modifica la editada y no ambas', () => {
+    // 1. Crear dos reservas con el mismo vehículo y cliente (duplicadas sin querer)
+    const booking1 = createBooking(db, {
+      ...validInput(),
+      plate: 'DUPLI-1',
+      name: 'Cliente Original',
+      model: 'Toyota Corolla',
+      dropoffHour: 9,
+      pickupHour: 10,
+    }, { now: mondayAt(8) });
+
+    const booking2 = createBooking(db, {
+      ...validInput(),
+      plate: 'DUPLI-1',
+      name: 'Cliente Original',
+      model: 'Toyota Corolla',
+      dropoffHour: 11,
+      pickupHour: 12,
+    }, { now: mondayAt(8) });
+
+    expect(getBooking(db, booking1.id)?.plate).toBe('DUPLI-1');
+    expect(getBooking(db, booking2.id)?.plate).toBe('DUPLI-1');
+
+    // 2. El administrador edita SOLO la segunda reserva para asignarle otro auto y cliente
+    updateBookingByAdmin(db, booking2.id, {
+      plate: 'NUEVO-99',
+      name: 'Segundo Cliente',
+      model: 'Hyundai Tucson',
+      phone: '987111222',
+      vehicleType: 'small_suv',
+      baseServiceId: exteriorId,
+      addonServiceIds: [],
+      dropoffHour: 14,
+      pickupHour: 15,
+      status: 'pending',
+      paymentMethod: 'cash',
+      paymentStatus: 'pending',
+      amountPaid: 0,
+      total: 15,
+      notes: 'Auto nuevo',
+    });
+
+    // 3. Comprobar que booking2 cambió a los nuevos datos
+    const b2 = getBooking(db, booking2.id);
+    expect(b2?.plate).toBe('NUEVO-99');
+    expect(b2?.customer_name).toBe('Segundo Cliente');
+    expect(b2?.vehicle_model).toBe('Hyundai Tucson');
+    expect(b2?.vehicle_type).toBe('small_suv');
+    expect(b2?.dropoff_hour).toBe(14);
+
+    // 4. Comprobar que booking1 PERMANECE INTACTO con su placa, modelo y cliente original
+    const b1 = getBooking(db, booking1.id);
+    expect(b1?.plate).toBe('DUPLI-1');
+    expect(b1?.customer_name).toBe('Cliente Original');
+    expect(b1?.vehicle_model).toBe('Toyota Corolla');
+    expect(b1?.vehicle_type).toBe('car');
+    expect(b1?.dropoff_hour).toBe(9);
+  });
 });
+

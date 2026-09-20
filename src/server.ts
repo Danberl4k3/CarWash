@@ -7,6 +7,11 @@ import { createDatabase } from './db.js';
 
 const database = createDatabase();
 const app = await buildApp({ db: database.db, logger: true });
+app.log.info(`[DB] Base de datos activa en: ${database.path}`);
+if (process.env.NODE_ENV === 'production' && !database.path.startsWith('/data') && !process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+  app.log.warn('[DB] ⚠️ ADVERTENCIA: La base de datos está en disco efímero. Para no perder datos en cada actualización, añade un Railway Volume en /data con DATABASE_PATH=/data/carwash.db');
+}
+
 const port = Number(process.env.PORT || 3000);
 const host = process.env.HOST ?? (process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1');
 

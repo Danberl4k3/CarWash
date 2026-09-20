@@ -134,7 +134,14 @@ const defaultPrices: Record<string, Partial<Record<VehicleType, number>>> = {
 };
 
 export function createDatabase(databasePath?: string): DatabaseContext {
-  const target = databasePath ?? process.env.DATABASE_PATH ?? './data/carwash.db';
+  let target = databasePath ?? process.env.DATABASE_PATH;
+  if (!target) {
+    if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+      target = `${process.env.RAILWAY_VOLUME_MOUNT_PATH}/carwash.db`;
+    } else {
+      target = './data/carwash.db';
+    }
+  }
   const isMemory = target === ':memory:';
   const resolvedPath = isMemory ? target : resolve(target);
   if (!isMemory) mkdirSync(dirname(resolvedPath), { recursive: true });

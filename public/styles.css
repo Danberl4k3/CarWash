@@ -2386,3 +2386,204 @@ textarea { resize: vertical; }
   background: #334155;
 }
 
+/* ==========================================================================
+   Sección de Servicios y Precio en Cartita + Botones de Peligro + Animaciones
+   ========================================================================== */
+
+.card-service-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  background: #f0f5f4;
+  border: 1px solid #dce8e5;
+  border-radius: 9px;
+  padding: 6px 10px;
+  margin: 7px 0 9px;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.card-service-name {
+  color: var(--navy);
+  font-weight: 600;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.card-service-price {
+  background: #e6f9f6;
+  color: #0d8b7e;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #b7ede5;
+  white-space: nowrap;
+}
+
+.next-up-price-tag {
+  display: inline-block;
+  background: #e6f9f6;
+  color: #0d8b7e;
+  font-weight: 800;
+  font-size: 12px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  margin-left: 4px;
+  border: 1px solid #b7ede5;
+}
+
+[data-theme="dark"] .card-service-section {
+  background: #0d2130;
+  border-color: #173b50;
+}
+
+[data-theme="dark"] .card-service-name {
+  color: #e2f1f5;
+}
+
+[data-theme="dark"] .card-service-price {
+  background: rgba(88, 228, 211, 0.15);
+  border-color: rgba(88, 228, 211, 0.35);
+  color: var(--aqua);
+}
+
+[data-theme="dark"] .next-up-price-tag {
+  background: rgba(88, 228, 211, 0.15);
+  border-color: rgba(88, 228, 211, 0.35);
+  color: var(--aqua);
+}
+
+/* Botones y acciones del catálogo de servicios */
+.settings-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.danger-button-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid #f29b9b;
+  color: #db5b62;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.danger-button-outline:hover {
+  background: #db5b62;
+  color: white;
+  border-color: #db5b62;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(219, 91, 98, 0.25);
+}
+
+[data-theme="dark"] .danger-button-outline {
+  border-color: rgba(219, 91, 98, 0.5);
+  color: #f87171;
+}
+
+[data-theme="dark"] .danger-button-outline:hover {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+
+/* Animaciones al modificar datos */
+@keyframes cardGlowPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(88, 228, 211, 0.8);
+    transform: scale(1);
+  }
+  20% {
+    box-shadow: 0 0 0 12px rgba(88, 228, 211, 0.45);
+    transform: scale(1.02);
+  }
+  45% {
+    box-shadow: 0 0 0 18px rgba(88, 228, 211, 0.2);
+    transform: scale(1.01);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(7, 26, 38, 0.05);
+    transform: scale(1);
+  }
+}
+
+@keyframes dataHighlightShimmer {
+  0% {
+    background-color: rgba(88, 228, 211, 0.5);
+    border-color: var(--aqua);
+    transform: scale(1.02);
+  }
+  50% {
+    background-color: rgba(88, 228, 211, 0.25);
+  }
+  100% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+}
+
+@keyframes badgePop {
+  0% {
+    transform: scale(0.6) translateY(-4px);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.05) translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.vehicle-card.card-just-updated,
+.settings-card.card-just-updated,
+.vehicle-card:target,
+.settings-card:target {
+  animation: cardGlowPulse 2.8s ease-out;
+  border-left-color: var(--aqua) !important;
+  position: relative;
+  z-index: 5;
+}
+
+.vehicle-card.card-just-updated .card-service-section,
+.vehicle-card.card-just-updated .plate-row,
+.vehicle-card.card-just-updated .vehicle-meta {
+  animation: dataHighlightShimmer 2.8s ease-out;
+}
+
+.updated-floating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, #12ad9e, #0d8b7e);
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 9px;
+  box-shadow: 0 4px 14px rgba(18, 173, 158, 0.4);
+  animation: badgePop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.updated-floating-badge.fade-out {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+

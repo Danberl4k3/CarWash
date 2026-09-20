@@ -269,6 +269,35 @@
     }
   }
 
+  // Animación de datos actualizados tras regresar al panel
+  function checkUpdatedParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const updatedId = urlParams.get('updated');
+    if (!updatedId) return;
+
+    const targetCard = document.getElementById(`booking-${updatedId}`);
+    if (targetCard) {
+      setTimeout(() => {
+        targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+
+      targetCard.classList.add('card-just-updated');
+
+      const badge = document.createElement('div');
+      badge.className = 'updated-floating-badge';
+      badge.innerHTML = '✨ ¡Datos actualizados!';
+      targetCard.prepend(badge);
+
+      setTimeout(() => {
+        targetCard.classList.remove('card-just-updated');
+        badge.classList.add('fade-out');
+        setTimeout(() => badge.remove(), 600);
+      }, 4000);
+    }
+  }
+
+  checkUpdatedParam();
+
   window.setInterval(updateWashTimers, 5000);
   updateWashTimers();
 })();

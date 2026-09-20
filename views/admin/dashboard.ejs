@@ -98,7 +98,7 @@
             </div>
             <div class="next-up-meta">
               <span>Cliente: <b><%= nextBookingToEnter.customer_name || 'Sin nombre' %></b></span>
-              <span>Servicio: <b><%= nextBookingToEnter.services %></b></span>
+              <span>Servicio: <b><%= nextBookingToEnter.services %></b> <strong class="next-up-price-tag"><%= formatMoney(nextBookingToEnter.total_cents) %></strong></span>
               <span>Ingreso: <b><%= hourLabel(nextBookingToEnter.dropoff_hour, nextBookingToEnter.dropoff_minute === null ? 0 : nextBookingToEnter.dropoff_minute % 60) %></b></span>
             </div>
           </div>
@@ -183,7 +183,10 @@
                   <b style="color: var(--aqua-dark); font-weight: 700;">· <%= booking.vehicle_model %></b>
                 <% } %>
               </p>
-              <small><%= booking.services %></small>
+              <div class="card-service-section highlight-on-update">
+                <span class="card-service-name">🧼 <%= booking.services || 'Sin servicio asignado' %></span>
+                <span class="card-service-price"><%= formatMoney(booking.total_cents) %></span>
+              </div>
               <div class="vehicle-meta">
                 <span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span>
                 <span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span>
@@ -225,5 +228,5 @@
     <% }) %>
   </section>
 </main>
-<script src="/public/admin.js?v=8" defer></script>
+<script src="/public/admin.js?v=9" defer></script>
 <%- include('../partials/footer') %>

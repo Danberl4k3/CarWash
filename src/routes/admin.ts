@@ -357,7 +357,9 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
         addonServiceIds: normalizeArray(body.addonServiceIds),
       });
       appEvents.emitAppEvent('booking_updated', { id });
-      return okRedirect(reply, `/admin/reservas/${id}`, 'Cambios guardados.');
+      const updatedBooking = getBooking(db, id);
+      const dateParam = updatedBooking?.booking_date ? `date=${encodeURIComponent(updatedBooking.booking_date)}&` : '';
+      return okRedirect(reply, `/admin?${dateParam}updated=${id}#booking-${id}`, 'Cambios guardados correctamente.');
     } catch (error) {
       const message = error instanceof BookingValidationError ? error.message : 'No se pudieron guardar los cambios.';
       request.log.error(error);
@@ -506,10 +508,30 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
           upsert.run(id, vehicleType, Math.round(amount * 100));
         }
       })();
-      return okRedirect(reply, '/admin/servicios', 'Servicio actualizado.');
+      return okRedirect(reply, `/admin/servicios?updated=${id}#service-${id}`, 'Servicio actualizado.');
     } catch (error) {
       request.log.error(error);
       return failRedirect(reply, '/admin/servicios', 'Revisa los precios ingresados.');
+    }
+  });
+
+  app.post('/admin/servicios/:id/eliminar', async (request, reply) => {
+    const session = requirePostAuth(db, request, reply);
+    if (!session) return;
+    const id = Number((request.params as { id: string }).id);
+    if (!Number.isInteger(id) || id <= 0) {
+      return failRedirect(reply, '/admin/servicios', 'Servicio no encontrado.');
+    }
+    try {
+      db.transaction(() => {
+        db.prepare('DELETE FROM service_prices WHERE service_id = ?').run(id);
+        db.prepare('UPDATE booking_services SET service_id = NULL WHERE service_id = ?').run(id);
+        db.prepare('DELETE FROM services WHERE id = ?').run(id);
+      })();
+      return okRedirect(reply, '/admin/servicios', 'Servicio eliminado correctamente.');
+    } catch (error) {
+      request.log.error(error);
+      return failRedirect(reply, '/admin/servicios', 'No se pudo eliminar el servicio.');
     }
   });
 

@@ -480,6 +480,8 @@ describe('pruebas exhaustivas del sistema', () => {
 
       expect(res.statusCode).toBe(302);
       expect(res.headers.location).toContain('success=');
+      expect(res.headers.location).toContain('/admin?');
+      expect(res.headers.location).toContain(`updated=${b.id}`);
 
       const updated = getBooking(db, b.id);
       expect(updated?.status).toBe('in_progress');
@@ -654,6 +656,42 @@ describe('pruebas exhaustivas del sistema', () => {
 
       const priceCar = db.prepare('SELECT price_cents FROM service_prices WHERE service_id = ? AND vehicle_type = ?').get(service.id, 'car') as any;
       expect(priceCar.price_cents).toBe(2000);
+    });
+
+    it('permite eliminar un servicio duplicado o no deseado en /admin/servicios/:id/eliminar', async () => {
+      // 1. Crear servicio duplicado
+      await app.inject({
+        method: 'POST',
+        url: '/admin/servicios/nuevo',
+        headers: { cookie: authCookie, 'content-type': 'application/x-www-form-urlencoded' },
+        payload: new URLSearchParams({
+          _csrf: csrfToken,
+          name: 'Servicio Duplicado Temporal',
+          category: 'base',
+        }).toString(),
+      });
+
+      const dupe = db.prepare('SELECT * FROM services WHERE name = ?').get('Servicio Duplicado Temporal') as any;
+      expect(dupe).toBeDefined();
+
+      // 2. Eliminar el servicio
+      const delRes = await app.inject({
+        method: 'POST',
+        url: `/admin/servicios/${dupe.id}/eliminar`,
+        headers: { cookie: authCookie, 'content-type': 'application/x-www-form-urlencoded' },
+        payload: new URLSearchParams({ _csrf: csrfToken }).toString(),
+      });
+
+      expect(delRes.statusCode).toBe(302);
+      expect(delRes.headers.location).toContain('/admin/servicios');
+      expect(delRes.headers.location).toContain('success=');
+
+      // 3. Comprobar que ya no existe en la base de datos ni en precios
+      const deletedService = db.prepare('SELECT * FROM services WHERE id = ?').get(dupe.id);
+      expect(deletedService).toBeUndefined();
+
+      const prices = db.prepare('SELECT * FROM service_prices WHERE service_id = ?').all(dupe.id);
+      expect(prices.length).toBe(0);
     });
 
     it('actualiza la contraseña del administrador en /admin/seguridad', async () => {

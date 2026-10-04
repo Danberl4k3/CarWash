@@ -17,7 +17,7 @@
     <p>Elige tu servicio y separa un horario. Nosotros nos encargamos del resto.</p>
     <div class="intro-pills">
       <span>15–20 min por servicio</span>
-      <span>Lun–Sáb</span>
+      <span>Lun–Dom</span>
       <span>7 a. m. – 6 p. m.</span>
     </div>
     <div class="watermark-car" aria-hidden="true">
@@ -31,14 +31,8 @@
       <span class="today-chip"><span></span> Hoy</span>
     </div>
     <%- include('partials/alerts', { error, success: null }) %>
-    <% if (!openToday) { %>
-      <div class="closed-state">
-        <strong>Hoy no atendemos reservas.</strong>
-        <span>Regresa de lunes a sábado para separar tu turno.</span>
-      </div>
-    <% } %>
     <form id="booking-form" class="booking-form" method="post" action="/reservar"
-      data-catalog="<%= serviceCatalog %>" data-now-hour="<%= now.hour %>" <%= !openToday ? 'inert' : '' %>>
+      data-catalog="<%= serviceCatalog %>" data-now-hour="<%= now.hour %>">
       <fieldset>
         <legend><span>1</span> Tus datos</legend>
           <div class="field-wrapper plate-wrapper">
@@ -136,7 +130,7 @@
 
       <div class="booking-total">
         <span><small>Total estimado</small><strong id="booking-total">S/ 0.00</strong></span>
-        <button class="primary-button" type="submit" <%= !openToday ? 'disabled' : '' %>>Confirmar reserva <span>→</span></button>
+        <button class="primary-button" type="submit">Confirmar reserva <span>→</span></button>
       </div>
       <div class="index-yape-bar">
         <span class="index-yape-prompt">🟣 <strong>Pagar con Yape:</strong></span>

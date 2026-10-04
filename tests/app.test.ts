@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type Database from 'better-sqlite3';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
@@ -36,6 +36,21 @@ describe('aplicación web', () => {
     expect(response.headers['content-security-policy']).toContain("default-src 'self'");
   });
 
+  it('mantiene habilitado el formulario de reservas los domingos', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-04T15:00:00Z'));
+    try {
+      const response = await app.inject({ method: 'GET', url: '/' });
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toContain('Lun–Dom');
+      expect(response.body).not.toContain('Hoy no atendemos reservas.');
+      expect(response.body).toMatch(/<form id="booking-form"[^>]*>/);
+      expect(response.body.match(/<form id="booking-form"[^>]*>/)?.[0]).not.toContain('inert');
+      expect(response.body.match(/<button class="primary-button" type="submit"[^>]*>/)?.[0]).not.toContain('disabled');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('expone un endpoint de salud', async () => {
     const response = await app.inject({ method: 'GET', url: '/salud' });
     expect(response.statusCode).toBe(200);

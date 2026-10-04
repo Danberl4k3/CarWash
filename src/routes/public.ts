@@ -4,7 +4,7 @@ import { BUSINESS, PAYMENT_LABELS, STATUS_LABELS, VEHICLE_LABELS, formatMoney, h
 import { getServicesWithPrices } from '../db.js';
 import { BookingValidationError, createBooking, getBookingByCode, lookupVehicleByPlate } from '../domain/bookings.js';
 import { appEvents } from '../events.js';
-import { dropoffHours, getLimaNow, isBusinessDay, isDropoffInPast, pickupHours, roundUpTo10 } from '../time.js';
+import { dropoffHours, getLimaNow, isDropoffInPast, pickupHours, roundUpTo10 } from '../time.js';
 import { processPlateOcr } from '../services/plate-ocr.js';
 import { consultarPlacaJsonPe, getVehicleTypeLabel } from '../services/json-pe.js';
 
@@ -33,7 +33,7 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
       ...slot,
       used: used.get(slot.hour) ?? 0,
       available: Math.max(0, slot.max_slots - (used.get(slot.hour) ?? 0)),
-      disabled: !isBusinessDay(now) || isDropoffInPast(slot.hour, now) || (used.get(slot.hour) ?? 0) >= slot.max_slots,
+      disabled: isDropoffInPast(slot.hour, now) || (used.get(slot.hour) ?? 0) >= slot.max_slots,
       label: hourLabel(slot.hour),
     }));
     return reply.view('index.ejs', {
@@ -41,7 +41,6 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
       business: BUSINESS,
       now,
       automaticDropoff,
-      openToday: isBusinessDay(now),
       services,
       serviceCatalog: JSON.stringify(services).replaceAll('<', '\\u003c'),
       slots,

@@ -29,10 +29,6 @@ export function getLimaNow(date = new Date()): LimaNow {
   };
 }
 
-export function isBusinessDay(now: LimaNow): boolean {
-  return now.weekday !== 'Sun';
-}
-
 export function isDropoffInPast(hour: number, now: LimaNow): boolean {
   return hour <= now.hour;
 }

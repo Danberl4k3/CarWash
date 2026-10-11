@@ -1,7 +1,8 @@
 import type Database from 'better-sqlite3';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { BUSINESS, PAYMENT_LABELS, STATUS_LABELS, VEHICLE_LABELS, formatMoney, hourLabel } from '../constants.js';
 import { getServicesWithPrices } from '../db.js';
+import { assertCsrf, getSession } from '../auth.js';
 import { BookingValidationError, createBooking, getBookingByCode, lookupVehicleByPlate } from '../domain/bookings.js';
 import { appEvents } from '../events.js';
 import { dropoffHours, getLimaNow, isDropoffInPast, pickupHours, roundUpTo10 } from '../time.js';
@@ -15,7 +16,14 @@ function stringArray(value: unknown): string[] {
 }
 
 export async function registerPublicRoutes(app: FastifyInstance, db: Database.Database): Promise<void> {
+  function lookupForRequest(request: FastifyRequest, plate: string) {
+    const result = lookupVehicleByPlate(db, plate);
+    if (getSession(db, request)) return result;
+    return { ...result, name: null, phone: null };
+  }
   app.get('/', async (request, reply) => {
+    const session = getSession(db, request);
+    if (session) reply.header('Cache-Control', 'no-store');
     const now = getLimaNow();
     const automaticDropoff = { hour: now.hour, minute: now.minute };
     const services = getServicesWithPrices(db, true);
@@ -47,6 +55,8 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
       pickupSlots: pickupHours().map((hour) => ({ hour, label: hourLabel(hour) })),
       vehicleLabels: VEHICLE_LABELS,
       paymentLabels: PAYMENT_LABELS,
+      canSetPaymentStatus: Boolean(session),
+      csrfToken: session?.csrfToken ?? null,
       error: typeof (request.query as { error?: unknown }).error === 'string' ? (request.query as { error: string }).error : null,
       formatMoney,
       hourLabel,
@@ -61,7 +71,7 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
       if (!plate) return reply.code(400).send({ error: 'Placa requerida' });
       
       // 1. Buscar primero en base de datos local (clientes frecuentes)
-      const localResult = lookupVehicleByPlate(db, plate);
+      const localResult = lookupForRequest(request, plate);
       if (localResult.found) {
         return reply.send({
           ...localResult,
@@ -100,7 +110,7 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
       if (!plate) return reply.code(400).send({ error: 'Placa requerida' });
 
       // 1. Base de datos local
-      const localResult = lookupVehicleByPlate(db, plate);
+      const localResult = lookupForRequest(request, plate);
       if (localResult.found) {
         return reply.send({
           found: true,
@@ -142,7 +152,7 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
 
       if (autoLookup && ocrResult.placa && ocrResult.legible) {
         // Consultar vehículo automáticamente
-        const local = lookupVehicleByPlate(db, ocrResult.placa);
+        const local = lookupForRequest(request, ocrResult.placa);
         let vehicleData;
         if (local.found) {
           vehicleData = {
@@ -175,6 +185,10 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
     { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
     async (request, reply) => {
       const body = request.body as Record<string, unknown>;
+      const session = getSession(db, request);
+      if (session && !assertCsrf(session, body._csrf)) {
+        return reply.code(403).send('La sesión o el formulario expiró. Recarga la página.');
+      }
       try {
         const now = getLimaNow();
         const pickup = String(body.pickupTime || '').trim();
@@ -201,8 +215,9 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
           pickupHour: Number.isFinite(pickupHour) ? (pickupHour as number) : (now.hour + 1) % 24,
           pickupMinute: Number.isFinite(pickupMinute) ? (pickupMinute as number) : 0,
           paymentMethod: body.paymentMethod,
+          paymentStatus: session ? body.paymentStatus : undefined,
           notes: body.notes,
-        });
+        }, { createdByAdmin: Boolean(session) });
 
         // Emitir evento para el panel administrativo en tiempo real (SSE)
         appEvents.emitAppEvent('booking_created', { code: result.code, id: result.id });

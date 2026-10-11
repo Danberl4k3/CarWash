@@ -27,5 +27,11 @@ jobs:
       - name: TypeScript validation
         run: npm run typecheck
 
+      - name: Compile production server
+        run: npm run build
+
       - name: Run unit & integration tests
         run: npm test
+
+      - name: Build Railway image
+        run: docker build --tag carwash-ci .

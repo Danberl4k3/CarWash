@@ -55,6 +55,7 @@ export const bookingSchema = z.object({
   dropoffMinute: z.coerce.number().int().min(0).max(59).default(0),
   pickupMinute: z.coerce.number().int().min(0).max(59).default(0),
   paymentMethod: z.enum(PAYMENT_METHODS, { message: 'Selecciona un método de pago.' }),
+  paymentStatus: z.enum(PAYMENT_STATUSES, { message: 'Selecciona si el cliente pagó o no pagó.' }).default('pending'),
   notes: z
     .string()
     .trim()
@@ -76,6 +77,7 @@ export interface BookingInput {
   dropoffMinute: number;
   pickupMinute: number;
   paymentMethod: PaymentMethod;
+  paymentStatus?: PaymentStatus;
   notes: string | null;
 }
 
@@ -159,19 +161,21 @@ export function createBooking(
     (total, service) => total + (service.prices[input.vehicleType] ?? 0),
     0,
   );
+  const paymentStatus = options.createdByAdmin ? (input.paymentStatus ?? 'pending') : 'pending';
+  const amountPaidCents = paymentStatus === 'paid' ? totalCents : 0;
   const transaction = db.transaction(() => {
     let vehicle = db.prepare('SELECT id, customer_id FROM vehicles WHERE plate = ?').get(input.plate) as
       | { id: number; customer_id: number | null }
       | undefined;
     let customerId = vehicle?.customer_id ?? null;
 
-    if (customerId) {
+    if (customerId && options.createdByAdmin) {
       db.prepare(`
         UPDATE customers
         SET name = COALESCE(?, name), phone = COALESCE(?, phone), updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).run(input.name, input.phone, customerId);
-    } else {
+    } else if (!customerId) {
       const customerResult = db
         .prepare('INSERT INTO customers (name, phone) VALUES (?, ?)')
         .run(input.name, input.phone);
@@ -179,9 +183,11 @@ export function createBooking(
     }
 
     if (vehicle) {
-      db.prepare(`
-        UPDATE vehicles SET vehicle_type = ?, model = COALESCE(?, model), customer_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-      `).run(input.vehicleType, input.model ?? null, customerId, vehicle.id);
+      if (options.createdByAdmin || !vehicle.customer_id) {
+        db.prepare(`
+          UPDATE vehicles SET vehicle_type = ?, model = COALESCE(?, model), customer_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+        `).run(input.vehicleType, input.model ?? null, customerId, vehicle.id);
+      }
     } else {
       const vehicleResult = db
         .prepare('INSERT INTO vehicles (plate, vehicle_type, model, customer_id) VALUES (?, ?, ?, ?)')
@@ -193,8 +199,8 @@ export function createBooking(
     const bookingResult = db.prepare(`
       INSERT INTO bookings (
         code, booking_date, customer_id, vehicle_id, dropoff_hour, pickup_hour, dropoff_minute, pickup_minute,
-        payment_method, total_cents, notes, created_by_admin
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        payment_method, payment_status, amount_paid_cents, total_cents, notes, created_by_admin
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       code,
       now.date,
@@ -205,11 +211,18 @@ export function createBooking(
       toMinutes(input.dropoffHour, input.dropoffMinute),
       toMinutes(input.pickupHour, input.pickupMinute),
       input.paymentMethod,
+      paymentStatus,
+      amountPaidCents,
       totalCents,
       input.notes,
       options.createdByAdmin ? 1 : 0,
     );
     const bookingId = Number(bookingResult.lastInsertRowid);
+    db.prepare(`
+      INSERT INTO booking_snapshots (booking_id, customer_name, phone, plate, vehicle_type, vehicle_model)
+      SELECT b.id, COALESCE(?, c.name), COALESCE(?, c.phone), ?, ?, COALESCE(?, v.model)
+      FROM bookings b JOIN vehicles v ON v.id = b.vehicle_id LEFT JOIN customers c ON c.id = b.customer_id WHERE b.id = ?
+    `).run(input.name, input.phone, input.plate, input.vehicleType, input.model ?? null, bookingId);
     const insertBookingService = db.prepare(`
       INSERT INTO booking_services (booking_id, service_id, service_name, category, price_cents)
       VALUES (?, ?, ?, ?, ?)
@@ -256,14 +269,23 @@ export interface BookingDetailRow {
   services: string;
 }
 
+const bookingDetailsSelect = `
+  SELECT b.*,
+    CASE WHEN s.booking_id IS NULL THEN c.name ELSE s.customer_name END AS customer_name,
+    CASE WHEN s.booking_id IS NULL THEN c.phone ELSE s.phone END AS phone,
+    COALESCE(s.plate, v.plate) AS plate, COALESCE(s.vehicle_type, v.vehicle_type) AS vehicle_type,
+    CASE WHEN s.booking_id IS NULL THEN v.model ELSE s.vehicle_model END AS vehicle_model,
+    GROUP_CONCAT(bs.service_name, ' · ') AS services
+  FROM bookings b
+  JOIN vehicles v ON v.id = b.vehicle_id
+  LEFT JOIN customers c ON c.id = b.customer_id
+  LEFT JOIN booking_snapshots s ON s.booking_id = b.id
+  LEFT JOIN booking_services bs ON bs.booking_id = b.id
+`;
+
 export function getBooking(db: Database.Database, id: number): BookingDetailRow | undefined {
   return db.prepare(`
-    SELECT b.*, c.name AS customer_name, c.phone, v.plate, v.vehicle_type, v.model AS vehicle_model,
-      GROUP_CONCAT(bs.service_name, ' · ') AS services
-    FROM bookings b
-    JOIN vehicles v ON v.id = b.vehicle_id
-    LEFT JOIN customers c ON c.id = b.customer_id
-    LEFT JOIN booking_services bs ON bs.booking_id = b.id
+    ${bookingDetailsSelect}
     WHERE b.id = ?
     GROUP BY b.id
   `).get(id) as BookingDetailRow | undefined;
@@ -271,12 +293,7 @@ export function getBooking(db: Database.Database, id: number): BookingDetailRow 
 
 export function getBookingByCode(db: Database.Database, code: string): BookingDetailRow | undefined {
   return db.prepare(`
-    SELECT b.*, c.name AS customer_name, c.phone, v.plate, v.vehicle_type, v.model AS vehicle_model,
-      GROUP_CONCAT(bs.service_name, ' · ') AS services
-    FROM bookings b
-    JOIN vehicles v ON v.id = b.vehicle_id
-    LEFT JOIN customers c ON c.id = b.customer_id
-    LEFT JOIN booking_services bs ON bs.booking_id = b.id
+    ${bookingDetailsSelect}
     WHERE b.code = ?
     GROUP BY b.id
   `).get(code) as BookingDetailRow | undefined;
@@ -299,15 +316,10 @@ export function getBookingServiceIds(
 
 export function listBookingsForDate(db: Database.Database, date: string): BookingDetailRow[] {
   return db.prepare(`
-    SELECT b.*, c.name AS customer_name, c.phone, v.plate, v.vehicle_type, v.model AS vehicle_model,
-      GROUP_CONCAT(bs.service_name, ' · ') AS services
-    FROM bookings b
-    JOIN vehicles v ON v.id = b.vehicle_id
-    LEFT JOIN customers c ON c.id = b.customer_id
-    LEFT JOIN booking_services bs ON bs.booking_id = b.id
+    ${bookingDetailsSelect}
     WHERE b.booking_date = ?
     GROUP BY b.id
-    ORDER BY b.pickup_hour, b.dropoff_hour, b.created_at
+    ORDER BY b.pickup_minute, b.dropoff_minute, b.created_at
   `).all(date) as BookingDetailRow[];
 }
 
@@ -339,8 +351,8 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
     addonServiceIds: z.array(z.coerce.number().int().positive()).default([]),
     dropoffHour: z.coerce.number().int().min(0).max(23),
     pickupHour: z.coerce.number().int().min(0).max(23),
-    dropoffMinute: z.coerce.number().int().min(0).max(59).default(0),
-    pickupMinute: z.coerce.number().int().min(0).max(59).default(0),
+    dropoffMinute: z.coerce.number().int().min(0).max(59).optional(),
+    pickupMinute: z.coerce.number().int().min(0).max(59).optional(),
     status: z.enum(BOOKING_STATUSES),
     paymentMethod: z.enum(PAYMENT_METHODS),
     paymentStatus: z.enum(PAYMENT_STATUSES),
@@ -366,6 +378,9 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
   }
   const selection = selectedServices(getServicesWithPrices(db), update as BookingInput);
   const allSelected = [selection.base, ...selection.addons];
+  const previousServices = db.prepare('SELECT service_id, service_name, category, price_cents FROM booking_services WHERE booking_id = ?')
+    .all(id) as Array<{ service_id: number | null; service_name: string; category: 'base' | 'addon'; price_cents: number }>;
+  const startedWashingAt = washingStartForStatus(booking, update.status);
   db.transaction(() => {
     // 1. Manejo seguro de cliente sin afectar otras reservas duplicadas o compartidas
     let targetCustomerId: number | null = booking.customer_id;
@@ -454,6 +469,7 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
         dropoff_minute = ?,
         pickup_minute = ?,
         status = ?,
+        started_washing_at = ?,
         payment_method = ?,
         payment_status = ?,
         amount_paid_cents = ?,
@@ -466,9 +482,10 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
       targetCustomerId,
       update.dropoffHour,
       update.pickupHour,
-      toMinutes(update.dropoffHour, update.dropoffMinute),
-      toMinutes(update.pickupHour, update.pickupMinute),
+      toMinutes(update.dropoffHour, update.dropoffMinute ?? ((booking.dropoff_minute ?? 0) % 60)),
+      toMinutes(update.pickupHour, update.pickupMinute ?? ((booking.pickup_minute ?? 0) % 60)),
       update.status,
+      startedWashingAt,
       update.paymentMethod,
       update.paymentStatus,
       amountPaidCents,
@@ -477,6 +494,13 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
       id,
     );
 
+    db.prepare(`
+      INSERT INTO booking_snapshots (booking_id, customer_name, phone, plate, vehicle_type, vehicle_model)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(booking_id) DO UPDATE SET customer_name = excluded.customer_name, phone = excluded.phone,
+        plate = excluded.plate, vehicle_type = excluded.vehicle_type, vehicle_model = excluded.vehicle_model
+    `).run(id, update.name, update.phone, update.plate, update.vehicleType, update.model ?? null);
+
     // 4. Actualizar los servicios seleccionados exclusivamente para esta reserva
     db.prepare('DELETE FROM booking_services WHERE booking_id = ?').run(id);
     const insertBookingService = db.prepare(`
@@ -484,15 +508,29 @@ export function updateBookingByAdmin(db: Database.Database, id: number, raw: unk
       VALUES (?, ?, ?, ?, ?)
     `);
     for (const service of allSelected) {
+      const previous = booking.vehicle_type === update.vehicleType
+        ? previousServices.find((item) => item.service_id === service.id)
+        : undefined;
       insertBookingService.run(
         id,
         service.id,
-        service.name,
-        service.category,
-        service.prices[update.vehicleType] ?? 0,
+        previous?.service_name ?? service.name,
+        previous?.category ?? service.category,
+        previous?.price_cents ?? service.prices[update.vehicleType] ?? 0,
       );
     }
   })();
+}
+
+export function washingStartForStatus(
+  booking: { status: string; started_washing_at: string | null },
+  status: BookingStatus,
+): string | null {
+  if (status === 'pending' || status === 'cancelled') return null;
+  if (status === 'in_progress' && (booking.status !== 'in_progress' || !booking.started_washing_at)) {
+    return new Date().toISOString();
+  }
+  return booking.started_washing_at;
 }
 
 export const WASH_DURATION_MINUTES: Record<VehicleType, number> = {
@@ -504,9 +542,10 @@ export const WASH_DURATION_MINUTES: Record<VehicleType, number> = {
 
 export function checkAndAutoCompleteBookings(db: Database.Database): number {
   const inProgress = db.prepare(`
-    SELECT b.id, b.started_washing_at, v.vehicle_type
+    SELECT b.id, b.started_washing_at, COALESCE(s.vehicle_type, v.vehicle_type) AS vehicle_type
     FROM bookings b
     JOIN vehicles v ON b.vehicle_id = v.id
+    LEFT JOIN booking_snapshots s ON s.booking_id = b.id
     WHERE b.status = 'in_progress' AND b.started_washing_at IS NOT NULL
   `).all() as Array<{ id: number; started_washing_at: string; vehicle_type: VehicleType }>;
 

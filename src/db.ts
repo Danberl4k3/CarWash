@@ -103,6 +103,20 @@ CREATE TABLE IF NOT EXISTS booking_services (
   PRIMARY KEY (booking_id, service_name)
 );
 
+CREATE TABLE IF NOT EXISTS booking_snapshots (
+  booking_id INTEGER PRIMARY KEY REFERENCES bookings(id) ON DELETE CASCADE,
+  customer_name TEXT,
+  phone TEXT,
+  plate TEXT NOT NULL,
+  vehicle_type TEXT NOT NULL,
+  vehicle_model TEXT
+);
+
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  name TEXT PRIMARY KEY,
+  applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_bookings_date_dropoff ON bookings(booking_date, dropoff_hour);
 CREATE INDEX IF NOT EXISTS idx_bookings_date_pickup ON bookings(booking_date, pickup_hour);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
@@ -150,13 +164,14 @@ export function createDatabase(databasePath?: string): DatabaseContext {
   db.exec(schema);
   // Minute precision was added after the original hourly schema. Keep hourly
   // columns for compatibility and backfill the new values for old bookings.
-  for (const statement of [
-    'ALTER TABLE bookings ADD COLUMN dropoff_minute INTEGER',
-    'ALTER TABLE bookings ADD COLUMN pickup_minute INTEGER',
-    'ALTER TABLE vehicles ADD COLUMN model TEXT',
-    'ALTER TABLE bookings ADD COLUMN started_washing_at TEXT',
+  for (const [table, column, type] of [
+    ['bookings', 'dropoff_minute', 'INTEGER'],
+    ['bookings', 'pickup_minute', 'INTEGER'],
+    ['vehicles', 'model', 'TEXT'],
+    ['bookings', 'started_washing_at', 'TEXT'],
   ]) {
-    try { db.exec(statement); } catch { /* column already exists */ }
+    const columns = db.pragma(`table_info(${table})`) as Array<{ name: string }>;
+    if (!columns.some((item) => item.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
   }
   const bookingsSql = (db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='bookings'").get() as { sql: string } | undefined)?.sql;
   if (bookingsSql && (bookingsSql.includes('BETWEEN 8 AND 18') || bookingsSql.includes('BETWEEN 7 AND 17'))) {
@@ -191,15 +206,23 @@ export function createDatabase(databasePath?: string): DatabaseContext {
       CREATE INDEX IF NOT EXISTS idx_bookings_date_dropoff ON bookings(booking_date, dropoff_hour);
       CREATE INDEX IF NOT EXISTS idx_bookings_date_pickup ON bookings(booking_date, pickup_hour);
       CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+      CREATE INDEX IF NOT EXISTS idx_bookings_vehicle_id ON bookings(vehicle_id);
+      CREATE INDEX IF NOT EXISTS idx_bookings_customer_id ON bookings(customer_id);
       COMMIT;
       PRAGMA foreign_keys = ON;
     `);
   }
 
   db.exec(`
+    UPDATE vehicles SET vehicle_type = 'large_suv' WHERE vehicle_type = 'pickup';
+    UPDATE booking_snapshots SET vehicle_type = 'large_suv' WHERE vehicle_type = 'pickup';
+    INSERT OR IGNORE INTO service_prices (service_id, vehicle_type, price_cents)
+      SELECT service_id, 'large_suv', price_cents FROM service_prices WHERE vehicle_type = 'pickup';
     UPDATE bookings SET dropoff_minute = dropoff_hour * 60 WHERE dropoff_minute IS NULL;
     UPDATE bookings SET pickup_minute = pickup_hour * 60 WHERE pickup_minute IS NULL;
-    UPDATE capacity_slots SET max_slots = 6 WHERE max_slots = 1;
+    INSERT OR IGNORE INTO booking_snapshots (booking_id, customer_name, phone, plate, vehicle_type, vehicle_model)
+      SELECT b.id, c.name, c.phone, v.plate, v.vehicle_type, v.model
+      FROM bookings b JOIN vehicles v ON v.id = b.vehicle_id LEFT JOIN customers c ON c.id = b.customer_id;
   `);
 
   const insertService = db.prepare(`
@@ -212,11 +235,17 @@ export function createDatabase(databasePath?: string): DatabaseContext {
     VALUES (?, ?, ?)
   `);
   const seedServices = db.transaction(() => {
-    for (const item of defaultServices) {
-      insertService.run(...item);
-      const row = db.prepare('SELECT id FROM services WHERE slug = ?').get(item[0]) as { id: number };
-      for (const vehicleType of VEHICLE_TYPES) insertPrice.run(row.id, vehicleType, defaultPrices[item[0]]?.[vehicleType] ?? 0);
+    const seeded = db.prepare("SELECT 1 FROM schema_migrations WHERE name = 'initial_catalog_v1'").get();
+    const adminCount = (db.prepare('SELECT COUNT(*) AS count FROM admins').get() as { count: number }).count;
+    const serviceCount = (db.prepare('SELECT COUNT(*) AS count FROM services').get() as { count: number }).count;
+    if (!seeded && adminCount === 0 && serviceCount === 0) {
+      for (const item of defaultServices) {
+        insertService.run(...item);
+        const row = db.prepare('SELECT id FROM services WHERE slug = ?').get(item[0]) as { id: number };
+        for (const vehicleType of VEHICLE_TYPES) insertPrice.run(row.id, vehicleType, defaultPrices[item[0]]?.[vehicleType] ?? 0);
+      }
     }
+    if (!seeded) db.prepare("INSERT INTO schema_migrations (name) VALUES ('initial_catalog_v1')").run();
     const insertCapacity = db.prepare('INSERT OR IGNORE INTO capacity_slots (hour, max_slots) VALUES (?, 6)');
     for (const hour of dropoffHours()) insertCapacity.run(hour);
   });

@@ -25,12 +25,15 @@ Sistema web integral de reservas y control de pista para **DASAV Car Wash**, des
 
 ## 🧪 Pruebas y Validación
 
-- `npm test`: Ejecuta toda la suite de pruebas unitarias y de integración (14 pruebas pasando).
+- `npm test`: Ejecuta la suite de pruebas unitarias y de integración (90 pruebas validadas).
 - `npm run typecheck`: Validación estricta de tipos con el compilador TypeScript (`tsc --noEmit`).
 - `npm run build`: Compila el código TypeScript a JavaScript en el directorio `dist/`.
+- `npm run test:e2e`: Después de compilar, ejecuta 14 etapas en Edge/Chromium con una base en memoria. Para otro navegador Chromium, configura `BROWSER_PATH`.
 - `npm run test:visual`: Smoke test visual para diseño móvil y panel administrativo (requiere Edge o Chromium).
-- `npm run db:backup`: Genera una copia de seguridad atómica y consistente de la base SQLite en `data/backups/`.
-- `npm run db:restore <ruta>`: Valida la integridad de un archivo `.db` y lo restaura en la ruta de `DATABASE_PATH`.
+- `npm run db:backup`: Genera una copia consistente de SQLite en `backups/` junto a la base de datos, también dentro del volumen de Railway.
+- `npm run db:restore -- <ruta>`: Valida la integridad y las relaciones de un archivo `.db`, conserva una copia del destino y lo restaura mediante SQLite.
+
+La opción **Sí pagó / No pagó** aparece en Nueva reserva al iniciar sesión como administrador. Sí pagó registra el importe completo, incluidos adicionales; No pagó registra cero cobrado. Los visitantes no pueden marcar una reserva como pagada. La edición permite registrar abonos parciales.
 
 ---
 
@@ -41,10 +44,12 @@ Para que todos los miembros del equipo y clientes, desde cualquier ubicación, u
 ### 1. Requisitos de Configuración en Railway
 
 El archivo [`railway.toml`](./railway.toml) ya incluye la configuración de construcción y despliegue:
-* **Build Command**: `npm ci && npm run build`
+* **Builder**: Dockerfile con Node 22. Instala dependencias, compila y conserva las dependencias de producción en la imagen final.
 * **Start Command**: `npm start`
 * **Health Check Path**: `/salud`
 * **Health Check Timeout**: `120` segundos
+
+Conecta este repositorio y selecciona la rama `main`. El `Dockerfile` define `NODE_ENV=production`, `TZ=America/Lima` y `HOST=0.0.0.0`; el servidor utiliza el `PORT` asignado por Railway. `nixpacks.toml` queda como configuración antigua y no se utiliza con el builder Dockerfile. La configuración de despliegue se basa en la [referencia de Railway](https://docs.railway.com/config-as-code/reference).
 
 ### 2. Variables de Entorno en Railway
 
@@ -97,10 +102,13 @@ Si deseas transferir tu base de datos local actual con todos sus turnos, servici
    ```bash
    npx @railway/cli link
    ```
-3. Ejecuta la restauración de tu copia de seguridad local hacia el contenedor en Railway:
+3. Transfiere previamente una copia consistente de SQLite al volumen del servicio. Subir el código a GitHub no transfiere los datos locales.
+4. Abre una sesión en el contenedor con `railway ssh` y ejecuta allí, usando la ruta real del backup:
    ```bash
-   npx @railway/cli run npm run db:restore data/carwash_backup_20260915.db
+   npm run db:restore -- /data/backups/archivo_backup.db
    ```
+
+   `railway run` ejecuta comandos en tu equipo con variables de Railway; no restaura la base del contenedor. Consulta [Railway SSH](https://docs.railway.com/cli/ssh) y [Railway run](https://docs.railway.com/cli/run). Programa las restauraciones fuera del horario de atención para evitar nuevas escrituras mientras recuperas los datos.
 
 #### Opción B: Arranque Limpio Automatizado
 Si no cargas un backup previo, la aplicación detectará que `/data/carwash.db` no existe y creará automáticamente:
@@ -120,13 +128,15 @@ Si no cargas un backup previo, la aplicación detectará que `/data/carwash.db` 
    ```bash
    npm run db:backup
    ```
-   Genera una copia consistente en `data/backups/carwash_backup_YYYY-MM-DD...db`. El script ejecuta un checkpoint del WAL y utiliza la API atómica `.backup()` de `better-sqlite3`, permitiendo realizar copias en caliente sin detener el servidor ni causar bloqueos.
+   Genera una copia consistente en la carpeta `backups` junto a la base; con `/data/carwash.db`, se guarda en `/data/backups`. Utiliza la API `.backup()` de `better-sqlite3` e incluye los datos pendientes del WAL. Conserva los 14 backups automáticos más recientes.
 
 2. **Restaurar un backup**:
    ```bash
-   npm run db:restore ruta/al/archivo_backup.db
+   npm run db:restore -- ruta/al/archivo_backup.db
    ```
-   El script verifica la integridad de SQLite antes de reemplazar la base destino.
+   El script verifica la integridad y las relaciones, crea una copia `before_restore_...db` del destino existente y restaura mediante SQLite, compatible con WAL. Las copias previas a restaurar se conservan hasta que se eliminen manualmente.
+
+Para consultas reales de placas y OCR, configura `JSON_PE_TOKEN` y `GEMINI_API_KEY` en las variables del servicio. En producción no se emplean respuestas simuladas; la reserva manual sigue disponible. Los secretos, bases de datos y copias se excluyen de Git y del contexto Docker.
 
 ---
 

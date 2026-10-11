@@ -137,6 +137,9 @@
   const lookupBtn = form.querySelector('#btn-lookup-plate');
   const cameraInput = form.querySelector('#plate-camera-input');
   const feedbackEl = form.querySelector('#plate-feedback');
+  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[character]);
 
   function showFeedback(html, type = 'info', autoHide = 0) {
     if (!feedbackEl) return;
@@ -203,6 +206,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ placa: plate }),
       });
+      if (plateInput.value.trim().toUpperCase() !== plate) return;
 
       if (!res.ok) {
         let errMessage = 'No se pudo consultar la placa';
@@ -210,19 +214,20 @@
           const errData = await res.json();
           if (errData && errData.error) errMessage = errData.error;
         } catch {}
-        showFeedback(errMessage, 'warning', 4000);
+        showFeedback(escapeHtml(errMessage), 'warning', 4000);
         return;
       }
 
       const data = await res.json();
+      if (plateInput.value.trim().toUpperCase() !== plate) return;
       if (data && data.found) {
         applyVehicleData(data);
-        const sourceLabel = data.source === 'local' ? 'Cliente registrado' : 'SUNARP oficial';
-        const modelDesc = data.fullModel || data.modelo || data.model || '';
-        const typeDesc = data.vehicleTypeLabel ? ` · ${data.vehicleTypeLabel}` : '';
+        const sourceLabel = data.source === 'local' ? 'Cliente registrado' : data.source === 'mock' ? 'Datos de demostración' : 'SUNARP oficial';
+        const modelDesc = escapeHtml(data.fullModel || data.modelo || data.model || '');
+        const typeDesc = data.vehicleTypeLabel ? ` · ${escapeHtml(data.vehicleTypeLabel)}` : '';
         showFeedback(`✓ <strong>${sourceLabel}:</strong> ${modelDesc}${typeDesc}`, 'success', 6000);
       } else {
-        showFeedback(`ℹ️ Placa <strong>${plate}</strong> no encontrada en SUNARP. Puedes continuar con el registro manual.`, 'info', 5000);
+        showFeedback(`ℹ️ Placa <strong>${escapeHtml(plate)}</strong> no encontrada en SUNARP. Puedes continuar con el registro manual.`, 'info', 5000);
       }
     } catch {
       showFeedback('Error de conexión al consultar la placa', 'warning', 4000);
@@ -279,7 +284,7 @@
           const errData = await res.json();
           if (errData && errData.notas) errMessage = errData.notas;
         } catch {}
-        showFeedback(`⚠️ ${errMessage}`, 'warning', 7000);
+        showFeedback(`⚠️ ${escapeHtml(errMessage)}`, 'warning', 7000);
         return;
       }
 
@@ -291,22 +296,22 @@
         }
 
         const confidencePct = Math.round((ocrResult.confianza || 0.95) * 100);
-        let msg = `✓ Placa: <strong>${ocrResult.placa}</strong> (${confidencePct}% confianza)`;
+        let msg = `✓ Placa: <strong>${escapeHtml(ocrResult.placa)}</strong> (${confidencePct}% confianza)`;
         if (ocrResult.notas) {
-          msg += `<br><small style="color:var(--text-muted)">Nota: ${ocrResult.notas}</small>`;
+          msg += `<br><small style="color:var(--text-muted)">Nota: ${escapeHtml(ocrResult.notas)}</small>`;
         }
 
         if (ocrResult.vehicle && ocrResult.vehicle.found) {
           applyVehicleData(ocrResult.vehicle);
-          const vehicleDesc = ocrResult.vehicle.fullModel || ocrResult.vehicle.modelo || '';
-          const typeDesc = ocrResult.vehicle.vehicleTypeLabel ? ` · ${ocrResult.vehicle.vehicleTypeLabel}` : '';
-          msg += `<br>🚗 <strong>SUNARP:</strong> ${vehicleDesc}${typeDesc}`;
+          const vehicleDesc = escapeHtml(ocrResult.vehicle.fullModel || ocrResult.vehicle.modelo || ocrResult.vehicle.model || '');
+          const typeDesc = ocrResult.vehicle.vehicleTypeLabel ? ` · ${escapeHtml(ocrResult.vehicle.vehicleTypeLabel)}` : '';
+          msg += `<br>🚗 <strong>Vehículo:</strong> ${vehicleDesc}${typeDesc}`;
         }
 
         showFeedback(msg, 'success', 8000);
       } else {
         const errorMsg = ocrResult.notas || 'No se detectó placa legible en la imagen. Intenta enfocar más cerca.';
-        showFeedback(`⚠️ ${errorMsg}`, 'warning', 7000);
+        showFeedback(`⚠️ ${escapeHtml(errorMsg)}`, 'warning', 7000);
       }
     } catch {
       showFeedback('No se pudo procesar la imagen para OCR. Verifica tu conexión.', 'warning', 5000);

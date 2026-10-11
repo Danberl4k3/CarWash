@@ -122,19 +122,21 @@ export async function processPlateOcr(imageBase64OrDataUri: string): Promise<Pla
   }
 
   // 2. Procesador local heurístico / simulador para tests y offline
-  const localResult = processLocalPlateOcr(trimmed);
-  if (localResult.placa || trimmed.includes('SIMULATE_')) return localResult;
+  if (process.env.NODE_ENV !== 'production') {
+    const localResult = processLocalPlateOcr(trimmed);
+    if (localResult.placa || trimmed.includes('SIMULATE_')) return localResult;
+  }
 
   if (!apiKey) {
     return {
       placa: null,
       confianza: 0,
       legible: false,
-      notas: 'Para escanear fotos reales con IA, configura GEMINI_API_KEY en las Variables de Railway o en tu archivo .env',
+      notas: 'El escaneo de fotos no está disponible. Puedes ingresar la placa manualmente.',
     };
   }
 
-  return localResult;
+  return { placa: null, confianza: 0, legible: false, notas: 'No se pudo leer la placa. Puedes ingresarla manualmente.' };
 }
 
 /**
@@ -158,6 +160,7 @@ async function callGeminiVisionOcr(imageBase64OrDataUri: string, apiKey: string)
 
       const response = await fetch(endpoint, {
         method: 'POST',
+        signal: AbortSignal.timeout(8000),
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [

@@ -176,7 +176,13 @@
         body: params.toString(),
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
-      await silentRefresh(postPromise);
+      const response = await postPromise;
+      if (!response.ok || new URL(response.url).pathname === '/admin/login') {
+        showToast('No se pudo guardar. Recarga la página e inicia sesión si es necesario.');
+        return;
+      }
+      // Actualizar la fecha que el usuario está consultando, incluida una fecha histórica.
+      await silentRefresh();
     } catch (err) {
       console.error('Quick action failed:', err);
     } finally {
@@ -283,12 +289,11 @@
   });
 
   // Clicks en tarjetas de resumen superior (Vehículos, Pendientes, En proceso, Terminados, Cobrado)
-  document.querySelectorAll('[data-summary-filter]').forEach((item) => {
-    item.addEventListener('click', () => {
-      const filterTarget = item.dataset.summaryFilter;
-      setFilter(filterTarget);
-      document.querySelector('.board-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+  document.addEventListener('click', (event) => {
+    const item = event.target.closest('[data-summary-filter]');
+    if (!item) return;
+    setFilter(item.dataset.summaryFilter);
+    document.querySelector('.board-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   // Toggle de ocultar terminados y pagados (activado por defecto)
@@ -339,6 +344,7 @@
   }
 
   // Temporizador en vivo para vehículos en progreso
+  const completionRefreshRequested = new Set();
   function updateWashTimers() {
     let hasFinishedWashing = false;
     document.querySelectorAll('[data-wash-timer]').forEach((timer) => {
@@ -368,7 +374,11 @@
         if (remainEl) remainEl.textContent = '¡Completado!';
         if (labelEl) labelEl.textContent = '✨ Listo para entregar';
         if (fillEl) fillEl.style.width = '100%';
-        hasFinishedWashing = true;
+        const completionKey = `${card.id}:${startedAt}`;
+        if (!completionRefreshRequested.has(completionKey)) {
+          completionRefreshRequested.add(completionKey);
+          hasFinishedWashing = true;
+        }
       }
     });
 

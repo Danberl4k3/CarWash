@@ -3,12 +3,13 @@ import { mkdirSync, statSync, readdirSync, unlinkSync } from 'node:fs';
 import { dirname, resolve, join } from 'node:path';
 import 'dotenv/config';
 
-const dbPath = process.env.DATABASE_PATH ?? './data/carwash.db';
+const dbPath = process.env.DATABASE_PATH ?? (process.env.RAILWAY_VOLUME_MOUNT_PATH ? join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'carwash.db') : './data/carwash.db');
 const resolvedDbPath = resolve(dbPath);
 
 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-const defaultBackupPath = resolve(`./data/backups/carwash_backup_${timestamp}.db`);
+const defaultBackupPath = join(dirname(resolvedDbPath), 'backups', `carwash_backup_${timestamp}.db`);
 const targetBackupPath = resolve(process.argv[2] ?? defaultBackupPath);
+if (targetBackupPath.toLowerCase() === resolvedDbPath.toLowerCase()) throw new Error('El backup debe tener una ruta distinta de la base de datos.');
 
 const backupDir = dirname(targetBackupPath);
 mkdirSync(backupDir, { recursive: true });
@@ -18,9 +19,6 @@ console.log(`[BACKUP] Destino: ${targetBackupPath}`);
 
 try {
   const db = new Database(resolvedDbPath, { fileMustExist: true });
-  // Checkpoint WAL data into the main database file
-  db.pragma('wal_checkpoint(TRUNCATE)');
-  
   // Perform safe hot backup
   await db.backup(targetBackupPath);
   db.close();

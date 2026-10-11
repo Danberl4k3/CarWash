@@ -57,6 +57,15 @@
               <% Object.entries(paymentLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %>
             </select>
           </label>
+          <% if (canSetPaymentStatus) { %>
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <label>Estado del pago
+              <select name="paymentStatus" required>
+                <option value="pending" selected>No pagó (pendiente)</option>
+                <option value="paid">Sí pagó (total cancelado)</option>
+              </select>
+            </label>
+          <% } %>
         </div>
         <label>Indicaciones <small>Opcional</small><textarea name="notes" rows="3" maxlength="1000" placeholder="Nivel de suciedad, objetos delicados u otra indicación"></textarea></label>
       </fieldset>
@@ -147,5 +156,5 @@
     </form>
   </section>
 </main>
-<script src="/public/booking.js?v=10" defer></script>
+<script src="/public/booking.js?v=11" defer></script>
 <%- include('partials/footer') %>

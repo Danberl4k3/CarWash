@@ -18,7 +18,9 @@
     </div><div class="inline-total calculated-total"><small>Total según catálogo</small><strong id="booking-total"><%= formatMoney(booking.total_cents) %></strong></div></div>
     <div class="form-section"><h2>Operación</h2><div class="field-grid three-columns">
       <label>Ingreso<select name="dropoffHour"><% dropoffSlots.forEach(hour => { %><option value="<%= hour %>" <%= booking.dropoff_hour === hour ? 'selected' : '' %>><%= hourLabel(hour) %></option><% }) %></select></label>
+      <label>Minutos de ingreso<input name="dropoffMinute" type="number" min="0" max="59" step="1" value="<%= (booking.dropoff_minute ?? 0) % 60 %>" required></label>
       <label>Recojo<select name="pickupHour"><% pickupSlots.forEach(hour => { %><option value="<%= hour %>" <%= booking.pickup_hour === hour ? 'selected' : '' %>><%= hourLabel(hour) %></option><% }) %></select></label>
+      <label>Minutos de recojo<input name="pickupMinute" type="number" min="0" max="59" step="1" value="<%= (booking.pickup_minute ?? 0) % 60 %>" required></label>
       <label>Estado<select name="status"><% statuses.forEach(value => { %><option value="<%= value %>" <%= booking.status === value ? 'selected' : '' %>><%= statusLabels[value] %></option><% }) %></select></label>
     </div></div>
     <div class="form-section"><h2>Pago</h2><div class="field-grid three-columns">
@@ -39,5 +41,5 @@
     </div>
   </form>
 </main>
-<script src="/public/booking.js" defer></script>
+<script src="/public/booking.js?v=11" defer></script>
 <%- include('../partials/footer') %>

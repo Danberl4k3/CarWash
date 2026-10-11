@@ -27,13 +27,16 @@
     </div></div>
     <div class="form-section"><h2>Horario y pago</h2><div class="field-grid two-columns">
       <label>Ingreso<select id="dropoff-hour" name="dropoffHour" required><% dropoffSlots.forEach(hour => { %><option value="<%= hour %>"><%= hourLabel(hour) %></option><% }) %></select></label>
+      <label>Minutos de ingreso<input type="number" name="dropoffMinute" min="0" max="59" value="0" required></label>
       <label>Recojo<select id="pickup-hour" name="pickupHour" required><% pickupSlots.forEach(hour => { %><option value="<%= hour %>"><%= hourLabel(hour) %></option><% }) %></select></label>
+      <label>Minutos de recojo<input type="number" name="pickupMinute" min="0" max="59" value="0" required></label>
       <label>Método de pago<select name="paymentMethod"><% paymentMethods.forEach(value => { %><option value="<%= value %>"><%= paymentLabels[value] %></option><% }) %></select></label>
+      <label>Estado del pago<select name="paymentStatus" required><option value="pending" selected>No pagó (pendiente)</option><option value="paid">Sí pagó (total cancelado)</option></select></label>
       <div class="inline-total"><small>Total calculado</small><strong id="booking-total">S/ 0.00</strong></div>
     </div></div>
     <label>Notas<textarea name="notes" rows="4"></textarea></label>
     <div class="form-actions"><a class="secondary-button" href="/admin">Cancelar</a><button class="primary-button" type="submit">Crear reserva</button></div>
   </form>
 </main>
-<script src="/public/booking.js?v=10" defer></script>
+<script src="/public/booking.js?v=11" defer></script>
 <%- include('../partials/footer') %>

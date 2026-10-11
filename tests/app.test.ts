@@ -159,9 +159,11 @@ describe('aplicación web', () => {
     expect(confRes.body).toContain('yape-qr-modal');
 
     // 2. Verificar que lookupVehicleByPlate devuelve teléfono y nombre
+    const login = await app.inject({ method: 'POST', url: '/admin/login', payload: { username: 'admin-test', password: 'password-seguro-test' } });
     const lookupRes = await app.inject({
       method: 'POST',
       url: '/api/placa/consultar',
+      headers: { cookie: login.cookies.map(c => `${c.name}=${c.value}`).join('; ') },
       payload: { placa: 'YAP-100' },
     });
     expect(lookupRes.statusCode).toBe(200);

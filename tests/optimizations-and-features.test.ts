@@ -95,6 +95,7 @@ describe('Nuevas optimizaciones y funcionalidades (Puntos 2, 3, 4 y 5)', () => {
       const lookupRes = await app.inject({
         method: 'GET',
         url: '/api/vehiculo-lookup?plate=XYZ-777',
+        headers: { cookie: await loginAsAdmin() },
       });
 
       expect(lookupRes.statusCode).toBe(200);

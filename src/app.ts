@@ -22,7 +22,7 @@ export interface BuildAppOptions {
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify({
     logger: options.logger ?? false,
-    trustProxy: process.env.TRUST_PROXY === 'true' || Boolean(process.env.RAILWAY_ENVIRONMENT) || process.env.NODE_ENV === 'production',
+    trustProxy: process.env.TRUST_PROXY === 'true',
     bodyLimit: 10 * 1024 * 1024,
   });
   const cookieSecret = options.cookieSecret ?? process.env.COOKIE_SECRET ?? randomBytes(32).toString('hex');
@@ -64,7 +64,12 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   app.setErrorHandler(async (error, request, reply) => {
     request.log.error(error);
     if (reply.sent) return;
-    return reply.code(500).view('error.ejs', { title: 'Ocurrió un problema' });
+    const candidate = error && typeof error === 'object' && 'statusCode' in error ? error.statusCode : undefined;
+    const statusCode = typeof candidate === 'number' && candidate >= 400 && candidate <= 599 ? candidate : 500;
+    if (request.url.startsWith('/api/') || statusCode < 500) {
+      return reply.code(statusCode).send({ error: statusCode < 500 && error instanceof Error ? error.message : 'Ocurrió un problema.' });
+    }
+    return reply.code(statusCode).view('error.ejs', { title: 'Ocurrió un problema' });
   });
 
   const runMaintenance = (): void => {

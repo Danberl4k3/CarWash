@@ -26,6 +26,7 @@ import {
   getDailyPaymentBreakdown,
   listBookingsForDate,
   updateBookingByAdmin,
+  washingStartForStatus,
 } from '../domain/bookings.js';
 import { appEvents, type AppEvent } from '../events.js';
 import { allPickupHours, dropoffHours, getLimaNow } from '../time.js';
@@ -153,8 +154,8 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       pending: bookings.filter((booking) => booking.status === 'pending').length,
       inProgress: bookings.filter((booking) => booking.status === 'in_progress').length,
       completed: bookings.filter((booking) => booking.status === 'completed').length,
-      collected: bookings.reduce((sum, booking) => sum + booking.amount_paid_cents, 0),
-      expected: bookings.reduce((sum, booking) => sum + booking.total_cents, 0),
+      collected: bookings.filter((booking) => booking.status !== 'cancelled').reduce((sum, booking) => sum + booking.amount_paid_cents, 0),
+      expected: bookings.filter((booking) => booking.status !== 'cancelled').reduce((sum, booking) => sum + booking.total_cents, 0),
     };
 
     const paymentBreakdown = getDailyPaymentBreakdown(db, selectedDate);
@@ -189,6 +190,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     const session = requireAdmin(db, request, reply);
     if (!session) return;
 
+    reply.hijack();
     reply.raw.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
@@ -199,6 +201,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     reply.raw.write('event: connected\ndata: {"status":"connected"}\n\n');
 
     const onEvent = (event: AppEvent) => {
+      if (!getSession(db, request)) { reply.raw.end(); return; }
       try {
         reply.raw.write(`event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`);
       } catch {
@@ -209,6 +212,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     appEvents.on('app_event', onEvent);
 
     const keepAliveTimer = setInterval(() => {
+      if (!getSession(db, request)) { reply.raw.end(); return; }
       try {
         reply.raw.write(': ping\n\n');
       } catch {
@@ -217,7 +221,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       }
     }, 15000);
 
-    request.raw.on('close', () => {
+    reply.raw.on('close', () => {
       clearInterval(keepAliveTimer);
       appEvents.off('app_event', onEvent);
     });
@@ -250,7 +254,8 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
 
     const escapeCsv = (val: string | number | null | undefined) => {
       if (val === null || val === undefined) return '""';
-      const str = String(val).replaceAll('"', '""');
+      const text = String(val);
+      const str = (/^[\s]*[=+@-]/.test(text) ? `'${text}` : text).replaceAll('"', '""');
       return `"${str}"`;
     };
 
@@ -406,11 +411,12 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     const parsedPayment = z.enum(PAYMENT_STATUSES).safeParse(body.paymentStatus);
     if (!parsedStatus.success || !parsedPayment.success) return failRedirect(reply, '/admin', 'Estado inválido.');
     
-    if (parsedPayment.data === 'paid') {
-      db.prepare('UPDATE bookings SET status = ?, payment_status = ?, amount_paid_cents = total_cents, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(parsedStatus.data, parsedPayment.data, id);
-    } else {
-      db.prepare('UPDATE bookings SET status = ?, payment_status = ?, amount_paid_cents = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(parsedStatus.data, parsedPayment.data, id);
-    }
+    const booking = getBooking(db, id);
+    if (!booking) return failRedirect(reply, '/admin', 'Reserva no encontrada.');
+    const amountPaid = parsedPayment.data === 'paid' ? booking.total_cents
+      : booking.payment_status === 'paid' ? 0 : booking.amount_paid_cents;
+    db.prepare('UPDATE bookings SET status = ?, started_washing_at = ?, payment_status = ?, amount_paid_cents = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .run(parsedStatus.data, washingStartForStatus(booking, parsedStatus.data), parsedPayment.data, amountPaid, id);
     appEvents.emitAppEvent('booking_updated', { id });
     return reply.redirect('/admin');
   });
@@ -422,7 +428,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     const body = request.body as Record<string, unknown>;
     const action = body.action;
 
-    const booking = db.prepare('SELECT status, payment_status, total_cents FROM bookings WHERE id = ?').get(id) as { status: string, payment_status: string, total_cents: number } | undefined;
+    const booking = getBooking(db, id);
     if (!booking) return failRedirect(reply, '/admin', 'Reserva no encontrada.');
 
     const statusOrder = ['pending', 'in_progress', 'completed'];
@@ -446,7 +452,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
         if (prevStatus === 'pending') {
           db.prepare('UPDATE bookings SET status = ?, started_washing_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(prevStatus, id);
         } else {
-          db.prepare('UPDATE bookings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(prevStatus, id);
+          db.prepare('UPDATE bookings SET status = ?, started_washing_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(prevStatus, washingStartForStatus(booking, 'in_progress'), id);
         }
       }
     } else if (action === 'toggle_payment') {
@@ -457,7 +463,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       }
     }
     appEvents.emitAppEvent('booking_updated', { id });
-    return reply.redirect(`/admin#booking-${id}`);
+    return reply.redirect(`/admin?date=${encodeURIComponent(booking.booking_date)}#booking-${id}`);
   });
 
   app.get('/admin/reservas/:id/ticket', async (request, reply) => {
@@ -624,8 +630,9 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(id);
     const vehicles = db.prepare('SELECT * FROM vehicles WHERE customer_id = ? ORDER BY plate').all(id);
     const bookings = db.prepare(`
-      SELECT b.*, v.plate FROM bookings b JOIN vehicles v ON v.id = b.vehicle_id
-      WHERE b.customer_id = ? ORDER BY b.booking_date DESC, b.dropoff_hour DESC
+      SELECT b.*, COALESCE(s.plate, v.plate) AS plate FROM bookings b JOIN vehicles v ON v.id = b.vehicle_id
+      LEFT JOIN booking_snapshots s ON s.booking_id = b.id
+      WHERE b.customer_id = ? ORDER BY b.booking_date DESC, b.dropoff_minute DESC
     `).all(id);
     if (!customer) return reply.code(404).view('not-found.ejs', { title: 'Cliente no encontrado' });
     return reply.view('admin/customer-edit.ejs', {
@@ -679,7 +686,11 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       return failRedirect(reply, '/admin/seguridad', 'La contraseña actual no es correcta.');
     }
     if (newPassword.length < 10) return failRedirect(reply, '/admin/seguridad', 'La nueva contraseña debe tener al menos 10 caracteres.');
-    db.prepare('UPDATE admins SET password_hash = ? WHERE id = ?').run(bcrypt.hashSync(newPassword, 12), session.adminId);
+    db.transaction(() => {
+      db.prepare('UPDATE admins SET password_hash = ? WHERE id = ?').run(bcrypt.hashSync(newPassword, 12), session.adminId);
+      db.prepare('DELETE FROM admin_sessions WHERE admin_id = ?').run(session.adminId);
+    })();
+    createSession(db, reply, session.adminId);
     return okRedirect(reply, '/admin/seguridad', 'Contraseña actualizada.');
   });
 }

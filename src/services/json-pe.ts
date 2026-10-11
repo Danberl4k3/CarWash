@@ -198,6 +198,10 @@ export async function consultarPlacaJsonPe(rawPlate: string): Promise<VehicleCon
   }
 
   // Fallback simulado para desarrollo, tests y demostración sin token
+  if (process.env.NODE_ENV === 'production') {
+    const vehicleType = classifyVehicleType(null, null, formattedPlate);
+    return { found: false, source: 'sunarp', placa: formattedPlate, vehicleType, vehicleTypeLabel: getVehicleTypeLabel(vehicleType) };
+  }
   return getMockVehicleConsultation(formattedPlate, cleanPlate);
 }
 

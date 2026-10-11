@@ -52,20 +52,10 @@
           <label>Marca / Modelo <small>Sugerencias activas</small><input name="model" list="car-brands" maxlength="100" placeholder="Ej. Toyota, Hyundai, Kia..." autocomplete="off"></label>
           <label>Nombre <small>Opcional</small><input name="name" maxlength="200" placeholder="¿A nombre de quién?"></label>
           <label id="phone-field">Teléfono <small id="phone-optional">Opcional</small><input type="tel" name="phone" id="phone" maxlength="20" placeholder="999 999 999"></label>
-          <label>Método de pago
-            <select name="paymentMethod" required>
-              <% Object.entries(paymentLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %>
-            </select>
-          </label>
           <% if (csrfToken) { %>
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
           <% } %>
-          <label>Estado del pago
-            <select name="paymentStatus" required>
-              <option value="pending" selected>No pagado (pendiente)</option>
-              <option value="paid">Pagado (total cancelado)</option>
-            </select>
-          </label>
+          <%- include('partials/payment-choices', { paymentLabels }) %>
         </div>
         <label>Indicaciones <small>Opcional</small><textarea name="notes" rows="3" maxlength="1000" placeholder="Nivel de suciedad, objetos delicados u otra indicación"></textarea></label>
       </fieldset>

@@ -33,7 +33,7 @@ Sistema web integral de reservas y control de pista para **DASAV Car Wash**, des
 - `npm run db:backup`: Genera una copia consistente de SQLite en `backups/` junto a la base de datos, también dentro del volumen de Railway.
 - `npm run db:restore -- <ruta>`: Valida la integridad y las relaciones de un archivo `.db`, conserva una copia del destino y lo restaura mediante SQLite.
 
-La opción **Pagado / No pagado** aparece en **Separa tu turno**, debajo de Método de pago, sin necesidad de iniciar sesión, y también en Nueva reserva del administrador. Pagado registra el importe completo calculado por el servidor, incluidos adicionales; No pagado registra cero cobrado. Es un registro manual del estado indicado, sin verificación bancaria automática. La edición administrativa permite registrar abonos parciales.
+**Método de pago** y **Estado del pago** se eligen mediante tarjetas, como Elige el lavado. Las opciones **Pagado / No pagado** aparecen en **Separa tu turno**, sin necesidad de iniciar sesión, y también en Nueva reserva del administrador. Pagado registra el importe completo calculado por el servidor, incluidos adicionales; No pagado registra cero cobrado. Es un registro manual del estado indicado, sin verificación bancaria automática. La edición administrativa permite registrar abonos parciales.
 
 ---
 

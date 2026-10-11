@@ -74,6 +74,20 @@ img { max-width: 100%; }
 .service-option span { display: flex; flex-direction: column; }
 .service-option strong { font-size: 13px; }.service-option small { color: var(--muted); font-size: 11px; margin-top: 3px; }
 .service-option b { color: var(--aqua-dark); font-size: 13px; }
+.payment-choice-section { min-width: 0; margin: 14px 0; }
+.payment-choice-title { color: var(--ink); font-size: 12px; margin: 0 0 9px; }
+.payment-status-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.payment-method-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.service-option.payment-option { min-height: 74px; padding: 14px 34px 14px 14px; justify-content: center; color: var(--ink); }
+.payment-option .payment-selection-mark { position: absolute; top: 12px; right: 12px; width: 16px; height: 16px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; font-size: 11px; }
+.payment-option:has(input:checked) .payment-selection-mark { background: var(--aqua-dark); border-color: var(--aqua-dark); color: white; }
+.payment-option:has(input:checked) .payment-selection-mark::after { content: '✓'; }
+.payment-option:has(input:focus-visible) { outline: 3px solid var(--aqua-dark); outline-offset: 3px; }
+[data-theme="dark"] .payment-option:has(input:checked) { background: var(--ice); border-color: var(--aqua-dark); }
+@media (max-width: 480px) {
+  .service-option.payment-option { padding: 28px 10px 12px; }
+  .payment-option .payment-selection-mark { top: 8px; right: 8px; }
+}
 .addon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .addon-option { position: relative; display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 14px; background: white; padding: 13px; cursor: pointer; transition: .2s; }
 .check-mark { flex: 0 0 22px; width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; background: #edf2f1; color: transparent; font-size: 12px; }

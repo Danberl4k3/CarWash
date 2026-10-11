@@ -53,8 +53,8 @@ describe('pago al crear una reserva', () => {
       const response = await app.inject({ method: 'GET', url, headers: { cookie } });
       expect(response.statusCode).toBe(200);
       expect(response.body).toContain('name="paymentStatus"');
-      expect(response.body).toContain('No pagado (pendiente)');
-      expect(response.body).toContain('Pagado (total cancelado)');
+      expect(response.body).toContain('No pagado');
+      expect(response.body).toContain('Total cancelado');
     }
     const anonymous = await app.inject({ method: 'GET', url: '/' });
     expect(anonymous.body).toContain('name="paymentStatus"');

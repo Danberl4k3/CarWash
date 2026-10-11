@@ -1,0 +1,27 @@
+<div class="payment-choice-section">
+  <h3 class="payment-choice-title" id="payment-method-title">Método de pago</h3>
+  <div class="service-list payment-method-choices" role="radiogroup" aria-labelledby="payment-method-title">
+    <% Object.entries(paymentLabels).forEach(([value, label], index) => { %>
+      <label class="service-option payment-option">
+        <input type="radio" name="paymentMethod" value="<%= value %>" <%= index === 0 ? 'checked' : '' %> required>
+        <span><strong><%= label %></strong></span>
+        <span class="payment-selection-mark" aria-hidden="true"></span>
+      </label>
+    <% }) %>
+  </div>
+</div>
+<div class="payment-choice-section">
+  <h3 class="payment-choice-title" id="payment-status-title">Estado del pago</h3>
+  <div class="service-list payment-status-choices" role="radiogroup" aria-labelledby="payment-status-title">
+    <label class="service-option payment-option">
+      <input type="radio" name="paymentStatus" value="pending" checked required>
+      <span><strong>No pagado</strong><small>Pendiente</small></span>
+      <span class="payment-selection-mark" aria-hidden="true"></span>
+    </label>
+    <label class="service-option payment-option">
+      <input type="radio" name="paymentStatus" value="paid" required>
+      <span><strong>Pagado</strong><small>Total cancelado</small></span>
+      <span class="payment-selection-mark" aria-hidden="true"></span>
+    </label>
+  </div>
+</div>

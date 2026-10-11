@@ -62,8 +62,14 @@ async function runE2E() {
     console.log(`✓ SUV Compacta seleccionada automáticamente: ${isSmallSuv}`);
 
     console.log('3. Llenando formulario de reserva...');
-    assert.equal(await page.locator('select[name="paymentStatus"]').inputValue(), 'pending');
-    await page.selectOption('select[name="paymentStatus"]', 'paid');
+    assert.equal(await page.locator('input[name="paymentStatus"]:checked').inputValue(), 'pending');
+    await page.locator('label.payment-option:has(input[name="paymentStatus"][value="paid"])').click();
+    assert.equal(await page.locator('input[name="paymentStatus"]:checked').inputValue(), 'paid');
+    await page.locator('label.payment-option:has(input[name="paymentMethod"][value="plin"])').click();
+    assert.equal(await page.locator('input[name="paymentMethod"]:checked').inputValue(), 'plin');
+    await page.locator('input[name="paymentMethod"][value="plin"]').focus();
+    await page.keyboard.press('ArrowLeft');
+    assert.equal(await page.locator('input[name="paymentMethod"]:checked').inputValue(), 'yape');
     await page.fill('input[name="plate"]', 'tst-999');
     await page.fill('input[name="model"]', 'toyota yaris');
     await page.fill('input[name="name"]', 'pedro infante');
@@ -89,6 +95,7 @@ async function runE2E() {
     const totalText = await page.textContent('#booking-total');
     assert.match(totalText, /30\.00/);
     await themeBtn.click();
+    await page.waitForTimeout(300);
     await page.screenshot({ path: 'artifacts/public-payment-choice.png', fullPage: true });
     await themeBtn.click();
     console.log(`✓ Total calculado en pantalla: "${totalText?.trim()}"`);
@@ -131,12 +138,12 @@ async function runE2E() {
 
     console.log('6. Registrando una nueva reserva ya pagada desde recepción...');
     await page.goto(`${baseUrl}/`);
-    assert.equal(await page.locator('select[name="paymentStatus"]').inputValue(), 'pending');
+    assert.equal(await page.locator('input[name="paymentStatus"]:checked').inputValue(), 'pending');
     await page.fill('input[name="plate"]', 'PAG-321');
     await page.locator('input[data-slug="complete"]').check({ force: true });
     await page.locator('label[data-addon-slug="wax"] input').check({ force: true });
-    await page.selectOption('select[name="paymentMethod"]', 'cash');
-    await page.selectOption('select[name="paymentStatus"]', 'paid');
+    await page.locator('label.payment-option:has(input[name="paymentMethod"][value="cash"])').click();
+    await page.locator('label.payment-option:has(input[name="paymentStatus"][value="paid"])').click();
     await Promise.all([
       page.waitForURL('**/reserva/DASAV-*'),
       page.click('button[type="submit"]'),
@@ -151,7 +158,7 @@ async function runE2E() {
 
     console.log('7. Registrando una nueva reserva sin pago desde el formulario administrativo...');
     await page.goto(`${baseUrl}/admin/reservas/nueva`);
-    assert.equal(await page.locator('select[name="paymentStatus"]').inputValue(), 'pending');
+    assert.equal(await page.locator('input[name="paymentStatus"]:checked').inputValue(), 'pending');
     await page.fill('input[name="plate"]', 'NPG-321');
     await page.selectOption('select[name="vehicleType"]', 'car');
     await page.selectOption('select[name="baseServiceId"]', { label: 'Lavado completo' });
@@ -225,7 +232,11 @@ async function runE2E() {
     console.log('12. Comprobando móvil y selección de servicios para moto...');
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await mobile.goto(`${baseUrl}/`);
-    assert.equal(await mobile.locator('select[name="paymentStatus"]').count(), 1);
+    assert.equal(await mobile.locator('input[name="paymentStatus"]').count(), 2);
+    await mobile.locator('label.payment-option:has(input[name="paymentMethod"][value="cash"])').click();
+    await mobile.locator('label.payment-option:has(input[name="paymentStatus"][value="paid"])').click();
+    assert.equal(await mobile.locator('input[name="paymentMethod"]:checked').inputValue(), 'cash');
+    assert.equal(await mobile.locator('input[name="paymentStatus"]:checked').inputValue(), 'paid');
     assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await mobile.locator('input[name="vehicleType"][value="motorcycle"]').check({ force: true });
     assert.equal(await mobile.locator('input[name="baseServiceId"]:checked').getAttribute('data-slug'), 'motorcycle-wash');

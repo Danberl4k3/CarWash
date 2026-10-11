@@ -1,6 +1,6 @@
-const CACHE_NAME = 'dasav-v7';
+const CACHE_NAME = 'dasav-v8';
 const STATIC_ASSETS = [
-  '/public/styles.css?v=14',
+  '/public/styles.css?v=15',
   '/public/theme.js',
   '/public/booking.js?v=11',
   '/public/admin.js',

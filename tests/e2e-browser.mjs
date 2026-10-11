@@ -6,6 +6,20 @@ import { createDatabase } from '../dist/db.js';
 
 const executablePath = process.env.BROWSER_PATH ?? 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 
+async function assertPaymentColumns(page) {
+  for (const [selector, count] of [['.payment-method-choices', 3], ['.payment-status-choices', 2]]) {
+    const cards = await page.locator(`${selector} .payment-option`).evaluateAll(elements => elements.map(element => {
+      const rect = element.getBoundingClientRect();
+      return { top: Math.round(rect.top), left: Math.round(rect.left), width: rect.width, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
+    }));
+    assert.equal(cards.length, count);
+    assert.equal(new Set(cards.map(card => card.top)).size, 1, `${selector}: todas las opciones deben estar en la misma fila`);
+    assert.equal(new Set(cards.map(card => card.left)).size, count);
+    assert.equal(cards.every(card => card.width > 0 && card.scrollWidth <= card.clientWidth), true, `${selector}: sin desbordamiento`);
+  }
+  assert.equal(await page.locator('.payment-method-icon').count(), 3);
+}
+
 async function runE2E() {
   await mkdir('artifacts', { recursive: true });
   console.log('Iniciando servidor de pruebas para E2E...');
@@ -25,6 +39,7 @@ async function runE2E() {
   try {
     console.log('1. Navegando a la página de inicio...');
     await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded' });
+    await assertPaymentColumns(page);
 
     // Verificar título y estructura
     const title = await page.title();
@@ -158,6 +173,7 @@ async function runE2E() {
 
     console.log('7. Registrando una nueva reserva sin pago desde el formulario administrativo...');
     await page.goto(`${baseUrl}/admin/reservas/nueva`);
+    await assertPaymentColumns(page);
     assert.equal(await page.locator('input[name="paymentStatus"]:checked').inputValue(), 'pending');
     await page.fill('input[name="plate"]', 'NPG-321');
     await page.selectOption('select[name="vehicleType"]', 'car');
@@ -232,6 +248,12 @@ async function runE2E() {
     console.log('12. Comprobando móvil y selección de servicios para moto...');
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await mobile.goto(`${baseUrl}/`);
+    for (const width of [320, 390, 768]) {
+      await mobile.setViewportSize({ width, height: 844 });
+      await assertPaymentColumns(mobile);
+      assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    }
+    await mobile.setViewportSize({ width: 390, height: 844 });
     assert.equal(await mobile.locator('input[name="paymentStatus"]').count(), 2);
     await mobile.locator('label.payment-option:has(input[name="paymentMethod"][value="cash"])').click();
     await mobile.locator('label.payment-option:has(input[name="paymentStatus"][value="paid"])').click();

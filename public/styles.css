@@ -76,9 +76,15 @@ img { max-width: 100%; }
 .service-option b { color: var(--aqua-dark); font-size: 13px; }
 .payment-choice-section { min-width: 0; margin: 14px 0; }
 .payment-choice-title { color: var(--ink); font-size: 12px; margin: 0 0 9px; }
-.payment-status-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.payment-method-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.service-list.payment-status-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.service-list.payment-method-choices { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .service-option.payment-option { min-height: 74px; padding: 14px 34px 14px 14px; justify-content: center; color: var(--ink); }
+.payment-option input { top: 0; left: 0; width: 1px; height: 1px; margin: 0; padding: 0; }
+.payment-method-choices .payment-option { min-width: 0; min-height: 100px; padding: 22px 8px 12px; align-items: center; gap: 7px; text-align: center; }
+.payment-option .payment-method-icon { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; border-radius: 10px; color: white; font-size: 20px; font-weight: 900; line-height: 1; }
+.payment-method-icon-yape { background: #74218a; }
+.payment-method-icon-plin { background: #007f98; }
+.payment-option .payment-method-icon-cash { background: #18705d; font-size: 16px; }
 .payment-option .payment-selection-mark { position: absolute; top: 12px; right: 12px; width: 16px; height: 16px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; font-size: 11px; }
 .payment-option:has(input:checked) .payment-selection-mark { background: var(--aqua-dark); border-color: var(--aqua-dark); color: white; }
 .payment-option:has(input:checked) .payment-selection-mark::after { content: '✓'; }

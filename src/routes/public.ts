@@ -55,7 +55,6 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
       pickupSlots: pickupHours().map((hour) => ({ hour, label: hourLabel(hour) })),
       vehicleLabels: VEHICLE_LABELS,
       paymentLabels: PAYMENT_LABELS,
-      canSetPaymentStatus: Boolean(session),
       csrfToken: session?.csrfToken ?? null,
       error: typeof (request.query as { error?: unknown }).error === 'string' ? (request.query as { error: string }).error : null,
       formatMoney,
@@ -215,7 +214,7 @@ export async function registerPublicRoutes(app: FastifyInstance, db: Database.Da
           pickupHour: Number.isFinite(pickupHour) ? (pickupHour as number) : (now.hour + 1) % 24,
           pickupMinute: Number.isFinite(pickupMinute) ? (pickupMinute as number) : 0,
           paymentMethod: body.paymentMethod,
-          paymentStatus: session ? body.paymentStatus : undefined,
+          paymentStatus: body.paymentStatus,
           notes: body.notes,
         }, { createdByAdmin: Boolean(session) });
 

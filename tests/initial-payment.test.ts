@@ -48,16 +48,18 @@ describe('pago al crear una reserva', () => {
     };
   }
 
-  it('ofrece la elección en los dos formularios del administrador y la oculta a visitantes', async () => {
+  it('ofrece la elección en Separa tu turno sin sesión y en los dos formularios del administrador', async () => {
     for (const url of ['/', '/admin/reservas/nueva']) {
       const response = await app.inject({ method: 'GET', url, headers: { cookie } });
       expect(response.statusCode).toBe(200);
       expect(response.body).toContain('name="paymentStatus"');
-      expect(response.body).toContain('No pagó (pendiente)');
-      expect(response.body).toContain('Sí pagó (total cancelado)');
+      expect(response.body).toContain('No pagado (pendiente)');
+      expect(response.body).toContain('Pagado (total cancelado)');
     }
     const anonymous = await app.inject({ method: 'GET', url: '/' });
-    expect(anonymous.body).not.toContain('name="paymentStatus"');
+    expect(anonymous.body).toContain('name="paymentStatus"');
+    expect(anonymous.body.indexOf('Método de pago')).toBeLessThan(anonymous.body.indexOf('Estado del pago'));
+    expect(anonymous.body.indexOf('Estado del pago')).toBeLessThan(anonymous.body.indexOf('Indicaciones'));
     expect(anonymous.body).not.toContain('name="_csrf"');
   });
 
@@ -98,11 +100,30 @@ describe('pago al crear una reserva', () => {
     expect(db.prepare('SELECT COUNT(*) AS count FROM bookings').get()).toEqual({ count: 0 });
   });
 
-  it('mantiene pendiente una reserva anónima aunque envíe un pago manipulado', async () => {
-    const response = await app.inject({ method: 'POST', url: '/reservar', payload: payload('paid') });
+  it.each(['cash', 'yape', 'plin'])('guarda Pagado desde Separa tu turno sin sesión, con %s', async (paymentMethod) => {
+    const response = await app.inject({ method: 'POST', url: '/reservar', payload: { ...payload('paid'), paymentMethod, total: -999, amountPaid: -999, createdByAdmin: true } });
     expect(response.statusCode).toBe(302);
     const code = decodeURIComponent(String(response.headers.location).split('/').pop()!);
-    expect(getBookingByCode(db, code)).toMatchObject({ payment_status: 'pending', amount_paid_cents: 0, created_by_admin: 0 });
+    expect(getBookingByCode(db, code)).toMatchObject({ payment_status: 'paid', amount_paid_cents: 3000, total_cents: 3000, created_by_admin: 0 });
+    const confirmation = await app.inject({ method: 'GET', url: `/reserva/${code}` });
+    expect(confirmation.body).toContain('Pagado ✓');
+    const status = await app.inject({ method: 'GET', url: `/api/reserva/${code}/status` });
+    expect(status.json()).toMatchObject({ paymentStatus: 'paid', amountPaidCents: 3000 });
+    const breakdown = getDailyPaymentBreakdown(db, getLimaNow().date);
+    expect(breakdown.totalPendingCents).toBe(0);
+    expect(breakdown.totalCollectedCents).toBe(3000);
+  });
+
+  it.each(['pending', undefined])('guarda No pagado desde Separa tu turno sin sesión (%s)', async paymentStatus => {
+    const response = await app.inject({ method: 'POST', url: '/reservar', payload: payload(paymentStatus) });
+    expect(response.headers.location).toMatch(/^\/reserva\//);
+    expect(db.prepare('SELECT payment_status, amount_paid_cents, created_by_admin FROM bookings').get()).toMatchObject({ payment_status: 'pending', amount_paid_cents: 0, created_by_admin: 0 });
+  });
+
+  it('rechaza un estado de pago inválido desde Separa tu turno sin sesión', async () => {
+    const response = await app.inject({ method: 'POST', url: '/reservar', payload: payload('invalid') });
+    expect(response.headers.location).toContain('error=');
+    expect(db.prepare('SELECT COUNT(*) AS count FROM bookings').get()).toEqual({ count: 0 });
   });
 
   it.each([undefined, 'invalid'])('rechaza registrar cobros en el formulario principal con CSRF ausente o inválido (%s)', async (_csrf) => {

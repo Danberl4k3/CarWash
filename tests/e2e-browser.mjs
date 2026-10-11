@@ -1,11 +1,13 @@
 import { chromium } from 'playwright-core';
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
 import { buildApp } from '../dist/app.js';
 import { createDatabase } from '../dist/db.js';
 
 const executablePath = process.env.BROWSER_PATH ?? 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 
 async function runE2E() {
+  await mkdir('artifacts', { recursive: true });
   console.log('Iniciando servidor de pruebas para E2E...');
   process.env.ADMIN_USERNAME = 'admin-e2e';
   process.env.ADMIN_PASSWORD = 'password-e2e-1234';
@@ -60,6 +62,8 @@ async function runE2E() {
     console.log(`✓ SUV Compacta seleccionada automáticamente: ${isSmallSuv}`);
 
     console.log('3. Llenando formulario de reserva...');
+    assert.equal(await page.locator('select[name="paymentStatus"]').inputValue(), 'pending');
+    await page.selectOption('select[name="paymentStatus"]', 'paid');
     await page.fill('input[name="plate"]', 'tst-999');
     await page.fill('input[name="model"]', 'toyota yaris');
     await page.fill('input[name="name"]', 'pedro infante');
@@ -84,6 +88,9 @@ async function runE2E() {
 
     const totalText = await page.textContent('#booking-total');
     assert.match(totalText, /30\.00/);
+    await themeBtn.click();
+    await page.screenshot({ path: 'artifacts/public-payment-choice.png', fullPage: true });
+    await themeBtn.click();
     console.log(`✓ Total calculado en pantalla: "${totalText?.trim()}"`);
 
     console.log('4. Enviando formulario de reserva...');
@@ -101,6 +108,8 @@ async function runE2E() {
     const cardText = await page.textContent('.confirmation-card');
     if (!cardText.includes('TST-999')) throw new Error('No se encontró placa TST-999 en el comprobante');
     console.log('✓ Comprobante verificado con placa y código de reserva.');
+    assert.match(await page.locator('#tracker-payment-badge').textContent(), /Pagado/);
+    assert.deepEqual(db.prepare('SELECT payment_status, amount_paid_cents, total_cents, created_by_admin FROM bookings b JOIN vehicles v ON v.id = b.vehicle_id WHERE v.plate = ?').get('TST-999'), { payment_status: 'paid', amount_paid_cents: 3000, total_cents: 3000, created_by_admin: 0 });
 
     console.log('5. Accediendo al Panel Administrativo...');
     await page.goto(`${baseUrl}/admin/login`);
@@ -216,7 +225,7 @@ async function runE2E() {
     console.log('12. Comprobando móvil y selección de servicios para moto...');
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await mobile.goto(`${baseUrl}/`);
-    assert.equal(await mobile.locator('select[name="paymentStatus"]').count(), 0);
+    assert.equal(await mobile.locator('select[name="paymentStatus"]').count(), 1);
     assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await mobile.locator('input[name="vehicleType"][value="motorcycle"]').check({ force: true });
     assert.equal(await mobile.locator('input[name="baseServiceId"]:checked').getAttribute('data-slug'), 'motorcycle-wash');

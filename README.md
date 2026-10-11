@@ -25,7 +25,7 @@ Sistema web integral de reservas y control de pista para **DASAV Car Wash**, des
 
 ## 🧪 Pruebas y Validación
 
-- `npm test`: Ejecuta la suite de pruebas unitarias y de integración (90 pruebas validadas).
+- `npm test`: Ejecuta la suite de pruebas unitarias y de integración (95 pruebas validadas).
 - `npm run typecheck`: Validación estricta de tipos con el compilador TypeScript (`tsc --noEmit`).
 - `npm run build`: Compila el código TypeScript a JavaScript en el directorio `dist/`.
 - `npm run test:e2e`: Después de compilar, ejecuta 14 etapas en Edge/Chromium con una base en memoria. Para otro navegador Chromium, configura `BROWSER_PATH`.
@@ -33,7 +33,7 @@ Sistema web integral de reservas y control de pista para **DASAV Car Wash**, des
 - `npm run db:backup`: Genera una copia consistente de SQLite en `backups/` junto a la base de datos, también dentro del volumen de Railway.
 - `npm run db:restore -- <ruta>`: Valida la integridad y las relaciones de un archivo `.db`, conserva una copia del destino y lo restaura mediante SQLite.
 
-La opción **Sí pagó / No pagó** aparece en Nueva reserva al iniciar sesión como administrador. Sí pagó registra el importe completo, incluidos adicionales; No pagó registra cero cobrado. Los visitantes no pueden marcar una reserva como pagada. La edición permite registrar abonos parciales.
+La opción **Pagado / No pagado** aparece en **Separa tu turno**, debajo de Método de pago, sin necesidad de iniciar sesión, y también en Nueva reserva del administrador. Pagado registra el importe completo calculado por el servidor, incluidos adicionales; No pagado registra cero cobrado. Es un registro manual del estado indicado, sin verificación bancaria automática. La edición administrativa permite registrar abonos parciales.
 
 ---
 

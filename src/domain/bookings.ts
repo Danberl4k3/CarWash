@@ -161,7 +161,7 @@ export function createBooking(
     (total, service) => total + (service.prices[input.vehicleType] ?? 0),
     0,
   );
-  const paymentStatus = options.createdByAdmin ? (input.paymentStatus ?? 'pending') : 'pending';
+  const paymentStatus = input.paymentStatus ?? 'pending';
   const amountPaidCents = paymentStatus === 'paid' ? totalCents : 0;
   const transaction = db.transaction(() => {
     let vehicle = db.prepare('SELECT id, customer_id FROM vehicles WHERE plate = ?').get(input.plate) as

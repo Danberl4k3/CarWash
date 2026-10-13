@@ -14,7 +14,10 @@
            data-duration="<%= durationMinutes %>">
 
     <div class="tracker-top-bar">
-      <span class="reservation-code-pill">Ticket #<%= booking.code %></span>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <span class="reservation-code-pill">Ticket #<%= booking.code %></span>
+        <span class="live-pulse-badge"><span class="pulse-dot"></span> EN VIVO</span>
+      </div>
       <span id="tracker-status-badge" class="status-badge badge-<%= booking.status %>">
         <%= statusLabels[booking.status] ?? booking.status %>
       </span>

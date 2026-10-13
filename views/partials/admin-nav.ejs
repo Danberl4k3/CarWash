@@ -4,11 +4,12 @@
     <span><strong>DASAV Car Wash</strong><small>Centro de control</small></span>
   </a>
   <nav class="admin-nav" aria-label="Administración">
-    <a href="/admin">Operación</a>
+    <a href="/admin" class="<%= typeof activeNav !== 'undefined' && activeNav === 'operacion' ? 'active' : '' %>">Operación</a>
+    <a href="/admin/estadisticas" class="<%= typeof activeNav !== 'undefined' && activeNav === 'estadisticas' ? 'active' : '' %>">Estadísticas</a>
     <a href="/">Nueva reserva</a>
-    <a href="/admin/clientes">Clientes</a>
-    <a href="/admin/servicios">Servicios</a>
-    <a href="/admin/capacidad">Capacidad</a>
+    <a href="/admin/clientes" class="<%= typeof activeNav !== 'undefined' && activeNav === 'clientes' ? 'active' : '' %>">Clientes</a>
+    <a href="/admin/servicios" class="<%= typeof activeNav !== 'undefined' && activeNav === 'servicios' ? 'active' : '' %>">Servicios</a>
+    <a href="/admin/capacidad" class="<%= typeof activeNav !== 'undefined' && activeNav === 'capacidad' ? 'active' : '' %>">Capacidad</a>
   </nav>
   <div class="admin-user">
     <button class="theme-toggle-btn" type="button" aria-label="Cambiar tema" title="Modo oscuro">🌙</button>

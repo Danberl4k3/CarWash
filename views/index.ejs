@@ -16,12 +16,55 @@
     <h1>Tu vehículo limpio,<br><em>sin perder tiempo.</em></h1>
     <p>Elige tu servicio y separa un horario. Nosotros nos encargamos del resto.</p>
     <div class="intro-pills">
-      <span>15–20 min por servicio</span>
-      <span>Lun–Dom</span>
-      <span>7 a. m. – 6 p. m.</span>
+      <span>⏱ 15–20 min por servicio</span>
+      <span>📅 Lun–Dom</span>
+      <span>⏰ 7 a. m. – 6 p. m.</span>
     </div>
-    <div class="watermark-car" aria-hidden="true">
-      <span class="car-roof"></span><span class="car-body"></span><span class="wheel wheel-left"></span><span class="wheel wheel-right"></span>
+    
+    <div class="hero-car-showcase" aria-hidden="true">
+      <svg class="hero-car-svg" viewBox="0 0 420 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="neonGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#58e4d3" stop-opacity="0.2"/>
+            <stop offset="50%" stop-color="#58e4d3" stop-opacity="0.9"/>
+            <stop offset="100%" stop-color="#12ad9e" stop-opacity="0.4"/>
+          </linearGradient>
+          <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="50%">
+            <stop offset="0%" stop-color="#12ad9e" stop-opacity="0.15"/>
+            <stop offset="100%" stop-color="#58e4d3" stop-opacity="0.05"/>
+          </linearGradient>
+          <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+          </filter>
+        </defs>
+        <!-- Speed & water spray lines -->
+        <path d="M 20 65 L 110 65" stroke="#58e4d3" stroke-width="2" stroke-linecap="round" opacity="0.4" stroke-dasharray="4 8"/>
+        <path d="M 40 85 L 90 85" stroke="#58e4d3" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+        <path d="M 10 115 L 75 115" stroke="#58e4d3" stroke-width="2.5" stroke-linecap="round" opacity="0.5" stroke-dasharray="8 6"/>
+        <path d="M 330 152 L 410 152" stroke="#58e4d3" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+        <!-- Aerodynamic Car Silhouette -->
+        <path d="M 70 125 C 80 120 110 118 135 112 C 160 85 195 52 250 50 C 295 50 315 72 340 102 C 375 108 395 118 400 128 C 402 138 395 146 385 148 L 338 148 C 335 125 315 110 290 110 C 265 110 245 125 242 148 L 158 148 C 155 125 135 110 110 110 C 85 110 65 125 62 148 L 50 148 C 42 148 38 138 42 132 C 48 126 58 125 70 125 Z" fill="url(#bodyGrad)" stroke="url(#neonGlow)" stroke-width="3.5" filter="url(#softGlow)"/>
+        <!-- Glass Cabin Windshield & Windows -->
+        <path d="M 165 106 C 185 82 210 62 250 60 C 285 60 298 75 320 102 Z" fill="#58e4d3" fill-opacity="0.12" stroke="#58e4d3" stroke-width="2" opacity="0.85"/>
+        <line x1="245" y1="62" x2="242" y2="104" stroke="#58e4d3" stroke-width="2" opacity="0.6"/>
+        <!-- Wheels with sports rims -->
+        <circle cx="110" cy="148" r="26" fill="#071a26" stroke="#58e4d3" stroke-width="4.5"/>
+        <circle cx="110" cy="148" r="14" fill="#0c2d3c" stroke="#58e4d3" stroke-width="2" opacity="0.8"/>
+        <circle cx="110" cy="148" r="5" fill="#58e4d3"/>
+        <circle cx="290" cy="148" r="26" fill="#071a26" stroke="#58e4d3" stroke-width="4.5"/>
+        <circle cx="290" cy="148" r="14" fill="#0c2d3c" stroke="#58e4d3" stroke-width="2" opacity="0.8"/>
+        <circle cx="290" cy="148" r="5" fill="#58e4d3"/>
+        <!-- Front Headlight Neon Ray -->
+        <polygon points="380,120 420,110 420,135 385,130" fill="url(#neonGlow)" opacity="0.45"/>
+      </svg>
+      <div class="hero-trust-badge">
+        <span class="trust-badge-icon">✨</span>
+        <div class="trust-badge-text">
+          <strong>Acabado Espejo Garantizado</strong>
+          <small>Lavado minucioso y cuidado hidrofóbico</small>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -40,10 +83,12 @@
             <div class="plate-input-group">
               <input name="plate" id="plate-input" maxlength="12" placeholder="ABC-123" autocomplete="off" required>
               <label for="plate-camera-input" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto" role="button" tabindex="0">
-                📷 <span class="btn-text">Escanear</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="action-svg" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                <span class="btn-text">Escanear</span>
               </label>
               <button type="button" id="btn-lookup-plate" class="plate-action-btn plate-lookup-btn" title="Consultar placa en SUNARP">
-                🔍 <span class="btn-text">Consultar</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="action-svg" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span class="btn-text">Consultar</span>
               </button>
             </div>
             <input type="file" id="plate-camera-input" accept="image/*" capture="environment" class="visually-hidden-file-input">

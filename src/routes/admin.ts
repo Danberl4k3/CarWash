@@ -29,6 +29,7 @@ import {
   washingStartForStatus,
 } from '../domain/bookings.js';
 import { appEvents, type AppEvent } from '../events.js';
+import { getStatisticsData } from '../domain/statistics.js';
 import { allPickupHours, dropoffHours, getLimaNow } from '../time.js';
 
 function failRedirect(reply: FastifyReply, path: string, message: string): FastifyReply {
@@ -172,6 +173,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     return reply.view('admin/dashboard.ejs', {
       title: 'Panel de operación',
       ...baseView(session, request),
+      activeNav: 'operacion',
       now,
       selectedDate,
       isToday,
@@ -284,6 +286,37 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
       .header('Content-Type', 'text/csv; charset=utf-8')
       .header('Content-Disposition', `attachment; filename="carwash-reservas-${targetDate}.csv"`)
       .send(csvContent);
+  });
+
+  app.get('/admin/estadisticas', async (request, reply) => {
+    const session = requireAdmin(db, request, reply);
+    if (!session) return;
+    checkAndAutoCompleteBookings(db);
+    const query = request.query as { period?: string; startDate?: string; endDate?: string };
+    const stats = getStatisticsData(db, {
+      period: query.period,
+      startDate: query.startDate,
+      endDate: query.endDate,
+    });
+
+    return reply.view('admin/statistics.ejs', {
+      title: 'Estadísticas y Pronóstico',
+      ...baseView(session, request),
+      stats,
+      activeNav: 'estadisticas',
+    });
+  });
+
+  app.get('/admin/api/estadisticas', async (request, reply) => {
+    const session = requireAdmin(db, request, reply);
+    if (!session) return;
+    const query = request.query as { period?: string; startDate?: string; endDate?: string };
+    const stats = getStatisticsData(db, {
+      period: query.period,
+      startDate: query.startDate,
+      endDate: query.endDate,
+    });
+    return reply.send(stats);
   });
 
   app.post('/admin/logout', async (request, reply) => {
@@ -489,6 +522,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     return reply.view('admin/services.ejs', {
       title: 'Servicios y precios',
       ...baseView(session, request),
+      activeNav: 'servicios',
       services: getServicesWithPrices(db),
       vehicleTypes: VEHICLE_TYPES,
     });
@@ -578,6 +612,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     return reply.view('admin/capacity.ejs', {
       title: 'Capacidad por turno',
       ...baseView(session, request),
+      activeNav: 'capacidad',
       slots,
     });
   });
@@ -618,6 +653,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     return reply.view('admin/customers.ejs', {
       title: 'Clientes',
       ...baseView(session, request),
+      activeNav: 'clientes',
       customers,
       search,
     });

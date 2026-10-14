@@ -187,7 +187,7 @@ export function getStatisticsData(
   } else {
     // 'all'
     const earliestRow = db
-      .prepare('SELECT MIN(booking_date) AS min_date FROM bookings WHERE status != "cancelled"')
+      .prepare("SELECT MIN(booking_date) AS min_date FROM bookings WHERE status != 'cancelled'")
       .get() as { min_date: string | null } | undefined;
     startDate = earliestRow?.min_date ? earliestRow.min_date : offsetDate(today, -29);
   }

@@ -70,7 +70,12 @@
 
       const newCash = doc.querySelector('.cash-breakdown-panel');
       const currentCash = document.querySelector('.cash-breakdown-panel');
-      if (newCash && currentCash) currentCash.innerHTML = newCash.innerHTML;
+      if (newCash && currentCash) {
+        const wasOpen = currentCash.hasAttribute('open');
+        currentCash.innerHTML = newCash.innerHTML;
+        if (wasOpen) currentCash.setAttribute('open', '');
+        else currentCash.removeAttribute('open');
+      }
 
       const newNextUp = doc.querySelector('.next-up-card-container');
       const currentNextUp = document.querySelector('.next-up-card-container');

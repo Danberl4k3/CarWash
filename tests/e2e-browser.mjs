@@ -6,6 +6,7 @@ import { createDatabase } from '../dist/db.js';
 
 const executablePath = process.env.BROWSER_PATH ?? 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 
+
 async function assertPaymentColumns(page) {
   for (const [selector, count] of [['.payment-method-choices', 3], ['.payment-status-choices', 2]]) {
     const cards = await page.locator(`${selector} .payment-option`).evaluateAll(elements => elements.map(element => {
@@ -39,20 +40,20 @@ async function runE2E() {
   try {
     console.log('1. Navegando a la página de inicio...');
     await page.goto(`${baseUrl}/`, { waitUntil: 'domcontentloaded' });
+
     await assertPaymentColumns(page);
 
     // Verificar título y estructura
     const title = await page.title();
     console.log(`✓ Título de la página: "${title}"`);
 
-    // Verificar orden de leyendas 1..5
+    // Todos los datos se completan en una sola página.
     const legends = await page.$$eval('legend', (els) => els.map((e) => e.textContent.trim()));
     console.log('✓ Secciones encontradas en la página:', legends);
-    if (!legends[0].includes('Tus datos')) throw new Error('Sección 1 no es Tus datos');
-    if (!legends[1].includes('¿Qué vehículo traes?')) throw new Error('Sección 2 no es ¿Qué vehículo traes?');
-    if (!legends[2].includes('Horario')) throw new Error('Sección 3 no es Horario');
-    if (!legends[3].includes('Elige el lavado')) throw new Error('Sección 4 no es Elige el lavado');
-    if (!legends[4].includes('Agrega un cuidado extra')) throw new Error('Sección 5 no es Agrega un cuidado extra');
+    assert.equal(legends.length, 3);
+    assert.match(legends[0], /Vehículo y servicio/);
+    assert.match(legends[1], /Datos de la reserva/);
+    assert.match(legends[2], /Horario y pago/);
 
     console.log('2. Probando botón de Modo Oscuro...');
     const themeBtn = page.locator('.theme-toggle-btn');
@@ -91,15 +92,18 @@ async function runE2E() {
     await page.fill('input[name="phone"]', '999888777');
 
     // Seleccionar vehículo Auto
+
     await page.locator('input[name="vehicleType"][value="car"]').check({ force: true });
 
     // Probar atajo de horario de recojo (+ 1 hora)
+
     const btn1Hora = page.locator('button[data-pickup-offset="60"]');
     await btn1Hora.click();
     const pickupVal = await page.inputValue('#pickup-time');
     console.log(`✓ Hora estimada de recojo establecida con atajo: "${pickupVal}"`);
 
     // Seleccionar servicio
+
     const completeWash = page.locator('input[data-slug="complete"]');
     await completeWash.check({ force: true });
 
@@ -109,6 +113,7 @@ async function runE2E() {
 
     const totalText = await page.textContent('#booking-total');
     assert.match(totalText, /30\.00/);
+
     await themeBtn.click();
     await page.waitForTimeout(300);
     await page.screenshot({ path: 'artifacts/public-payment-choice.png', fullPage: true });
@@ -118,7 +123,7 @@ async function runE2E() {
     console.log('4. Enviando formulario de reserva...');
     await Promise.all([
       page.waitForNavigation(),
-      page.click('button[type="submit"]'),
+      page.click('.global-submit-btn'),
     ]);
 
     const confirmationUrl = page.url();
@@ -153,15 +158,18 @@ async function runE2E() {
 
     console.log('6. Registrando una nueva reserva ya pagada desde recepción...');
     await page.goto(`${baseUrl}/`);
+
     assert.equal(await page.locator('input[name="paymentStatus"]:checked').inputValue(), 'pending');
     await page.fill('input[name="plate"]', 'PAG-321');
+
     await page.locator('input[data-slug="complete"]').check({ force: true });
     await page.locator('label[data-addon-slug="wax"] input').check({ force: true });
+
     await page.locator('label.payment-option:has(input[name="paymentMethod"][value="cash"])').click();
     await page.locator('label.payment-option:has(input[name="paymentStatus"][value="paid"])').click();
     await Promise.all([
       page.waitForURL('**/reserva/DASAV-*'),
-      page.click('button[type="submit"]'),
+      page.click('.global-submit-btn'),
     ]);
     assert.match(await page.locator('#tracker-payment-badge').textContent(), /Pagado/);
     const paid = db.prepare('SELECT payment_status, amount_paid_cents, total_cents FROM bookings b JOIN vehicles v ON v.id = b.vehicle_id WHERE v.plate = ?').get('PAG-321');
@@ -231,6 +239,7 @@ async function runE2E() {
     const download = await downloadPromise;
     assert.match(download.suggestedFilename(), /\.csv$/);
     assert.equal(await download.failure(), null);
+    await page.locator('#cash-disclosure > summary').click();
     await page.locator('button[data-open-qr="hugo"]').click();
     assert.equal(await page.locator('#yape-qr-modal').isVisible(), true);
     await page.keyboard.press('Escape');
@@ -239,6 +248,7 @@ async function runE2E() {
     console.log('11. Comprobando escape de datos y privacidad en el formulario público...');
     db.prepare('UPDATE vehicles SET model = ? WHERE plate = ?').run('<img src=x onerror="window.__xss=1">', 'NPG-321');
     await page.goto(`${baseUrl}/`);
+
     await page.fill('input[name="plate"]', 'NPG-321');
     await page.click('#btn-lookup-plate');
     await page.waitForFunction(() => document.querySelector('#plate-feedback')?.textContent.includes('<img'));
@@ -248,6 +258,7 @@ async function runE2E() {
     console.log('12. Comprobando móvil y selección de servicios para moto...');
     const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
     await mobile.goto(`${baseUrl}/`);
+
     for (const width of [320, 390, 768]) {
       await mobile.setViewportSize({ width, height: 844 });
       await assertPaymentColumns(mobile);
@@ -260,6 +271,7 @@ async function runE2E() {
     assert.equal(await mobile.locator('input[name="paymentMethod"]:checked').inputValue(), 'cash');
     assert.equal(await mobile.locator('input[name="paymentStatus"]:checked').inputValue(), 'paid');
     assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+
     await mobile.locator('input[name="vehicleType"][value="motorcycle"]').check({ force: true });
     assert.equal(await mobile.locator('input[name="baseServiceId"]:checked').getAttribute('data-slug'), 'motorcycle-wash');
     const anon = await mobile.request.get(`${baseUrl}/api/vehiculo-lookup?plate=NPG-321`);
@@ -303,4 +315,3 @@ runE2E().catch((err) => {
   console.error('Error en pruebas E2E:', err);
   process.exit(1);
 });
-

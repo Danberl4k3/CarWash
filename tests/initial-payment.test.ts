@@ -59,7 +59,7 @@ describe('pago al crear una reserva', () => {
     const anonymous = await app.inject({ method: 'GET', url: '/' });
     expect(anonymous.body).toContain('name="paymentStatus"');
     expect(anonymous.body.indexOf('Método de pago')).toBeLessThan(anonymous.body.indexOf('Estado del pago'));
-    expect(anonymous.body.indexOf('Estado del pago')).toBeLessThan(anonymous.body.indexOf('Indicaciones'));
+    expect(anonymous.body.indexOf('Estado del pago')).toBeLessThan(anonymous.body.indexOf('Confirmar reserva'));
     expect(anonymous.body).not.toContain('name="_csrf"');
   });
 

@@ -69,10 +69,10 @@
     });
 
     // Moto solo tiene lavado simple (ocultar adicionales para motos)
-    const addonFieldset = form.querySelector('.addon-grid')?.closest('fieldset');
-    if (addonFieldset) {
-      addonFieldset.hidden = motorcycle;
-      addonFieldset.style.display = motorcycle ? 'none' : '';
+    const addonSection = form.querySelector('.addon-section') || form.querySelector('.addon-grid');
+    if (addonSection) {
+      addonSection.hidden = motorcycle;
+      addonSection.style.display = motorcycle ? 'none' : '';
       if (motorcycle) {
         form.querySelectorAll('[name="addonServiceIds"]').forEach((input) => {
           input.checked = false;

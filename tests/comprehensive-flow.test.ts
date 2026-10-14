@@ -30,40 +30,25 @@ describe('pruebas exhaustivas del sistema', () => {
   });
 
   // -------------------------------------------------------------
-  // 1. PÁGINA PÚBLICA Y ORDEN DE CAMPOS (5 1 4 2 3)
+  // 1. PÁGINA PÚBLICA Y RESERVA EN UNA PÁGINA
   // -------------------------------------------------------------
   describe('Página pública y estructura del formulario', () => {
-    it('renderiza correctamente el nuevo orden de secciones: 1 Tus datos, 2 Vehículo, 3 Horario, 4 Lavado, 5 Adicionales', async () => {
+    it('muestra todos los campos y permite confirmar la reserva en una sola página', async () => {
       const response = await app.inject({ method: 'GET', url: '/' });
       expect(response.statusCode).toBe(200);
 
       const html = response.body;
 
-      // Verificar que los títulos aparezcan en la secuencia exacta
-      const idxTusDatos = html.indexOf('Tus datos');
-      const idxVehiculo = html.indexOf('¿Qué vehículo traes?');
-      const idxHorario = html.indexOf('Horario');
-      const idxLavado = html.indexOf('Elige el lavado');
-      const idxAdicional = html.indexOf('Agrega un cuidado extra');
-
-      expect(idxTusDatos).toBeGreaterThan(-1);
-      expect(idxVehiculo).toBeGreaterThan(-1);
-      expect(idxHorario).toBeGreaterThan(-1);
-      expect(idxLavado).toBeGreaterThan(-1);
-      expect(idxAdicional).toBeGreaterThan(-1);
-
-      // Verificar el orden exacto: Tus datos < Vehículo < Horario < Lavado < Adicionales
-      expect(idxTusDatos).toBeLessThan(idxVehiculo);
-      expect(idxVehiculo).toBeLessThan(idxHorario);
-      expect(idxHorario).toBeLessThan(idxLavado);
-      expect(idxLavado).toBeLessThan(idxAdicional);
-
-      // Verificar que los números sean correlativos del 1 al 5
-      expect(html).toContain('<span>1</span> Tus datos');
-      expect(html).toContain('<span>2</span> ¿Qué vehículo traes?');
-      expect(html).toContain('<span>3</span> Horario');
-      expect(html).toContain('<span>4</span> Elige el lavado');
-      expect(html).toContain('<span>5</span> Agrega un cuidado extra');
+      const form = html.match(/<form id="booking-form"[\s\S]*?<\/form>/)?.[0];
+      expect(form).toBeDefined();
+      for (const name of ['vehicleType', 'baseServiceId', 'addonServiceIds', 'plate', 'model', 'name', 'phone', 'pickupTime', 'paymentMethod', 'paymentStatus', 'notes']) {
+        expect(form).toContain(`name="${name}"`);
+      }
+      expect(form).toMatch(/<button[^>]*global-submit-btn[^>]*type="submit"/);
+      expect(form).not.toMatch(/<fieldset[^>]*hidden/);
+      expect(html).not.toContain('data-wizard-step');
+      expect(html).not.toContain('data-step-next');
+      expect(html).not.toContain('data-step-prev');
 
       // Verificar que no queden textos de restricciones eliminadas
       expect(html).not.toContain('El teléfono es obligatorio después de las 2 p. m.');

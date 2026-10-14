@@ -46,7 +46,9 @@ describe('aplicación web', () => {
       expect(response.body).not.toContain('Hoy no atendemos reservas.');
       expect(response.body).toMatch(/<form id="booking-form"[^>]*>/);
       expect(response.body.match(/<form id="booking-form"[^>]*>/)?.[0]).not.toContain('inert');
-      expect(response.body.match(/<button class="primary-button" type="submit"[^>]*>/)?.[0]).not.toContain('disabled');
+      const submit = response.body.match(/<button class="[^"]*global-submit-btn[^"]*" type="submit"[^>]*>/)?.[0];
+      expect(submit).toBeDefined();
+      expect(submit).not.toContain('disabled');
     } finally {
       vi.useRealTimers();
     }

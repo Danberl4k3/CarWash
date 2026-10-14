@@ -34,370 +34,452 @@
     </form>
   </section>
 
-  <!-- Tarjetas KPI Principales -->
-  <section class="summary-grid stats-kpi-grid">
-    <article>
-      <span class="summary-dot dot-blue"></span>
-      <small>Vehículos Atendidos</small>
-      <strong><%= stats.totalBookings %></strong>
-      <span class="kpi-subtext">✓ <%= stats.completedBookings %> terminados · ✕ <%= stats.cancelledBookings %> canc.</span>
-    </article>
-    <article>
-      <span class="summary-dot dot-mint"></span>
-      <small>Total Cobrado</small>
-      <strong style="color: var(--aqua-dark);"><%= formatMoney(stats.totalRevenueCents) %></strong>
-      <span class="kpi-subtext"><%= stats.collectionRatePercent %>% de efectividad</span>
-    </article>
-    <article>
-      <span class="summary-dot dot-amber"></span>
-      <small>Por Cobrar (Pendiente)</small>
-      <strong style="color: <%= stats.pendingRevenueCents > 0 ? '#d97706' : 'var(--muted)' %>;"><%= formatMoney(stats.pendingRevenueCents) %></strong>
-      <span class="kpi-subtext">Esperado: <%= formatMoney(stats.expectedRevenueCents) %></span>
-    </article>
-    <article>
-      <span class="summary-dot dot-purple"></span>
-      <small>Ticket Promedio</small>
-      <strong><%= formatMoney(stats.averageTicketCents) %></strong>
-      <span class="kpi-subtext">por vehículo atendido</span>
-    </article>
-    <article>
-      <span class="summary-dot dot-green"></span>
-      <small>Tiempo Prom. Lavado</small>
-      <strong>~<%= stats.averageWashTimeMinutes %> min</strong>
-      <span class="kpi-subtext">Auto 30m · SUV 45m</span>
-    </article>
-    <article>
-      <span class="summary-dot" style="background: #0ea5e9;"></span>
-      <small>Promedio Diario</small>
-      <strong><%= stats.averageDailyVehicles %> veh/día</strong>
-      <span class="kpi-subtext"><%= formatMoney(stats.averageDailyRevenueCents) %> / día</span>
-    </article>
-  </section>
+  <!-- Selector de Vistas / Pestañas accesibles -->
+  <div class="stats-tabs-bar" role="tablist" aria-label="Secciones de estadísticas">
+    <button type="button" class="stats-tab-btn active" role="tab" id="tab-historical" aria-selected="true" aria-controls="panel-historical" tabindex="0">
+      <span class="tab-icon">📊</span>
+      <span>Resultados Históricos</span>
+    </button>
+    <button type="button" class="stats-tab-btn" role="tab" id="tab-forecast" aria-selected="false" aria-controls="panel-forecast" tabindex="-1">
+      <span class="tab-icon">🔮</span>
+      <span>Rendimiento y Pronóstico</span>
+    </button>
+  </div>
 
-  <!-- 🔮 SECCIÓN DESTACADA: MÓDULO DE PRONÓSTICO & PROYECCIÓN -->
-  <section class="forecast-container">
-    <div class="forecast-header">
-      <div class="forecast-title-group">
-        <span class="forecast-badge">🔮 Inteligencia Predictiva</span>
-        <h2>Pronóstico de Demanda para los Próximos 7 Días</h2>
-        <p>Estimación calculada a partir del histórico por día de la semana y tendencia de volumen reciente.</p>
-      </div>
-      <div class="forecast-week-total">
-        <small>Proyección total semana</small>
-        <strong>~<%= stats.forecast.totalExpectedVehiclesWeek %> vehículos</strong>
-        <span><%= formatMoney(stats.forecast.totalExpectedRevenueWeekCents) %> estimación</span>
-      </div>
-    </div>
-
-    <!-- Carrusel / Grid de los próximos 7 días -->
-    <div class="forecast-days-grid">
-      <% stats.forecast.next7Days.forEach(day => { %>
-        <article class="forecast-day-card">
-          <div class="forecast-day-top">
-            <strong><%= day.dayName %></strong>
-            <small><%= day.shortLabel %></small>
-          </div>
-          <div class="forecast-day-metric">
-            <span class="forecast-car-icon">🚗</span>
-            <div class="forecast-count-wrap">
-              <strong>~<%= day.expectedVehicles %></strong>
-              <small>vehículos</small>
-            </div>
-          </div>
-          <div class="forecast-day-revenue">
-            <span>Estimado: <b><%= formatMoney(day.expectedRevenueCents) %></b></span>
-          </div>
-          <div class="forecast-day-footer">
-            <span class="demand-pill" style="border-color: <%= day.demandColor %>; color: <%= day.demandColor %>;">
-              <%= day.demandLevel === 'Alta' ? '🔥 Alta' : (day.demandLevel === 'Media' ? '⚡ Media' : '🟢 Normal') %>
-            </span>
-            <span class="staff-tip" title="Personal recomendado">👥 <%= day.recommendedStaff %></span>
-          </div>
+  <div class="stats-tabs-container" id="stats-tabs-container">
+    <!-- Panel 1: Resultados Históricos y Análisis (Primero en pantalla) -->
+    <div class="stats-tabpanel" id="panel-historical" role="tabpanel" aria-labelledby="tab-historical">
+      <!-- Tarjetas KPI Principales -->
+      <section class="summary-grid stats-kpi-grid">
+        <article>
+          <span class="summary-dot dot-blue"></span>
+          <small>Vehículos Atendidos</small>
+          <strong><%= stats.totalBookings %></strong>
+          <span class="kpi-subtext">✓ <%= stats.completedBookings %> terminados · ✕ <%= stats.cancelledBookings %> canc.</span>
         </article>
-      <% }) %>
-    </div>
+        <article>
+          <span class="summary-dot dot-mint"></span>
+          <small>Total Cobrado</small>
+          <strong style="color: var(--aqua-dark);"><%= formatMoney(stats.totalRevenueCents) %></strong>
+          <span class="kpi-subtext"><%= stats.collectionRatePercent %>% de efectividad</span>
+        </article>
+        <article>
+          <span class="summary-dot dot-amber"></span>
+          <small>Por Cobrar (Pendiente)</small>
+          <strong style="color: <%= stats.pendingRevenueCents > 0 ? '#d97706' : 'var(--muted)' %>;"><%= formatMoney(stats.pendingRevenueCents) %></strong>
+          <span class="kpi-subtext">Esperado: <%= formatMoney(stats.expectedRevenueCents) %></span>
+        </article>
+        <article>
+          <span class="summary-dot dot-purple"></span>
+          <small>Ticket Promedio</small>
+          <strong><%= formatMoney(stats.averageTicketCents) %></strong>
+          <span class="kpi-subtext">por vehículo atendido</span>
+        </article>
+        <article>
+          <span class="summary-dot dot-green"></span>
+          <small>Tiempo Prom. Lavado</small>
+          <strong>~<%= stats.averageWashTimeMinutes %> min</strong>
+          <span class="kpi-subtext">Auto 30m · SUV 45m</span>
+        </article>
+        <article>
+          <span class="summary-dot" style="background: #0ea5e9;"></span>
+          <small>Promedio Diario</small>
+          <strong><%= stats.averageDailyVehicles %> veh/día</strong>
+          <span class="kpi-subtext"><%= formatMoney(stats.averageDailyRevenueCents) %> / día</span>
+        </article>
+      </section>
 
-    <!-- Métricas predictivas complementarias -->
-    <div class="forecast-insights-grid">
-      <!-- Cierre de mes -->
-      <article class="forecast-insight-card">
-        <div class="insight-icon">🎯</div>
-        <div class="insight-content">
-          <h4>Proyección de Cierre de Mes (<%= stats.forecast.projectedMonthEnd.monthName %>)</h4>
-          <p>
-            Al ritmo actual, con <%= stats.forecast.projectedMonthEnd.daysPassed %> de <%= stats.forecast.projectedMonthEnd.daysInMonth %> días transcurridos
-            (<b><%= stats.forecast.projectedMonthEnd.vehiclesSoFar %></b> vehículos y <b><%= formatMoney(stats.forecast.projectedMonthEnd.revenueSoFarCents) %></b> cobrados hasta hoy):
-          </p>
-          <div class="insight-stat-box">
+      <!-- Gráficos y Tablas de Análisis -->
+      <div class="stats-panels-grid">
+        <!-- 1. Evolución Diaria (Vehículos y Recaudación) -->
+        <section class="stats-panel-card full-width">
+          <div class="panel-card-header">
             <div>
-              <small>Facturación proyectada a fin de mes:</small>
-              <strong style="color: var(--aqua-dark); font-size: 20px;"><%= formatMoney(stats.forecast.projectedMonthEnd.projectedTotalRevenueCents) %></strong>
+              <h3>📈 Evolución Diaria de Vehículos e Ingresos</h3>
+              <small>Volumen atendido y facturación en <%= stats.periodLabel.toLowerCase() %></small>
             </div>
-            <div>
-              <small>Vehículos proyectados mes:</small>
-              <strong style="font-size: 20px;">~<%= stats.forecast.projectedMonthEnd.projectedTotalVehicles %></strong>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-color legend-bar"></span> Vehículos</span>
             </div>
           </div>
-        </div>
-      </article>
 
-      <!-- Cuello de botella / Horas pico -->
-      <article class="forecast-insight-card">
-        <div class="insight-icon">⚠️</div>
-        <div class="insight-content">
-          <h4>Horas Críticas de Pista (Cuello de Botella)</h4>
-          <p>Horarios donde se suele acumular la mayor demanda en pista:</p>
-          <div class="peak-hours-pills">
-            <% if (stats.forecast.peakHoursWarning.length > 0) { %>
-              <% stats.forecast.peakHoursWarning.forEach(pk => { %>
-                <span class="peak-pill">
-                  ⏱️ <b><%= pk.label %></b> · <%= pk.historicalAverage %> veh. en período
-                </span>
+          <div class="visual-chart-wrap">
+            <%
+              const maxVehicles = Math.max(1, ...stats.dailyTrend.map(d => d.vehiclesCount));
+            %>
+            <div class="css-barchart">
+              <% stats.dailyTrend.forEach(day => {
+                const heightPercent = Math.max(8, Math.round((day.vehiclesCount / maxVehicles) * 100));
+              %>
+                <div class="barchart-col" title="<%= day.dayName %> <%= day.date %>: <%= day.vehiclesCount %> vehículos · <%= formatMoney(day.revenueCents) %>">
+                  <div class="barchart-val"><%= day.vehiclesCount > 0 ? day.vehiclesCount : '' %></div>
+                  <div class="barchart-bar-track">
+                    <div class="barchart-bar <%= day.vehiclesCount === 0 ? 'empty' : '' %>" style="height: <%= heightPercent %>%;"></div>
+                  </div>
+                  <div class="barchart-lbl"><%= day.label %></div>
+                  <div class="barchart-rev"><%= day.revenueCents > 0 ? 'S/' + Math.round(day.revenueCents / 100) : '—' %></div>
+                </div>
               <% }) %>
-            <% } else { %>
-              <span class="peak-pill">✓ Flujo balanceado a lo largo del día</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Horas Pico en Pista (7:00 a 18:00) -->
+        <section class="stats-panel-card">
+          <div class="panel-card-header">
+            <div>
+              <h3>⏱️ Carga por Hora en Pista</h3>
+              <small>Distribución de ingresos de 7:00 a. m. a 6:00 p. m.</small>
+            </div>
+          </div>
+
+          <div class="horizontal-bars-list">
+            <%
+              const maxHourCount = Math.max(1, ...stats.hourlyDistribution.map(h => h.count));
+              stats.hourlyDistribution.forEach(h => {
+                const barWidth = Math.max(4, Math.round((h.count / maxHourCount) * 100));
+            %>
+              <div class="hbar-item <%= h.isPeak ? 'peak-row' : '' %>">
+                <span class="hbar-label"><%= h.label %></span>
+                <div class="hbar-track">
+                  <div class="hbar-fill <%= h.isPeak ? 'peak-fill' : '' %>" style="width: <%= barWidth %>%;"></div>
+                </div>
+                <span class="hbar-count"><b><%= h.count %></b> veh. <small>(<%= h.percentage %>%)</small></span>
+              </div>
+            <% }) %>
+          </div>
+        </section>
+
+        <!-- 3. Demanda por Día de la Semana (Lunes a Domingo) -->
+        <section class="stats-panel-card">
+          <div class="panel-card-header">
+            <div>
+              <h3>📅 Afluencia por Día de la Semana</h3>
+              <small>Promedio histórico para asignación de turnos</small>
+            </div>
+          </div>
+
+          <div class="horizontal-bars-list">
+            <%
+              const maxDowAvg = Math.max(1, ...stats.dayOfWeekDistribution.map(d => d.averageVehicles));
+              stats.dayOfWeekDistribution.forEach(d => {
+                const barWidth = Math.max(4, Math.round((d.averageVehicles / maxDowAvg) * 100));
+            %>
+              <div class="hbar-item">
+                <span class="hbar-label"><b><%= d.dayName %></b></span>
+                <div class="hbar-track">
+                  <div class="hbar-fill" style="width: <%= barWidth %>%; background: #4e9be8;"></div>
+                </div>
+                <span class="hbar-count"><b>~<%= d.averageVehicles %></b> prom. <small>(<%= d.totalVehicles %> tot)</small></span>
+              </div>
+            <% }) %>
+          </div>
+        </section>
+
+        <!-- 4. Mix de Vehículos -->
+        <section class="stats-panel-card">
+          <div class="panel-card-header">
+            <div>
+              <h3>🚗 Flota Atendida por Tipo</h3>
+              <small>Participación y recaudación</small>
+            </div>
+          </div>
+
+          <div class="breakdown-items-list">
+            <% if (stats.vehicleTypes.length === 0) { %>
+              <p class="empty-state-text">No hay registros en este período.</p>
+            <% } %>
+            <% stats.vehicleTypes.forEach(v => { %>
+              <div class="breakdown-item">
+                <div class="breakdown-item-main">
+                  <span class="breakdown-icon"><%= v.icon %></span>
+                  <div class="breakdown-name-wrap">
+                    <strong><%= v.label %></strong>
+                    <small><%= formatMoney(v.revenueCents) %> facturado</small>
+                  </div>
+                </div>
+                <div class="breakdown-item-metric">
+                  <strong><%= v.count %> veh.</strong>
+                  <div class="breakdown-progress-track">
+                    <div class="breakdown-progress-fill" style="width: <%= v.percentage %>%;"></div>
+                  </div>
+                  <small><%= v.percentage %>%</small>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </section>
+
+        <!-- 5. Métodos de Pago y Cobranza -->
+        <section class="stats-panel-card">
+          <div class="panel-card-header">
+            <div>
+              <h3>💳 Métodos de Pago</h3>
+              <small>Desglose de recaudación</small>
+            </div>
+          </div>
+
+          <div class="breakdown-items-list">
+            <% stats.paymentMethods.forEach(p => {
+              const icon = p.method === 'yape' ? '🟣' : (p.method === 'plin' ? '🔵' : '💵');
+            %>
+              <div class="breakdown-item">
+                <div class="breakdown-item-main">
+                  <span class="breakdown-icon"><%= icon %></span>
+                  <div class="breakdown-name-wrap">
+                    <strong><%= p.label %></strong>
+                    <small><%= p.count %> transacciones</small>
+                  </div>
+                </div>
+                <div class="breakdown-item-metric">
+                  <strong style="color: var(--aqua-dark);"><%= formatMoney(p.cents) %></strong>
+                  <div class="breakdown-progress-track">
+                    <div class="breakdown-progress-fill" style="width: <%= p.percentage %>%; background: <%= p.method === 'yape' ? '#74218a' : (p.method === 'plin' ? '#007f98' : '#18705d') %>;"></div>
+                  </div>
+                  <small><%= p.percentage %>%</small>
+                </div>
+              </div>
+            <% }) %>
+
+            <% if (stats.pendingRevenueCents > 0) { %>
+              <div class="breakdown-item pending-item">
+                <div class="breakdown-item-main">
+                  <span class="breakdown-icon">⏳</span>
+                  <div class="breakdown-name-wrap">
+                    <strong>Pendiente por Cobrar</strong>
+                    <small>Saldo por liquidar al entregar</small>
+                  </div>
+                </div>
+                <div class="breakdown-item-metric">
+                  <strong style="color: #d97706;"><%= formatMoney(stats.pendingRevenueCents) %></strong>
+                </div>
+              </div>
             <% } %>
           </div>
-          <small class="insight-footnote">💡 Capacidad nominal de 6 autos por hora. Se sugiere tener preparados paños secos e insumos antes de las 10:00 a. m.</small>
-        </div>
-      </article>
+        </section>
 
-      <!-- Insumos estimados próxima semana -->
-      <article class="forecast-insight-card">
-        <div class="insight-icon">🧴</div>
-        <div class="insight-content">
-          <h4>Insumos Clave Estimados (Próxima semana)</h4>
-          <p>Demanda aproximada para los próximos 7 días según tasa histórica:</p>
-          <div class="supply-pills">
-            <span class="supply-pill">✨ Cera líquida: <b>~<%= stats.forecast.supplyEstimates.waxCount %></b> autos</span>
-            <span class="supply-pill">🧽 Crema cuero: <b>~<%= stats.forecast.supplyEstimates.leatherCount %></b> autos</span>
-            <span class="supply-pill">🔧 Lavado motor: <b>~<%= stats.forecast.supplyEstimates.engineCount %></b> autos</span>
-          </div>
-          <small class="insight-footnote">Permite anticipar compras de galoneras y repuestos con suficiente tiempo.</small>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <!-- Gráficos y Tablas de Análisis -->
-  <div class="stats-panels-grid">
-    <!-- 1. Evolución Diaria (Vehículos y Recaudación) -->
-    <section class="stats-panel-card full-width">
-      <div class="panel-card-header">
-        <div>
-          <h3>📈 Evolución Diaria de Vehículos e Ingresos</h3>
-          <small>Volumen atendido y facturación en <%= stats.periodLabel.toLowerCase() %></small>
-        </div>
-        <div class="chart-legend">
-          <span class="legend-item"><span class="legend-color legend-bar"></span> Vehículos</span>
-        </div>
-      </div>
-
-      <div class="visual-chart-wrap">
-        <% 
-          const maxVehicles = Math.max(1, ...stats.dailyTrend.map(d => d.vehiclesCount));
-        %>
-        <div class="css-barchart">
-          <% stats.dailyTrend.forEach(day => { 
-            const heightPercent = Math.max(8, Math.round((day.vehiclesCount / maxVehicles) * 100));
-          %>
-            <div class="barchart-col" title="<%= day.dayName %> <%= day.date %>: <%= day.vehiclesCount %> vehículos · <%= formatMoney(day.revenueCents) %>">
-              <div class="barchart-val"><%= day.vehiclesCount > 0 ? day.vehiclesCount : '' %></div>
-              <div class="barchart-bar-track">
-                <div class="barchart-bar <%= day.vehiclesCount === 0 ? 'empty' : '' %>" style="height: <%= heightPercent %>%;"></div>
-              </div>
-              <div class="barchart-lbl"><%= day.label %></div>
-              <div class="barchart-rev"><%= day.revenueCents > 0 ? 'S/' + Math.round(day.revenueCents / 100) : '—' %></div>
+        <!-- 6. Servicios Más Solicitados -->
+        <section class="stats-panel-card full-width">
+          <div class="panel-card-header">
+            <div>
+              <h3>⭐ Servicios Más Solicitados</h3>
+              <small>Ranking de servicios base y adicionales contratados</small>
             </div>
+          </div>
+
+          <div class="services-ranking-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Servicio</th>
+                  <th>Tipo</th>
+                  <th>Contrataciones</th>
+                  <th>% del Total</th>
+                  <th>Facturación Acumulada</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (stats.topServices.length === 0) { %>
+                  <tr>
+                    <td colspan="5" class="empty-table">No hay servicios registrados en este período.</td>
+                  </tr>
+                <% } %>
+                <% stats.topServices.forEach(s => { %>
+                  <tr>
+                    <td><strong><%= s.name %></strong></td>
+                    <td>
+                      <span class="service-cat-badge <%= s.category === 'base' ? 'badge-base' : 'badge-addon' %>">
+                        <%= s.category === 'base' ? 'Lavado Base' : 'Adicional' %>
+                      </span>
+                    </td>
+                    <td><b><%= s.count %></b> veces</td>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="breakdown-progress-track" style="width: 80px;">
+                          <div class="breakdown-progress-fill" style="width: <%= s.percentage %>%;"></div>
+                        </div>
+                        <span><%= s.percentage %>%</span>
+                      </div>
+                    </td>
+                    <td><strong style="color: var(--aqua-dark);"><%= formatMoney(s.revenueCents) %></strong></td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Panel 2: Rendimiento y Pronóstico (Pestaña secundaria) -->
+    <div class="stats-tabpanel" id="panel-forecast" role="tabpanel" aria-labelledby="tab-forecast" hidden>
+      <section class="forecast-container">
+        <div class="forecast-header">
+          <div class="forecast-title-group">
+            <span class="forecast-badge">🔮 Inteligencia Predictiva</span>
+            <h2>Pronóstico de Demanda para los Próximos 7 Días</h2>
+            <p>Estimación calculada a partir del histórico por día de la semana y tendencia de volumen reciente.</p>
+          </div>
+          <div class="forecast-week-total">
+            <small>Proyección total semana</small>
+            <strong>~<%= stats.forecast.totalExpectedVehiclesWeek %> vehículos</strong>
+            <span><%= formatMoney(stats.forecast.totalExpectedRevenueWeekCents) %> estimación</span>
+          </div>
+        </div>
+
+        <!-- Carrusel / Grid de los próximos 7 días -->
+        <div class="forecast-days-grid">
+          <% stats.forecast.next7Days.forEach(day => { %>
+            <article class="forecast-day-card">
+              <div class="forecast-day-top">
+                <strong><%= day.dayName %></strong>
+                <small><%= day.shortLabel %></small>
+              </div>
+              <div class="forecast-day-metric">
+                <span class="forecast-car-icon">🚗</span>
+                <div class="forecast-count-wrap">
+                  <strong>~<%= day.expectedVehicles %></strong>
+                  <small>vehículos</small>
+                </div>
+              </div>
+              <div class="forecast-day-revenue">
+                <span>Estimado: <b><%= formatMoney(day.expectedRevenueCents) %></b></span>
+              </div>
+              <div class="forecast-day-footer">
+                <span class="demand-pill" style="border-color: <%= day.demandColor %>; color: <%= day.demandColor %>;">
+                  <%= day.demandLevel === 'Alta' ? '🔥 Alta' : (day.demandLevel === 'Media' ? '⚡ Media' : '🟢 Normal') %>
+                </span>
+                <span class="staff-tip" title="Personal recomendado">👥 <%= day.recommendedStaff %></span>
+              </div>
+            </article>
           <% }) %>
         </div>
-      </div>
-    </section>
 
-    <!-- 2. Horas Pico en Pista (7:00 a 18:00) -->
-    <section class="stats-panel-card">
-      <div class="panel-card-header">
-        <div>
-          <h3>⏱️ Carga por Hora en Pista</h3>
-          <small>Distribución de ingresos de 7:00 a. m. a 6:00 p. m.</small>
-        </div>
-      </div>
-
-      <div class="horizontal-bars-list">
-        <% 
-          const maxHourCount = Math.max(1, ...stats.hourlyDistribution.map(h => h.count));
-          stats.hourlyDistribution.forEach(h => {
-            const barWidth = Math.max(4, Math.round((h.count / maxHourCount) * 100));
-        %>
-          <div class="hbar-item <%= h.isPeak ? 'peak-row' : '' %>">
-            <span class="hbar-label"><%= h.label %></span>
-            <div class="hbar-track">
-              <div class="hbar-fill <%= h.isPeak ? 'peak-fill' : '' %>" style="width: <%= barWidth %>%;"></div>
-            </div>
-            <span class="hbar-count"><b><%= h.count %></b> veh. <small>(<%= h.percentage %>%)</small></span>
-          </div>
-        <% }) %>
-      </div>
-    </section>
-
-    <!-- 3. Demanda por Día de la Semana (Lunes a Domingo) -->
-    <section class="stats-panel-card">
-      <div class="panel-card-header">
-        <div>
-          <h3>📅 Afluencia por Día de la Semana</h3>
-          <small>Promedio histórico para asignación de turnos</small>
-        </div>
-      </div>
-
-      <div class="horizontal-bars-list">
-        <% 
-          const maxDowAvg = Math.max(1, ...stats.dayOfWeekDistribution.map(d => d.averageVehicles));
-          stats.dayOfWeekDistribution.forEach(d => {
-            const barWidth = Math.max(4, Math.round((d.averageVehicles / maxDowAvg) * 100));
-        %>
-          <div class="hbar-item">
-            <span class="hbar-label"><b><%= d.dayName %></b></span>
-            <div class="hbar-track">
-              <div class="hbar-fill" style="width: <%= barWidth %>%; background: #4e9be8;"></div>
-            </div>
-            <span class="hbar-count"><b>~<%= d.averageVehicles %></b> prom. <small>(<%= d.totalVehicles %> tot)</small></span>
-          </div>
-        <% }) %>
-      </div>
-    </section>
-
-    <!-- 4. Mix de Vehículos -->
-    <section class="stats-panel-card">
-      <div class="panel-card-header">
-        <div>
-          <h3>🚗 Flota Atendida por Tipo</h3>
-          <small>Participación y recaudación</small>
-        </div>
-      </div>
-
-      <div class="breakdown-items-list">
-        <% if (stats.vehicleTypes.length === 0) { %>
-          <p class="empty-state-text">No hay registros en este período.</p>
-        <% } %>
-        <% stats.vehicleTypes.forEach(v => { %>
-          <div class="breakdown-item">
-            <div class="breakdown-item-main">
-              <span class="breakdown-icon"><%= v.icon %></span>
-              <div class="breakdown-name-wrap">
-                <strong><%= v.label %></strong>
-                <small><%= formatMoney(v.revenueCents) %> facturado</small>
+        <!-- Métricas predictivas complementarias -->
+        <div class="forecast-insights-grid">
+          <!-- Cierre de mes -->
+          <article class="forecast-insight-card">
+            <div class="insight-icon">🎯</div>
+            <div class="insight-content">
+              <h4>Proyección de Cierre de Mes (<%= stats.forecast.projectedMonthEnd.monthName %>)</h4>
+              <p>
+                Al ritmo actual, con <%= stats.forecast.projectedMonthEnd.daysPassed %> de <%= stats.forecast.projectedMonthEnd.daysInMonth %> días transcurridos
+                (<b><%= stats.forecast.projectedMonthEnd.vehiclesSoFar %></b> vehículos y <b><%= formatMoney(stats.forecast.projectedMonthEnd.revenueSoFarCents) %></b> cobrados hasta hoy):
+              </p>
+              <div class="insight-stat-box">
+                <div>
+                  <small>Facturación proyectada a fin de mes:</small>
+                  <strong style="color: var(--aqua-dark); font-size: 20px;"><%= formatMoney(stats.forecast.projectedMonthEnd.projectedTotalRevenueCents) %></strong>
+                </div>
+                <div>
+                  <small>Vehículos proyectados mes:</small>
+                  <strong style="font-size: 20px;">~<%= stats.forecast.projectedMonthEnd.projectedTotalVehicles %></strong>
+                </div>
               </div>
             </div>
-            <div class="breakdown-item-metric">
-              <strong><%= v.count %> veh.</strong>
-              <div class="breakdown-progress-track">
-                <div class="breakdown-progress-fill" style="width: <%= v.percentage %>%;"></div>
-              </div>
-              <small><%= v.percentage %>%</small>
-            </div>
-          </div>
-        <% }) %>
-      </div>
-    </section>
+          </article>
 
-    <!-- 5. Métodos de Pago y Cobranza -->
-    <section class="stats-panel-card">
-      <div class="panel-card-header">
-        <div>
-          <h3>💳 Métodos de Pago</h3>
-          <small>Desglose de recaudación</small>
+          <!-- Cuello de botella / Horas pico -->
+          <article class="forecast-insight-card">
+            <div class="insight-icon">⚠️</div>
+            <div class="insight-content">
+              <h4>Horas Críticas de Pista (Cuello de Botella)</h4>
+              <p>Horarios donde se suele acumular la mayor demanda en pista:</p>
+              <div class="peak-hours-pills">
+                <% if (stats.forecast.peakHoursWarning.length > 0) { %>
+                  <% stats.forecast.peakHoursWarning.forEach(pk => { %>
+                    <span class="peak-pill">
+                      ⏱️ <b><%= pk.label %></b> · <%= pk.historicalAverage %> veh. en período
+                    </span>
+                  <% }) %>
+                <% } else { %>
+                  <span class="peak-pill">✓ Flujo balanceado a lo largo del día</span>
+                <% } %>
+              </div>
+              <small class="insight-footnote">💡 Capacidad nominal de 6 autos por hora. Se sugiere tener preparados paños secos e insumos antes de las 10:00 a. m.</small>
+            </div>
+          </article>
+
+          <!-- Insumos estimados próxima semana -->
+          <article class="forecast-insight-card">
+            <div class="insight-icon">🧴</div>
+            <div class="insight-content">
+              <h4>Insumos Clave Estimados (Próxima semana)</h4>
+              <p>Demanda aproximada para los próximos 7 días según tasa histórica:</p>
+              <div class="supply-pills">
+                <span class="supply-pill">✨ Cera líquida: <b>~<%= stats.forecast.supplyEstimates.waxCount %></b> autos</span>
+                <span class="supply-pill">🧽 Crema cuero: <b>~<%= stats.forecast.supplyEstimates.leatherCount %></b> autos</span>
+                <span class="supply-pill">🔧 Lavado motor: <b>~<%= stats.forecast.supplyEstimates.engineCount %></b> autos</span>
+              </div>
+              <small class="insight-footnote">Permite anticipar compras de galoneras y repuestos con suficiente tiempo.</small>
+            </div>
+          </article>
         </div>
-      </div>
-
-      <div class="breakdown-items-list">
-        <% stats.paymentMethods.forEach(p => { 
-          const icon = p.method === 'yape' ? '🟣' : (p.method === 'plin' ? '🔵' : '💵');
-        %>
-          <div class="breakdown-item">
-            <div class="breakdown-item-main">
-              <span class="breakdown-icon"><%= icon %></span>
-              <div class="breakdown-name-wrap">
-                <strong><%= p.label %></strong>
-                <small><%= p.count %> transacciones</small>
-              </div>
-            </div>
-            <div class="breakdown-item-metric">
-              <strong style="color: var(--aqua-dark);"><%= formatMoney(p.cents) %></strong>
-              <div class="breakdown-progress-track">
-                <div class="breakdown-progress-fill" style="width: <%= p.percentage %>%; background: <%= p.method === 'yape' ? '#74218a' : (p.method === 'plin' ? '#007f98' : '#18705d') %>;"></div>
-              </div>
-              <small><%= p.percentage %>%</small>
-            </div>
-          </div>
-        <% }) %>
-
-        <% if (stats.pendingRevenueCents > 0) { %>
-          <div class="breakdown-item pending-item">
-            <div class="breakdown-item-main">
-              <span class="breakdown-icon">⏳</span>
-              <div class="breakdown-name-wrap">
-                <strong>Pendiente por Cobrar</strong>
-                <small>Saldo por liquidar al entregar</small>
-              </div>
-            </div>
-            <div class="breakdown-item-metric">
-              <strong style="color: #d97706;"><%= formatMoney(stats.pendingRevenueCents) %></strong>
-            </div>
-          </div>
-        <% } %>
-      </div>
-    </section>
-
-    <!-- 6. Servicios Más Solicitados -->
-    <section class="stats-panel-card full-width">
-      <div class="panel-card-header">
-        <div>
-          <h3>⭐ Servicios Más Solicitados</h3>
-          <small>Ranking de servicios base y adicionales contratados</small>
-        </div>
-      </div>
-
-      <div class="services-ranking-table-wrap">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Servicio</th>
-              <th>Tipo</th>
-              <th>Contrataciones</th>
-              <th>% del Total</th>
-              <th>Facturación Acumulada</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% if (stats.topServices.length === 0) { %>
-              <tr>
-                <td colspan="5" class="empty-table">No hay servicios registrados en este período.</td>
-              </tr>
-            <% } %>
-            <% stats.topServices.forEach(s => { %>
-              <tr>
-                <td><strong><%= s.name %></strong></td>
-                <td>
-                  <span class="service-cat-badge <%= s.category === 'base' ? 'badge-base' : 'badge-addon' %>">
-                    <%= s.category === 'base' ? 'Lavado Base' : 'Adicional' %>
-                  </span>
-                </td>
-                <td><b><%= s.count %></b> veces</td>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 8px;">
-                    <div class="breakdown-progress-track" style="width: 80px;">
-                      <div class="breakdown-progress-fill" style="width: <%= s.percentage %>%;"></div>
-                    </div>
-                    <span><%= s.percentage %>%</span>
-                  </div>
-                </td>
-                <td><strong style="color: var(--aqua-dark);"><%= formatMoney(s.revenueCents) %></strong></td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-    </section>
+      </section>
+    </div>
   </div>
 </main>
+
+<script>
+  (() => {
+    const tabsContainer = document.getElementById('stats-tabs-container');
+    const tabs = [...document.querySelectorAll('.stats-tab-btn')];
+    const panels = [...document.querySelectorAll('.stats-tabpanel')];
+    if (!tabsContainer || tabs.length === 0) return;
+
+    tabsContainer.classList.add('has-tabs');
+
+    function switchTab(targetTab) {
+      const targetId = targetTab.getAttribute('aria-controls');
+      tabs.forEach(tab => {
+        const isSelected = tab === targetTab;
+        tab.classList.toggle('active', isSelected);
+        tab.setAttribute('aria-selected', String(isSelected));
+        tab.setAttribute('tabindex', isSelected ? '0' : '-1');
+      });
+
+      panels.forEach(panel => {
+        const isMatch = panel.id === targetId;
+        if (isMatch) {
+          panel.removeAttribute('hidden');
+          panel.style.display = '';
+        } else {
+          panel.setAttribute('hidden', '');
+          panel.style.display = 'none';
+        }
+      });
+    }
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => {
+        switchTab(tab);
+      });
+
+      tab.addEventListener('keydown', (e) => {
+        let newIndex = index;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          newIndex = (index + 1) % tabs.length;
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          newIndex = (index - 1 + tabs.length) % tabs.length;
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          newIndex = 0;
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          newIndex = tabs.length - 1;
+        }
+
+        if (newIndex !== index) {
+          tabs[newIndex].focus();
+          switchTab(tabs[newIndex]);
+        }
+      });
+    });
+
+    // Estado inicial: Tab histórico activo
+    switchTab(tabs[0]);
+  })();
+</script>
 <%- include('../partials/footer') %>

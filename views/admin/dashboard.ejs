@@ -1,5 +1,5 @@
 <%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
-<%- include('../partials/admin-nav', { admin, csrfToken }) %>
+<%- include('../partials/admin-nav', { admin, csrfToken, activeNav: 'operacion' }) %>
 <main class="admin-main">
   <div class="page-heading">
     <div>
@@ -39,44 +39,14 @@
   </section>
 
   <section class="summary-grid">
-    <article class="summary-clickable" data-summary-filter="all" title="Ver todos los vehículos"><span class="summary-dot dot-blue"></span><small>Vehículos</small><strong><%= summary.total %></strong></article>
-    <article class="summary-clickable" data-summary-filter="pending" title="Filtrar vehículos pendientes"><span class="summary-dot dot-amber"></span><small>Pendientes</small><strong><%= summary.pending %></strong></article>
-    <article class="summary-clickable" data-summary-filter="in_progress" title="Filtrar vehículos en proceso"><span class="summary-dot dot-purple"></span><small>En proceso</small><strong><%= summary.inProgress %></strong></article>
-    <article class="summary-clickable" data-summary-filter="completed" title="Filtrar vehículos terminados"><span class="summary-dot dot-green"></span><small>Terminados</small><strong><%= summary.completed %></strong></article>
-    <article><span class="summary-dot" style="background: #9fb4bb"></span><small>Total (Proyectado)</small><strong><%= formatMoney(summary.expected) %></strong></article>
-    <article class="summary-clickable" data-summary-filter="paid" title="Filtrar vehículos pagados"><span class="summary-dot dot-mint"></span><small>Cobrado</small><strong><%= formatMoney(summary.collected) %></strong></article>
-  </section>
-
-  <!-- Módulo de cierre de caja -->
-  <section class="cash-breakdown-panel">
-    <div class="cash-breakdown-title">
-      <span>💵 <strong>Cierre de caja · <%= selectedDate %></strong></span>
-      <% if (paymentBreakdown.totalPendingCents > 0) { %>
-        <span class="pending-to-collect">Por cobrar: <b><%= formatMoney(paymentBreakdown.totalPendingCents) %></b></span>
-      <% } else { %>
-        <span class="all-collected">✓ 100% cobrado</span>
-      <% } %>
-    </div>
-    <div class="cash-breakdown-chips">
-      <div class="cash-chip chip-yape">
-        <span class="chip-label">🟣 Yape</span>
-        <strong><%= formatMoney(paymentBreakdown.yapeCents) %></strong>
-      </div>
-      <div class="cash-chip chip-plin">
-        <span class="chip-label">🔵 Plin</span>
-        <strong><%= formatMoney(paymentBreakdown.plinCents) %></strong>
-      </div>
-      <div class="cash-chip chip-cash">
-        <span class="chip-label">💵 Efectivo</span>
-        <strong><%= formatMoney(paymentBreakdown.cashCents) %></strong>
-      </div>
-    </div>
-    <div class="admin-qr-quick-bar">
-      <span class="admin-qr-title">📱 QRs de Cobro rápido:</span>
-      <div class="admin-qr-btns">
-        <button type="button" class="admin-yape-btn" data-open-qr="hugo" onclick="openYapeQr('hugo')">🟣 Yape Hugo</button>
-        <button type="button" class="admin-yape-btn" data-open-qr="roxana" onclick="openYapeQr('roxana')">🟣 Yape Roxana</button>
-      </div>
+    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="pending" title="Filtrar vehículos pendientes"><span class="summary-dot dot-amber"></span><small>En espera</small><strong><%= summary.pending %></strong></article>
+    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="in_progress" title="Filtrar vehículos en proceso"><span class="summary-dot dot-purple"></span><small>En proceso</small><strong><%= summary.inProgress %></strong></article>
+    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="completed" title="Filtrar vehículos listos"><span class="summary-dot dot-green"></span><small>Listos</small><strong><%= summary.completed %></strong></article>
+    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="pending_payment" title="Filtrar saldo pendiente de cobro"><span class="summary-dot dot-danger"></span><small>Por cobrar</small><strong><%= formatMoney(paymentBreakdown.totalPendingCents) %></strong></article>
+    <div class="operation-meta">
+      <button type="button" data-summary-filter="all"><b><%= summary.total %></b> vehículos hoy</button>
+      <button type="button" data-summary-filter="paid">Cobrado <b><%= formatMoney(summary.collected) %></b></button>
+      <span>Proyectado <b><%= formatMoney(summary.expected) %></b></span>
     </div>
   </section>
 
@@ -134,7 +104,7 @@
 
   <div class="board-heading">
     <div class="board-heading-row">
-      <h2>Recojos por hora</h2>
+      <h2>Panel de recojos por hora</h2>
       <div class="board-heading-actions">
         <span class="board-date"><%= selectedDate %></span>
       </div>
@@ -144,7 +114,7 @@
       <div class="status-filter-pills" id="board-status-filters">
         <button type="button" class="filter-pill active" data-filter="all">Todos</button>
         <button type="button" class="filter-pill pill-progress" data-filter="in_progress">⏳ En proceso</button>
-        <button type="button" class="filter-pill pill-completed" data-filter="completed">✅ Terminados</button>
+        <button type="button" class="filter-pill pill-completed" data-filter="completed">✅ Listos</button>
         <button type="button" class="filter-pill pill-paid" data-filter="paid">💵 Pagados</button>
         <button type="button" class="filter-pill pill-pending-pay" data-filter="pending_payment">🔴 Por cobrar</button>
       </div>
@@ -152,12 +122,13 @@
         <label class="hide-completed-paid-toggle" title="Ocultar del tablero los vehículos que ya están terminados y cobrados para dejar solo los autos activos">
           <input type="checkbox" id="toggle-hide-done-paid" checked>
           <span class="toggle-slider"></span>
-          <span class="toggle-text">Ocultar terminados y pagados</span>
+          <span class="toggle-text">Ocultar listos y pagados</span>
         </label>
         <span class="filtered-counter" id="filtered-counter"></span>
       </div>
     </div>
   </div>
+
   <section class="pickup-board" data-live-board>
     <div class="hourly-summary">
       <h3 class="hourly-summary-title">Vehículos por hora</h3>
@@ -182,41 +153,57 @@
                  data-status="<%= booking.status %>"
                  data-payment-status="<%= booking.payment_status %>">
               <div class="vehicle-card-top">
-                <div>
-                  <span class="vehicle-badge"><%= vehicleLabels[booking.vehicle_type] %></span>
+                <div class="badges-row">
                   <span class="status-badge badge-<%= booking.status %>"><%= statusLabels[booking.status] %></span>
+                  <span class="payment-badge badge-<%= booking.payment_status %>"><%= booking.payment_status === 'paid' ? 'Pagado' : 'Por cobrar' %></span>
+                  <span class="vehicle-badge"><%= vehicleLabels[booking.vehicle_type] %></span>
                 </div>
-                <span class="payment-badge badge-<%= booking.payment_status %>"><%= booking.payment_status === 'paid' ? 'Pagado' : 'Por pagar' %></span>
+                <details class="card-more-menu">
+                  <summary class="card-more-trigger" title="Más opciones" aria-label="Más opciones de <%= booking.plate %>">⋮</summary>
+                  <div class="card-more-dropdown">
+                    <a href="/admin/reservas/<%= booking.id %>" class="card-dropdown-link">✏️ Ver / Editar detalle</a>
+                    <form method="post" action="/admin/reservas/<%= booking.id %>/eliminar" class="card-delete-form" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente el registro de <%= booking.plate %>? Esta acción no se puede deshacer.');">
+                      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                      <input type="hidden" name="redirectDate" value="<%= selectedDate %>">
+                      <button type="submit" class="card-delete-btn" title="Eliminar registro" aria-label="Eliminar registro">🗑️ Eliminar</button>
+                    </form>
+                  </div>
+                </details>
               </div>
+
               <div class="plate-row">
-                <a href="/admin/reservas/<%= booking.id %>" class="plate-number"><%= booking.plate %></a>
-                <div class="plate-actions">
-                  <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" class="ticket-btn">🖨️</a>
-                  <form method="post" action="/admin/reservas/<%= booking.id %>/eliminar" class="card-delete-form" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente el registro de <%= booking.plate %>? Esta acción no se puede deshacer.');">
-                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                    <input type="hidden" name="redirectDate" value="<%= selectedDate %>">
-                    <button type="submit" class="card-delete-btn" title="Eliminar registro" aria-label="Eliminar registro">🗑️</button>
-                  </form>
+                <a href="/admin/reservas/<%= booking.id %>" class="plate-number" title="Ver detalle de <%= booking.plate %>"><%= booking.plate %></a>
+                <% if (booking.vehicle_model) { %>
+                  <span class="card-model">· <%= booking.vehicle_model %></span>
+                <% } %>
+              </div>
+
+              <div class="card-timing-row">
+                <div class="card-pickup-highlight">
+                  <span class="time-label">Recojo:</span>
+                  <strong class="pickup-highlight-time">⏰ <%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></strong>
+                </div>
+                <div class="card-dropoff-sub">
+                  <span>Ingreso: <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span>
                 </div>
               </div>
-              <p>
+
+              <p class="card-customer">
                 <% if (booking.customer_id) { %>
-                  <a href="/admin/clientes/<%= booking.customer_id %>" class="customer-link" style="display:inline;"><%= booking.customer_name %></a>
+                  <a href="/admin/clientes/<%= booking.customer_id %>" class="customer-link"><%= booking.customer_name %></a>
                 <% } else { %>
                   <span><%= booking.customer_name || 'Cliente sin nombre' %></span>
                 <% } %>
-                <% if (booking.vehicle_model) { %>
-                  <b style="color: var(--aqua-dark); font-weight: 700;">· <%= booking.vehicle_model %></b>
-                <% } %>
               </p>
+
               <div class="card-service-section highlight-on-update">
                 <span class="card-service-name">🧼 <%= booking.services || 'Sin servicio asignado' %></span>
                 <span class="card-service-price"><%= formatMoney(booking.total_cents) %></span>
               </div>
-              <div class="vehicle-meta">
-                <span>Ingreso <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span>
-                <span>Recojo <b><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></b></span>
-              </div>
+              <% if (booking.payment_status !== 'paid') { %>
+                <div class="card-balance"><span>Saldo pendiente</span><strong><%= formatMoney(Math.max(0, booking.total_cents - booking.amount_paid_cents)) %></strong></div>
+              <% } %>
+
               <% if (booking.status === 'in_progress' && booking.started_washing_at) { %>
                 <div class="wash-timer-card" data-wash-timer>
                   <div class="wash-timer-row">
@@ -226,22 +213,30 @@
                   <div class="wash-progress-track"><div class="wash-progress-bar"></div></div>
                 </div>
               <% } %>
+
               <div class="quick-actions">
                 <form method="post" action="/admin/reservas/<%= booking.id %>/quick-action">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                   <div class="action-row">
-                    <div class="status-stepper">
-                      <button type="submit" name="action" value="prev_status" title="Retroceder estado" <%= booking.status === 'pending' || booking.status === 'cancelled' ? 'disabled' : '' %>>◀</button>
-                      <button type="submit" name="action" value="next_status" title="Avanzar estado" <%= booking.status === 'completed' || booking.status === 'cancelled' ? 'disabled' : '' %>>▶</button>
+                    <div class="action-main-btn-wrap">
+                      <% if (booking.status === 'pending') { %>
+                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-start" title="Avanzar a En proceso">▶ Iniciar lavado</button>
+                      <% } else if (booking.status === 'in_progress') { %>
+                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-finish" title="Avanzar a Terminado">✓ Marcar listo</button>
+                      <% } else if (booking.status === 'completed') { %>
+                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-delivered" disabled title="Vehículo terminado">✓ Listo</button>
+                      <% } else { %>
+                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-cancelled" disabled>Cancelada</button>
+                      <% } %>
                     </div>
-                    <div class="payment-stepper" style="display: flex; gap: 4px; align-items: center;">
+                    <div class="action-secondary-group">
+                      <button type="submit" name="action" value="prev_status" class="btn-prev-status" title="Retroceder estado" <%= booking.status === 'pending' || booking.status === 'cancelled' ? 'disabled' : '' %>>↩</button>
                       <button type="submit" name="action" value="toggle_payment" class="toggle-btn <%= booking.payment_status === 'paid' ? 'is-paid' : '' %>">
                         <%= booking.payment_status === 'paid' ? 'Pagado' : 'Cobrar' %>
                       </button>
+                      <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" class="ticket-btn">🖨️</a>
                       <% if (booking.phone) { %>
-                        <div class="wa-action-wrap">
-                          <a href="https://wa.me/<%= booking.phone.replace(/\D/g, '') %>?text=<%= encodeURIComponent(`Hola ${(booking.customer_name || 'Amigo').split(' ')[0]}, tu vehículo de placa ${booking.plate} ya está listo y reluciente en DASAV Car Wash. Monto: S/ ${(booking.total_cents / 100).toFixed(2)}. ¡Te esperamos!`) %>" target="_blank" class="wa-btn" title="Avisar por WhatsApp: ¡Vehículo listo!">💬</a>
-                        </div>
+                        <a href="https://wa.me/<%= booking.phone.replace(/\D/g, '') %>?text=<%= encodeURIComponent(`Hola ${(booking.customer_name || 'Amigo').split(' ')[0]}, tu vehículo de placa ${booking.plate} ya está listo y reluciente en DASAV Car Wash. Monto: S/ ${(booking.total_cents / 100).toFixed(2)}. ¡Te esperamos!`) %>" target="_blank" class="wa-btn" title="Avisar por WhatsApp: ¡Vehículo listo!">💬</a>
                       <% } %>
                     </div>
                   </div>
@@ -253,6 +248,44 @@
       </article>
     <% }) %>
   </section>
+
+  <!-- Módulo secundario: Cierre de caja y QRs de cobro rápido -->
+  <details class="cash-breakdown-panel cash-disclosure" id="cash-disclosure">
+    <summary class="cash-disclosure-summary">
+      <div class="cash-disclosure-header">
+        <span class="cash-title-text">💵 <strong>Cierre de caja y QRs de cobro · <%= selectedDate %></strong></span>
+        <% if (paymentBreakdown.totalPendingCents > 0) { %>
+          <span class="pending-to-collect">Por cobrar: <b><%= formatMoney(paymentBreakdown.totalPendingCents) %></b></span>
+        <% } else { %>
+          <span class="all-collected">✓ 100% cobrado</span>
+        <% } %>
+        <span class="cash-disclosure-arrow" aria-hidden="true">▾</span>
+      </div>
+    </summary>
+    <div class="cash-disclosure-content">
+      <div class="cash-breakdown-chips">
+        <div class="cash-chip chip-yape">
+          <span class="chip-label">🟣 Yape</span>
+          <strong><%= formatMoney(paymentBreakdown.yapeCents) %></strong>
+        </div>
+        <div class="cash-chip chip-plin">
+          <span class="chip-label">🔵 Plin</span>
+          <strong><%= formatMoney(paymentBreakdown.plinCents) %></strong>
+        </div>
+        <div class="cash-chip chip-cash">
+          <span class="chip-label">💵 Efectivo</span>
+          <strong><%= formatMoney(paymentBreakdown.cashCents) %></strong>
+        </div>
+      </div>
+      <div class="admin-qr-quick-bar">
+        <span class="admin-qr-title">📱 QRs de Cobro rápido:</span>
+        <div class="admin-qr-btns">
+          <button type="button" class="admin-yape-btn" data-open-qr="hugo" onclick="openYapeQr('hugo')">🟣 Yape Hugo</button>
+          <button type="button" class="admin-yape-btn" data-open-qr="roxana" onclick="openYapeQr('roxana')">🟣 Yape Roxana</button>
+        </div>
+      </div>
+    </div>
+  </details>
 </main>
-<script src="/public/admin.js?v=11" defer></script>
+<script src="/public/admin.js?v=12" defer></script>
 <%- include('../partials/footer') %>

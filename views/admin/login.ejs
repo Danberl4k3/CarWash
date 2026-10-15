@@ -12,8 +12,8 @@
       <%- include('../partials/alerts', { error, success }) %>
       <label>Usuario<input name="username" autocomplete="username" required autofocus></label>
       <label>Contraseña<input type="password" name="password" autocomplete="current-password" required></label>
-      <button class="primary-button block-button" type="submit">Ingresar <span>→</span></button>
-      <a class="back-link" href="/">← Volver a reservas</a>
+      <button class="primary-button block-button" type="submit">Ingresar <span><%- include('../partials/icon', { name: 'arrow-right' }) %></span></button>
+      <a class="back-link" href="/"><%- include('../partials/icon', { name: 'arrow-left' }) %> Volver a reservas</a>
     </form>
   </section>
 </main>

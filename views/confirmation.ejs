@@ -58,7 +58,7 @@
     <!-- Tarjeta de temporizador dinámico si está lavando -->
     <div id="tracker-timer-card" class="tracker-live-timer" style="<%= booking.status === 'in_progress' ? 'display:block;' : 'display:none;' %>">
       <div class="timer-row">
-        <span>⏳ <strong>Lavado en curso</strong></span>
+        <span><%- include('partials/icon', { name: 'hourglass' }) %> <strong>Lavado en curso</strong></span>
         <span id="tracker-timer-remain" class="timer-countdown">Calculando tiempo...</span>
       </div>
       <div class="timer-track"><div id="tracker-timer-bar" class="timer-bar" style="width: 20%;"></div></div>
@@ -71,7 +71,7 @@
       <div>
         <small>Estado de pago</small>
         <span id="tracker-payment-badge" class="payment-badge badge-<%= booking.payment_status %>">
-          <%= booking.payment_status === 'paid' ? 'Pagado ✓' : 'Por pagar en local' %>
+          <% if (booking.payment_status === 'paid') { %>Pagado <%- include('partials/icon', { name: 'check' }) %><% } else { %>Por pagar en local<% } %>
         </span>
       </div>
       <div><small>Método</small><strong><%= paymentLabels[booking.payment_method] %></strong></div>
@@ -81,7 +81,7 @@
     <!-- Sección de Pago por Yape con botones para Hugo y Roxana -->
     <div class="tracker-yape-pay-box">
       <div class="tracker-yape-title">
-        <span class="yape-pill-icon">🟣</span>
+        <span class="yape-pill-icon"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""></span>
         <div>
           <strong>Pagar con Yape</strong>
           <small>Elige a quién transferir para abrir su código QR:</small>
@@ -89,20 +89,20 @@
       </div>
       <div class="yape-buttons-row">
         <button type="button" class="btn-yape-trigger" data-open-qr="hugo" onclick="openYapeQr('hugo')">
-          <span class="btn-yape-logo">🟣</span>
+          <span class="btn-yape-logo"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""></span>
           <span class="btn-yape-text">
             <strong>Hugo</strong>
             <small>Hugo Velasquez</small>
           </span>
-          <span class="btn-yape-arrow">↗</span>
+          <span class="btn-yape-arrow"><%- include('partials/icon', { name: 'arrow-right' }) %></span>
         </button>
         <button type="button" class="btn-yape-trigger" data-open-qr="roxana" onclick="openYapeQr('roxana')">
-          <span class="btn-yape-logo">🟣</span>
+          <span class="btn-yape-logo"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""></span>
           <span class="btn-yape-text">
             <strong>Roxana</strong>
             <small>Roxana Perez</small>
           </span>
-          <span class="btn-yape-arrow">↗</span>
+          <span class="btn-yape-arrow"><%- include('partials/icon', { name: 'arrow-right' }) %></span>
         </button>
       </div>
     </div>
@@ -110,7 +110,7 @@
     <div class="tracker-actions">
       <a class="secondary-button wa-share-btn" target="_blank"
          href="https://wa.me/?text=<%= encodeURIComponent(`Hola, este es el código de mi reserva #${booking.code} para mi auto ${booking.plate} en DASAV Car Wash.`) %>">
-        📲 Compartir reserva por WhatsApp
+        <%- include('partials/icon', { name: 'message-circle' }) %> Compartir reserva por WhatsApp
       </a>
       <a class="primary-button block-button" href="/">Nueva reserva</a>
     </div>
@@ -120,5 +120,5 @@
     </p>
   </section>
 </main>
-<script src="/public/tracker.js?v=1" defer></script>
+<script src="/public/tracker.js?v=2" defer></script>
 <%- include('partials/footer') %>

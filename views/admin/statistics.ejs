@@ -8,8 +8,8 @@
       <p>Métricas de facturación, horas pico y estimación de vehículos para planificar la operación.</p>
     </div>
     <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-      <a class="secondary-button" href="/admin/export-csv?date=<%= stats.endDate %>" title="Exportar CSV">📥 Exportar datos</a>
-      <a class="primary-button" href="/admin">← Volver al panel</a>
+      <a class="secondary-button" href="/admin/export-csv?date=<%= stats.endDate %>" title="Exportar CSV"><%- include('../partials/icon', { name: 'download' }) %> Exportar datos</a>
+      <a class="primary-button" href="/admin"><%- include('../partials/icon', { name: 'arrow-left' }) %> Volver al panel</a>
     </div>
   </div>
   <%- include('../partials/alerts', { error, success }) %>
@@ -24,7 +24,7 @@
     </div>
 
     <form method="get" action="/admin/estadisticas" class="stats-custom-dates-form">
-      <span class="date-range-badge">📅 <%= stats.startDate %> al <%= stats.endDate %> (<%= stats.totalDays %> <%= stats.totalDays === 1 ? 'día' : 'días' %>)</span>
+      <span class="date-range-badge"><%- include('../partials/icon', { name: 'calendar-days' }) %> <%= stats.startDate %> al <%= stats.endDate %> (<%= stats.totalDays %> <%= stats.totalDays === 1 ? 'día' : 'días' %>)</span>
       <div class="stats-date-inputs">
         <input type="date" name="startDate" value="<%= stats.startDate %>" aria-label="Fecha inicio" class="date-picker-input">
         <span style="color: var(--muted); font-size: 12px;">a</span>
@@ -37,11 +37,11 @@
   <!-- Selector de Vistas / Pestañas accesibles -->
   <div class="stats-tabs-bar" role="tablist" aria-label="Secciones de estadísticas">
     <button type="button" class="stats-tab-btn active" role="tab" id="tab-historical" aria-selected="true" aria-controls="panel-historical" tabindex="0">
-      <span class="tab-icon">📊</span>
+      <span class="tab-icon"><%- include('../partials/icon', { name: 'chart-no-axes-column' }) %></span>
       <span>Resultados Históricos</span>
     </button>
     <button type="button" class="stats-tab-btn" role="tab" id="tab-forecast" aria-selected="false" aria-controls="panel-forecast" tabindex="-1">
-      <span class="tab-icon">🔮</span>
+      <span class="tab-icon"><%- include('../partials/icon', { name: 'trending-up' }) %></span>
       <span>Rendimiento y Pronóstico</span>
     </button>
   </div>
@@ -55,7 +55,7 @@
           <span class="summary-dot dot-blue"></span>
           <small>Vehículos Atendidos</small>
           <strong><%= stats.totalBookings %></strong>
-          <span class="kpi-subtext">✓ <%= stats.completedBookings %> terminados · ✕ <%= stats.cancelledBookings %> canc.</span>
+          <span class="kpi-subtext"><%- include('../partials/icon', { name: 'check' }) %> <%= stats.completedBookings %> terminados · <%- include('../partials/icon', { name: 'x' }) %> <%= stats.cancelledBookings %> canc.</span>
         </article>
         <article>
           <span class="summary-dot dot-mint"></span>
@@ -95,7 +95,7 @@
         <section class="stats-panel-card full-width">
           <div class="panel-card-header">
             <div>
-              <h3>📈 Evolución Diaria de Vehículos e Ingresos</h3>
+              <h3><%- include('../partials/icon', { name: 'chart-no-axes-combined' }) %> Evolución Diaria de Vehículos e Ingresos</h3>
               <small>Volumen atendido y facturación en <%= stats.periodLabel.toLowerCase() %></small>
             </div>
             <div class="chart-legend">
@@ -128,7 +128,7 @@
         <section class="stats-panel-card">
           <div class="panel-card-header">
             <div>
-              <h3>⏱️ Carga por Hora en Pista</h3>
+              <h3><%- include('../partials/icon', { name: 'timer' }) %> Carga por Hora en Pista</h3>
               <small>Distribución de ingresos de 7:00 a. m. a 6:00 p. m.</small>
             </div>
           </div>
@@ -154,7 +154,7 @@
         <section class="stats-panel-card">
           <div class="panel-card-header">
             <div>
-              <h3>📅 Afluencia por Día de la Semana</h3>
+              <h3><%- include('../partials/icon', { name: 'calendar-days' }) %> Afluencia por Día de la Semana</h3>
               <small>Promedio histórico para asignación de turnos</small>
             </div>
           </div>
@@ -180,7 +180,7 @@
         <section class="stats-panel-card">
           <div class="panel-card-header">
             <div>
-              <h3>🚗 Flota Atendida por Tipo</h3>
+              <h3><%- include('../partials/icon', { name: 'car-front' }) %> Flota Atendida por Tipo</h3>
               <small>Participación y recaudación</small>
             </div>
           </div>
@@ -192,7 +192,7 @@
             <% stats.vehicleTypes.forEach(v => { %>
               <div class="breakdown-item">
                 <div class="breakdown-item-main">
-                  <span class="breakdown-icon"><%= v.icon %></span>
+                  <span class="breakdown-icon"><%- include('../partials/icon', { name: v.icon }) %></span>
                   <div class="breakdown-name-wrap">
                     <strong><%= v.label %></strong>
                     <small><%= formatMoney(v.revenueCents) %> facturado</small>
@@ -214,18 +214,16 @@
         <section class="stats-panel-card">
           <div class="panel-card-header">
             <div>
-              <h3>💳 Métodos de Pago</h3>
+              <h3><%- include('../partials/icon', { name: 'banknote' }) %> Métodos de Pago</h3>
               <small>Desglose de recaudación</small>
             </div>
           </div>
 
           <div class="breakdown-items-list">
-            <% stats.paymentMethods.forEach(p => {
-              const icon = p.method === 'yape' ? '🟣' : (p.method === 'plin' ? '🔵' : '💵');
-            %>
+            <% stats.paymentMethods.forEach(p => { %>
               <div class="breakdown-item">
                 <div class="breakdown-item-main">
-                  <span class="breakdown-icon"><%= icon %></span>
+                  <span class="breakdown-icon"><img class="brand-payment-icon" src="/public/img/payment-<%= p.method %>.<%= p.method === 'cash' ? 'svg' : 'png' %>" alt=""></span>
                   <div class="breakdown-name-wrap">
                     <strong><%= p.label %></strong>
                     <small><%= p.count %> transacciones</small>
@@ -244,7 +242,7 @@
             <% if (stats.pendingRevenueCents > 0) { %>
               <div class="breakdown-item pending-item">
                 <div class="breakdown-item-main">
-                  <span class="breakdown-icon">⏳</span>
+                  <span class="breakdown-icon"><%- include('../partials/icon', { name: 'hourglass' }) %></span>
                   <div class="breakdown-name-wrap">
                     <strong>Pendiente por Cobrar</strong>
                     <small>Saldo por liquidar al entregar</small>
@@ -262,7 +260,7 @@
         <section class="stats-panel-card full-width">
           <div class="panel-card-header">
             <div>
-              <h3>⭐ Servicios Más Solicitados</h3>
+              <h3><%- include('../partials/icon', { name: 'sparkles' }) %> Servicios Más Solicitados</h3>
               <small>Ranking de servicios base y adicionales contratados</small>
             </div>
           </div>
@@ -316,7 +314,7 @@
       <section class="forecast-container">
         <div class="forecast-header">
           <div class="forecast-title-group">
-            <span class="forecast-badge">🔮 Inteligencia Predictiva</span>
+            <span class="forecast-badge"><%- include('../partials/icon', { name: 'trending-up' }) %> Inteligencia Predictiva</span>
             <h2>Pronóstico de Demanda para los Próximos 7 Días</h2>
             <p>Estimación calculada a partir del histórico por día de la semana y tendencia de volumen reciente.</p>
           </div>
@@ -336,7 +334,7 @@
                 <small><%= day.shortLabel %></small>
               </div>
               <div class="forecast-day-metric">
-                <span class="forecast-car-icon">🚗</span>
+                <span class="forecast-car-icon"><%- include('../partials/icon', { name: 'car-front' }) %></span>
                 <div class="forecast-count-wrap">
                   <strong>~<%= day.expectedVehicles %></strong>
                   <small>vehículos</small>
@@ -347,9 +345,9 @@
               </div>
               <div class="forecast-day-footer">
                 <span class="demand-pill" style="border-color: <%= day.demandColor %>; color: <%= day.demandColor %>;">
-                  <%= day.demandLevel === 'Alta' ? '🔥 Alta' : (day.demandLevel === 'Media' ? '⚡ Media' : '🟢 Normal') %>
+                  <%- include('../partials/icon', { name: day.demandLevel === 'Alta' ? 'flame' : (day.demandLevel === 'Media' ? 'zap' : 'circle-check') }) %> <%= day.demandLevel %>
                 </span>
-                <span class="staff-tip" title="Personal recomendado">👥 <%= day.recommendedStaff %></span>
+                <span class="staff-tip" title="Personal recomendado"><%- include('../partials/icon', { name: 'users-round' }) %> <%= day.recommendedStaff %></span>
               </div>
             </article>
           <% }) %>
@@ -359,7 +357,7 @@
         <div class="forecast-insights-grid">
           <!-- Cierre de mes -->
           <article class="forecast-insight-card">
-            <div class="insight-icon">🎯</div>
+            <div class="insight-icon"><%- include('../partials/icon', { name: 'target' }) %></div>
             <div class="insight-content">
               <h4>Proyección de Cierre de Mes (<%= stats.forecast.projectedMonthEnd.monthName %>)</h4>
               <p>
@@ -381,7 +379,7 @@
 
           <!-- Cuello de botella / Horas pico -->
           <article class="forecast-insight-card">
-            <div class="insight-icon">⚠️</div>
+            <div class="insight-icon"><%- include('../partials/icon', { name: 'circle-alert' }) %></div>
             <div class="insight-content">
               <h4>Horas Críticas de Pista (Cuello de Botella)</h4>
               <p>Horarios donde se suele acumular la mayor demanda en pista:</p>
@@ -389,27 +387,27 @@
                 <% if (stats.forecast.peakHoursWarning.length > 0) { %>
                   <% stats.forecast.peakHoursWarning.forEach(pk => { %>
                     <span class="peak-pill">
-                      ⏱️ <b><%= pk.label %></b> · <%= pk.historicalAverage %> veh. en período
+                      <%- include('../partials/icon', { name: 'timer' }) %> <b><%= pk.label %></b> · <%= pk.historicalAverage %> veh. en período
                     </span>
                   <% }) %>
                 <% } else { %>
-                  <span class="peak-pill">✓ Flujo balanceado a lo largo del día</span>
+                  <span class="peak-pill"><%- include('../partials/icon', { name: 'check' }) %> Flujo balanceado a lo largo del día</span>
                 <% } %>
               </div>
-              <small class="insight-footnote">💡 Capacidad nominal de 6 autos por hora. Se sugiere tener preparados paños secos e insumos antes de las 10:00 a. m.</small>
+              <small class="insight-footnote"><%- include('../partials/icon', { name: 'lightbulb' }) %> Capacidad nominal de 6 autos por hora. Se sugiere tener preparados paños secos e insumos antes de las 10:00 a. m.</small>
             </div>
           </article>
 
           <!-- Insumos estimados próxima semana -->
           <article class="forecast-insight-card">
-            <div class="insight-icon">🧴</div>
+            <div class="insight-icon"><%- include('../partials/icon', { name: 'spray-can' }) %></div>
             <div class="insight-content">
               <h4>Insumos Clave Estimados (Próxima semana)</h4>
               <p>Demanda aproximada para los próximos 7 días según tasa histórica:</p>
               <div class="supply-pills">
-                <span class="supply-pill">✨ Cera líquida: <b>~<%= stats.forecast.supplyEstimates.waxCount %></b> autos</span>
-                <span class="supply-pill">🧽 Crema cuero: <b>~<%= stats.forecast.supplyEstimates.leatherCount %></b> autos</span>
-                <span class="supply-pill">🔧 Lavado motor: <b>~<%= stats.forecast.supplyEstimates.engineCount %></b> autos</span>
+                <span class="supply-pill"><%- include('../partials/icon', { name: 'sparkles' }) %> Cera líquida: <b>~<%= stats.forecast.supplyEstimates.waxCount %></b> autos</span>
+                <span class="supply-pill"><%- include('../partials/icon', { name: 'spray-can' }) %> Crema cuero: <b>~<%= stats.forecast.supplyEstimates.leatherCount %></b> autos</span>
+                <span class="supply-pill"><%- include('../partials/icon', { name: 'wrench' }) %> Lavado motor: <b>~<%= stats.forecast.supplyEstimates.engineCount %></b> autos</span>
               </div>
               <small class="insight-footnote">Permite anticipar compras de galoneras y repuestos con suficiente tiempo.</small>
             </div>

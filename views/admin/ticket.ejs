@@ -73,6 +73,7 @@
       cursor: pointer;
       margin-bottom: 20px;
     }
+    .print-btn svg { width: 18px; height: 18px; vertical-align: -3px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
     @media print {
       body { background: white; }
       .ticket { margin: 0; padding: 0; width: 100%; box-shadow: none; }
@@ -82,7 +83,7 @@
 </head>
 <body>
   <div class="ticket">
-    <button class="print-btn" onclick="window.print()">🖨️ IMPRIMIR RECIBO</button>
+    <button class="print-btn" onclick="window.print()"><%- include('../partials/icon', { name: 'printer' }) %> IMPRIMIR RECIBO</button>
     <div class="header center">
       <h1>D'Asav Car Wash</h1>
       <p>Comprobante de Servicio</p>

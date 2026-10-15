@@ -225,7 +225,7 @@
         const sourceLabel = data.source === 'local' ? 'Cliente registrado' : data.source === 'mock' ? 'Datos de demostración' : 'SUNARP oficial';
         const modelDesc = escapeHtml(data.fullModel || data.modelo || data.model || '');
         const typeDesc = data.vehicleTypeLabel ? ` · ${escapeHtml(data.vehicleTypeLabel)}` : '';
-        showFeedback(`✓ <strong>${sourceLabel}:</strong> ${modelDesc}${typeDesc}`, 'success', 6000);
+        showFeedback(`<svg class="ui-icon" aria-hidden="true"><use href="/public/icons.svg#circle-check"></use></svg> <strong>${sourceLabel}:</strong> ${modelDesc}${typeDesc}`, 'success', 6000);
       } else {
         showFeedback(`ℹ️ Placa <strong>${escapeHtml(plate)}</strong> no encontrada en SUNARP. Puedes continuar con el registro manual.`, 'info', 5000);
       }
@@ -284,7 +284,7 @@
           const errData = await res.json();
           if (errData && errData.notas) errMessage = errData.notas;
         } catch {}
-        showFeedback(`⚠️ ${escapeHtml(errMessage)}`, 'warning', 7000);
+        showFeedback(`<svg class="ui-icon" aria-hidden="true"><use href="/public/icons.svg#circle-alert"></use></svg> ${escapeHtml(errMessage)}`, 'warning', 7000);
         return;
       }
 
@@ -296,7 +296,7 @@
         }
 
         const confidencePct = Math.round((ocrResult.confianza || 0.95) * 100);
-        let msg = `✓ Placa: <strong>${escapeHtml(ocrResult.placa)}</strong> (${confidencePct}% confianza)`;
+        let msg = `<svg class="ui-icon" aria-hidden="true"><use href="/public/icons.svg#circle-check"></use></svg> Placa: <strong>${escapeHtml(ocrResult.placa)}</strong> (${confidencePct}% confianza)`;
         if (ocrResult.notas) {
           msg += `<br><small style="color:var(--text-muted)">Nota: ${escapeHtml(ocrResult.notas)}</small>`;
         }
@@ -305,13 +305,13 @@
           applyVehicleData(ocrResult.vehicle);
           const vehicleDesc = escapeHtml(ocrResult.vehicle.fullModel || ocrResult.vehicle.modelo || ocrResult.vehicle.model || '');
           const typeDesc = ocrResult.vehicle.vehicleTypeLabel ? ` · ${escapeHtml(ocrResult.vehicle.vehicleTypeLabel)}` : '';
-          msg += `<br>🚗 <strong>Vehículo:</strong> ${vehicleDesc}${typeDesc}`;
+          msg += `<br><svg class="ui-icon" aria-hidden="true"><use href="/public/icons.svg#car-front"></use></svg> <strong>Vehículo:</strong> ${vehicleDesc}${typeDesc}`;
         }
 
         showFeedback(msg, 'success', 8000);
       } else {
         const errorMsg = ocrResult.notas || 'No se detectó placa legible en la imagen. Intenta enfocar más cerca.';
-        showFeedback(`⚠️ ${escapeHtml(errorMsg)}`, 'warning', 7000);
+        showFeedback(`<svg class="ui-icon" aria-hidden="true"><use href="/public/icons.svg#circle-alert"></use></svg> ${escapeHtml(errorMsg)}`, 'warning', 7000);
       }
     } catch {
       showFeedback('No se pudo procesar la imagen para OCR. Verifica tu conexión.', 'warning', 5000);

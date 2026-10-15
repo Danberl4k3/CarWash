@@ -10,7 +10,8 @@
   const updateThemeIcons = () => {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     document.querySelectorAll('.theme-toggle-btn').forEach(btn => {
-      btn.textContent = isDark ? '☀️' : '🌙';
+      const icon = btn.querySelector('use');
+      if (icon) icon.setAttribute('href', `/public/icons.svg#${isDark ? 'sun' : 'moon'}`);
       btn.setAttribute('title', isDark ? 'Modo claro' : 'Modo oscuro');
     });
   };

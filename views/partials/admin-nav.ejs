@@ -5,7 +5,7 @@
       <span><strong>DASAV Car Wash</strong><small>Centro de control</small></span>
     </a>
     <div class="admin-user">
-      <button class="theme-toggle-btn" type="button" aria-label="Cambiar tema" title="Modo oscuro">🌙</button>
+      <button class="theme-toggle-btn" type="button" aria-label="Cambiar tema" title="Modo oscuro"><%- include('icon', { name: 'moon' }) %></button>
       <a href="/admin/seguridad" class="admin-username-link" title="Seguridad: <%= admin.username %>"><%= admin.username %></a>
       <form id="admin-logout-form" action="/admin/logout" method="post" class="admin-logout-form">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">

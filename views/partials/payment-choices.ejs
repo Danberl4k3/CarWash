@@ -4,7 +4,9 @@
     <% Object.entries(paymentLabels).forEach(([value, label], index) => { %>
       <label class="service-option payment-option">
         <input type="radio" name="paymentMethod" value="<%= value %>" <%= index === 0 ? 'checked' : '' %> required>
-        <span class="payment-method-icon payment-method-icon-<%= value %>" aria-hidden="true"><%= { yape: 'Y', plin: 'P', cash: 'S/' }[value] %></span>
+        <span class="payment-method-icon payment-method-icon-<%= value %>" aria-hidden="true">
+          <img src="/public/img/payment-<%= value %>.<%= value === 'cash' ? 'svg' : 'png' %>" alt="" width="40" height="40">
+        </span>
         <span><strong><%= label %></strong></span>
         <span class="payment-selection-mark" aria-hidden="true"></span>
       </label>

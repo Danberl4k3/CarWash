@@ -142,6 +142,14 @@ img { max-width: 100%; }
 .payment-method-icon-yape { background: #74218a; }
 .payment-method-icon-plin { background: #007f98; }
 .payment-option .payment-method-icon-cash { background: #18705d; font-size: 16px; }
+.payment-option .payment-method-icon { flex-basis: 40px; width: 40px; height: 40px; overflow: hidden; background: transparent; }
+.payment-option .payment-method-icon-cash { background: transparent; }
+.payment-option .payment-method-icon img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.ui-icon { display: inline-block; flex: 0 0 auto; width: 1.05em; height: 1.05em; vertical-align: -.16em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ui-icon-small { width: 15px; height: 15px; }
+.ui-icon-medium { width: 19px; height: 19px; }
+.ui-icon-large { width: 25px; height: 25px; }
+.brand-payment-icon { display: inline-block; width: 22px; height: 22px; object-fit: contain; vertical-align: middle; border-radius: 5px; }
 .payment-option .payment-selection-mark { position: absolute; top: 12px; right: 12px; width: 16px; height: 16px; border: 1px solid var(--line); border-radius: 50%; display: grid; place-items: center; font-size: 11px; }
 .payment-option:has(input:checked) .payment-selection-mark { background: var(--aqua-dark); border-color: var(--aqua-dark); color: white; }
 .payment-option:has(input:checked) .payment-selection-mark::after { content: '✓'; }
@@ -380,6 +388,9 @@ textarea { resize: vertical; }
 .hourly-chip:hover { border-color: var(--aqua-dark); transform: translateY(-1px); }
 .column-hidden { display: none !important; }
 .board-search { flex: 1; max-width: 320px; padding: 10px 16px; border-radius: 999px; border: 1.5px solid var(--line); font-size: 13px; background: white; outline: none; transition: all .2s; }
+.board-search-wrap { position: relative; display: flex; align-items: center; width: min(100%, 320px); }
+.board-search-wrap > .ui-icon { position: absolute; left: 13px; z-index: 1; color: var(--muted); pointer-events: none; }
+.board-search-wrap .board-search { width: 100%; max-width: none; padding-left: 38px; }
 .board-search:focus { border-color: var(--aqua-dark); box-shadow: 0 0 0 3px rgba(18, 173, 158, 0.15); }
 
 
@@ -1160,6 +1171,7 @@ textarea { resize: vertical; }
     padding: 0 14px;
     border-radius: 12px;
   }
+  .board-search-wrap { width: 100%; }
 
   /* Pickup Columns & Empty Slots */
   .pickup-board { gap: 12px; }

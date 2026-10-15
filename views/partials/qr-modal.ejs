@@ -217,11 +217,11 @@
 
 <div id="yape-qr-modal" class="qr-modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title">
   <div class="qr-modal-container" id="qr-modal-container">
-    <button type="button" class="qr-modal-close-btn" id="qr-modal-close" onclick="closeYapeQr()" aria-label="Cerrar">&times;</button>
+    <button type="button" class="qr-modal-close-btn" id="qr-modal-close" onclick="closeYapeQr()" aria-label="Cerrar"><%- include('icon', { name: 'x' }) %></button>
     
     <div class="qr-modal-header">
       <div class="qr-yape-badge">
-        <span>🟣</span>
+        <img class="brand-payment-icon" src="/public/img/payment-yape.png" alt="">
         <span>Yape Oficial</span>
       </div>
       <h3 id="qr-modal-title" class="qr-modal-title">Pagar a Hugo</h3>
@@ -232,15 +232,15 @@
 
     <div class="qr-modal-image-wrapper" id="qr-image-wrapper" onclick="toggleYapeQrZoom()" title="Toca para agrandar / pantalla completa">
       <img id="qr-modal-img" src="/public/img/qr-hugo.jpg" alt="Código QR de Yape" class="qr-modal-img" loading="eager">
-      <span class="qr-zoom-badge" id="qr-zoom-badge">🔍 Toca la imagen para pantalla completa</span>
+      <span class="qr-zoom-badge" id="qr-zoom-badge"><%- include('icon', { name: 'search' }) %> <span id="qr-zoom-badge-text">Toca la imagen para pantalla completa</span></span>
     </div>
 
     <div class="qr-modal-actions">
       <button type="button" class="qr-action-btn btn-zoom" id="qr-zoom-btn" onclick="toggleYapeQrZoom()">
-        🔍 <span id="qr-zoom-btn-text">Agrandar</span>
+        <%- include('icon', { name: 'search' }) %> <span id="qr-zoom-btn-text">Agrandar</span>
       </button>
       <a id="qr-modal-download" href="/public/img/qr-hugo.jpg" download="yape-qr.jpg" class="qr-action-btn btn-secondary">
-        💾 Guardar
+        <%- include('icon', { name: 'download' }) %> Guardar
       </a>
       <button type="button" class="qr-action-btn btn-primary" id="qr-modal-done" onclick="closeYapeQr()">
         Listo, cerrar
@@ -315,9 +315,9 @@
 
     function updateZoomButton() {
       const btnText = document.getElementById('qr-zoom-btn-text');
-      const badge = document.getElementById('qr-zoom-badge');
+      const badge = document.getElementById('qr-zoom-badge-text');
       if (btnText) btnText.textContent = isZoomed ? 'Normal' : 'Agrandar';
-      if (badge) badge.textContent = isZoomed ? '🔍 Toca para tamaño normal' : '🔍 Toca para pantalla completa';
+      if (badge) badge.textContent = isZoomed ? 'Toca para tamaño normal' : 'Toca para pantalla completa';
     }
 
     function handleEvent(e) {

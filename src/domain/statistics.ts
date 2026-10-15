@@ -130,10 +130,10 @@ export interface StatisticsData {
 }
 
 const VEHICLE_ICONS: Record<VehicleType, string> = {
-  motorcycle: '🏍️',
-  car: '🚗',
-  small_suv: '🚙',
-  large_suv: '🚙',
+  motorcycle: 'motorcycle',
+  car: 'car-front',
+  small_suv: 'car-front',
+  large_suv: 'car-front',
 };
 
 const DAY_NAMES = [
@@ -451,7 +451,7 @@ export function getStatisticsData(
   const vehicleTypes: VehicleTypeStat[] = vehicleDbRows.map((r) => ({
     type: r.vehicle_type,
     label: VEHICLE_LABELS[r.vehicle_type] || r.vehicle_type,
-    icon: VEHICLE_ICONS[r.vehicle_type] || '🚗',
+    icon: VEHICLE_ICONS[r.vehicle_type] || 'car-front',
     count: r.count,
     percentage: totalBookings > 0 ? Math.round((r.count / totalBookings) * 100) : 0,
     revenueCents: r.revenue_cents || 0,

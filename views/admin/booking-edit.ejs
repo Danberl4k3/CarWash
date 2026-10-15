@@ -32,7 +32,7 @@
     <label>Notas<textarea name="notes" rows="4"><%= booking.notes || '' %></textarea></label>
     <div class="form-actions form-actions-split">
       <div class="form-actions-left">
-        <button class="danger-button-outline delete-booking-btn" type="submit" formaction="/admin/reservas/<%= booking.id %>/eliminar" formnovalidate onclick="return confirm('¿Estás seguro de que deseas eliminar permanentemente el registro de <%= booking.plate %>? Esta acción no se puede deshacer.');">🗑️ Eliminar registro</button>
+        <button class="danger-button-outline delete-booking-btn" type="submit" formaction="/admin/reservas/<%= booking.id %>/eliminar" formnovalidate onclick="return confirm('¿Estás seguro de que deseas eliminar permanentemente el registro de <%= booking.plate %>? Esta acción no se puede deshacer.');"><%- include('../partials/icon', { name: 'trash' }) %> Eliminar registro</button>
       </div>
       <div class="form-actions-right">
         <a class="secondary-button" href="/admin">Cancelar</a>
@@ -41,5 +41,5 @@
     </div>
   </form>
 </main>
-<script src="/public/booking.js?v=11" defer></script>
+<script src="/public/booking.js?v=15" defer></script>
 <%- include('../partials/footer') %>

@@ -10,8 +10,8 @@
         <label for="plate-input-admin">Placa *</label>
         <div class="plate-input-group">
           <input name="plate" id="plate-input-admin" maxlength="12" required placeholder="ABC-123">
-          <label for="plate-camera-input-admin" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto" role="button" tabindex="0">📷 <span class="btn-text">Escanear</span></label>
-          <button type="button" id="btn-lookup-plate" class="plate-action-btn plate-lookup-btn" title="Consultar placa en SUNARP">🔍 <span class="btn-text">Consultar</span></button>
+          <label for="plate-camera-input-admin" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto" role="button" tabindex="0"><%- include('../partials/icon', { name: 'camera' }) %> <span class="btn-text">Escanear</span></label>
+          <button type="button" id="btn-lookup-plate" class="plate-action-btn plate-lookup-btn" title="Consultar placa en SUNARP"><%- include('../partials/icon', { name: 'search' }) %> <span class="btn-text">Consultar</span></button>
         </div>
         <input type="file" id="plate-camera-input-admin" accept="image/*" capture="environment" class="visually-hidden-file-input">
         <div id="plate-feedback" class="plate-feedback" style="display: none;"></div>
@@ -37,5 +37,5 @@
     <div class="form-actions"><a class="secondary-button" href="/admin">Cancelar</a><button class="primary-button" type="submit">Crear reserva</button></div>
   </form>
 </main>
-<script src="/public/booking.js?v=11" defer></script>
+<script src="/public/booking.js?v=15" defer></script>
 <%- include('../partials/footer') %>

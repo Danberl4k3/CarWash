@@ -19,7 +19,7 @@
           <% if (service.category === 'addon') { %><label class="check-row"><input type="checkbox" name="incompatibleWithInterior" value="1" <%= service.incompatible_with_interior ? 'checked' : '' %>> No permitir con lavado interior</label><% } %>
           <div class="settings-actions-row">
             <button class="secondary-button" type="submit">Guardar servicio</button>
-            <button class="danger-button-outline" type="submit" formaction="/admin/servicios/<%= service.id %>/eliminar" onclick="return confirm('¿Seguro que deseas eliminar permanentemente el servicio &quot;<%= service.name %>&quot;?');">🗑️ Eliminar servicio</button>
+            <button class="danger-button-outline" type="submit" formaction="/admin/servicios/<%= service.id %>/eliminar" onclick="return confirm('¿Seguro que deseas eliminar permanentemente el servicio &quot;<%= service.name %>&quot;?');"><%- include('../partials/icon', { name: 'trash' }) %> Eliminar servicio</button>
           </div>
         </form>
       <% }) %>

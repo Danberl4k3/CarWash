@@ -74,7 +74,7 @@ describe('pago al crear una reserva', () => {
     expect(breakdown.cashCents).toBe(3000);
     expect(breakdown.totalPendingCents).toBe(0);
     const confirmation = await app.inject({ method: 'GET', url: `/reserva/${row.code}` });
-    expect(confirmation.body).toContain('Pagado ✓');
+    expect(confirmation.body).toContain('Pagado <svg class="ui-icon');
     const status = await app.inject({ method: 'GET', url: `/api/reserva/${row.code}/status` });
     expect(status.json()).toMatchObject({ paymentStatus: 'paid', amountPaidCents: 3000 });
     const dashboard = await app.inject({ method: 'GET', url: '/admin', headers: { cookie } });
@@ -106,7 +106,7 @@ describe('pago al crear una reserva', () => {
     const code = decodeURIComponent(String(response.headers.location).split('/').pop()!);
     expect(getBookingByCode(db, code)).toMatchObject({ payment_status: 'paid', amount_paid_cents: 3000, total_cents: 3000, created_by_admin: 0 });
     const confirmation = await app.inject({ method: 'GET', url: `/reserva/${code}` });
-    expect(confirmation.body).toContain('Pagado ✓');
+    expect(confirmation.body).toContain('Pagado <svg class="ui-icon');
     const status = await app.inject({ method: 'GET', url: `/api/reserva/${code}/status` });
     expect(status.json()).toMatchObject({ paymentStatus: 'paid', amountPaidCents: 3000 });
     const breakdown = getDailyPaymentBreakdown(db, getLimaNow().date);

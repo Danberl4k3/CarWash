@@ -73,7 +73,9 @@
 
       const paymentBadge = document.getElementById('tracker-payment-badge');
       if (paymentBadge) {
-        paymentBadge.textContent = data.paymentStatus === 'paid' ? 'Pagado ✓' : 'Pendiente de pago';
+        paymentBadge.innerHTML = data.paymentStatus === 'paid'
+          ? 'Pagado <svg class="ui-icon" aria-hidden="true"><use href="/public/icons.svg#check"></use></svg>'
+          : 'Pendiente de pago';
         paymentBadge.className = `payment-badge badge-${data.paymentStatus}`;
       }
     } catch {

@@ -1,10 +1,14 @@
-const CACHE_NAME = 'dasav-v8';
+const CACHE_NAME = 'dasav-v9';
 const STATIC_ASSETS = [
-  '/public/styles.css?v=15',
+  '/public/styles.css?v=19',
   '/public/theme.js',
-  '/public/booking.js?v=11',
-  '/public/admin.js',
-  '/public/tracker.js'
+  '/public/booking.js?v=15',
+  '/public/admin.js?v=13',
+  '/public/tracker.js?v=2',
+  '/public/icons.svg',
+  '/public/img/payment-yape.png',
+  '/public/img/payment-plin.png',
+  '/public/img/payment-cash.svg'
 ];
 
 self.addEventListener('install', (event) => {

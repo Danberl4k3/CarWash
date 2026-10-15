@@ -97,7 +97,7 @@
       const sse = new EventSource('/admin/events');
       sse.addEventListener('booking_created', () => {
         playBookingChime();
-        showToast('🚗 ¡Nueva reserva registrada!');
+        showToast('¡Nueva reserva registrada!');
         silentRefresh();
       });
       sse.addEventListener('booking_updated', () => {
@@ -135,7 +135,8 @@
     const enabled = localStorage.getItem('adminSoundEnabled') !== 'false';
     const icon = soundBtn.querySelector('.sound-icon');
     const label = soundBtn.querySelector('.sound-label');
-    if (icon) icon.textContent = enabled ? '🔔' : '🔕';
+    const iconUse = icon?.querySelector('use');
+    if (iconUse) iconUse.setAttribute('href', `/public/icons.svg#${enabled ? 'bell' : 'bell-off'}`);
     if (label) label.textContent = enabled ? 'Avisos activos' : 'Silenciado';
     soundBtn.classList.toggle('is-muted', !enabled);
   }
@@ -271,7 +272,7 @@
     const counterEl = document.getElementById('filtered-counter');
     if (counterEl) {
       if (hiddenDonePaidCount > 0 && currentFilter === 'all') {
-        counterEl.innerHTML = `👁️ <b>${hiddenDonePaidCount}</b> terminados y cobrados ocultos`;
+        counterEl.innerHTML = `<svg class="ui-icon" aria-hidden="true"><use href="/public/icons.svg#eye-off"></use></svg> <b>${hiddenDonePaidCount}</b> terminados y cobrados ocultos`;
       } else {
         counterEl.textContent = `${visibleCount} vehículo${visibleCount === 1 ? '' : 's'}`;
       }
@@ -369,15 +370,15 @@
 
       const remainEl = timer.querySelector('.wash-timer-remain');
       const fillEl = timer.querySelector('.wash-progress-bar');
-      const labelEl = timer.querySelector('.wash-timer-label');
+      const labelEl = timer.querySelector('.wash-timer-text');
 
       if (remainingMinutes > 0) {
         if (remainEl) remainEl.textContent = `faltan ${remainingMinutes} min`;
-        if (labelEl) labelEl.textContent = `⏳ Lavando (${durationMinutes} min)`;
+        if (labelEl) labelEl.textContent = `Lavando (${durationMinutes} min)`;
         if (fillEl) fillEl.style.width = `${percent}%`;
       } else {
         if (remainEl) remainEl.textContent = '¡Completado!';
-        if (labelEl) labelEl.textContent = '✨ Listo para entregar';
+        if (labelEl) labelEl.textContent = 'Listo para entregar';
         if (fillEl) fillEl.style.width = '100%';
         const completionKey = `${card.id}:${startedAt}`;
         if (!completionRefreshRequested.has(completionKey)) {
@@ -408,7 +409,7 @@
 
       const badge = document.createElement('div');
       badge.className = 'updated-floating-badge';
-      badge.innerHTML = '✨ ¡Datos actualizados!';
+      badge.innerHTML = '<svg class="ui-icon" aria-hidden="true"><use href="/public/icons.svg#sparkles"></use></svg> ¡Datos actualizados!';
       targetCard.prepend(badge);
 
       setTimeout(() => {

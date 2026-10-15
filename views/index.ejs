@@ -5,7 +5,7 @@
     <span><strong>DASAV Car Wash</strong><small>Cuidado que se nota</small></span>
   </a>
   <div style="display: flex; gap: 10px; align-items: center;">
-    <button class="theme-toggle-btn" type="button" aria-label="Cambiar tema" title="Modo oscuro">🌙</button>
+    <button class="theme-toggle-btn" type="button" aria-label="Cambiar tema" title="Modo oscuro"><%- include('partials/icon', { name: 'moon' }) %></button>
     <a class="admin-link" href="/admin/login">Administración</a>
   </div>
 </header>
@@ -17,8 +17,8 @@
     <p>Elige tu servicio y separa tu turno. Cuidamos cada detalle de tu vehículo.</p>
     <div class="intro-pills">
       <span>Turnos para hoy</span>
-      <span>📅 Lun–Dom</span>
-      <span>⏰ 7 a. m. – 6 p. m.</span>
+      <span><%- include('partials/icon', { name: 'calendar-days' }) %> Lun–Dom</span>
+      <span><%- include('partials/icon', { name: 'clock-3' }) %> 7 a. m. – 6 p. m.</span>
     </div>
 
     <div class="hero-car-showcase" aria-hidden="true">
@@ -59,7 +59,7 @@
         <polygon points="380,120 420,110 420,135 385,130" fill="url(#neonGlow)" opacity="0.45"/>
       </svg>
       <div class="hero-trust-badge">
-        <span class="trust-badge-icon">✨</span>
+        <span class="trust-badge-icon"><%- include('partials/icon', { name: 'sparkles' }) %></span>
         <div class="trust-badge-text">
           <strong>Atención profesional</strong>
           <small>Lavado minucioso e insumos de calidad</small>
@@ -113,7 +113,7 @@
             <% services.filter(service => service.category === 'addon').forEach(service => { %>
               <label class="addon-option" data-addon-slug="<%= service.slug %>" data-incompatible-interior="<%= service.incompatible_with_interior %>">
                 <input type="checkbox" name="addonServiceIds" value="<%= service.id %>">
-                <span class="check-mark">✓</span>
+                <span class="check-mark"><%- include('partials/icon', { name: 'check' }) %></span>
                 <span><strong><%= service.name %></strong><small class="service-price" data-service-price="<%= service.id %>">—</small></span>
               </label>
             <% }) %>
@@ -177,16 +177,16 @@
       <!-- Barra de total y acción siempre visible -->
       <div class="booking-total">
         <span><small>Total estimado</small><strong id="booking-total">S/ 0.00</strong></span>
-        <button class="primary-button global-submit-btn" type="submit">Confirmar reserva <span>→</span></button>
+        <button class="primary-button global-submit-btn" type="submit">Confirmar reserva <span><%- include('partials/icon', { name: 'arrow-right' }) %></span></button>
       </div>
       <div class="index-yape-bar">
-        <span class="index-yape-prompt">🟣 <strong>Pagar con Yape:</strong></span>
+        <span class="index-yape-prompt"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <strong>Pagar con Yape:</strong></span>
         <div class="index-yape-buttons">
           <button type="button" class="btn-yape-pill" data-open-qr="hugo" onclick="openYapeQr('hugo')" title="Abrir código QR de Yape de Hugo">
-            <span>🟣</span> <b>Hugo</b>
+            <img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <b>Hugo</b>
           </button>
           <button type="button" class="btn-yape-pill" data-open-qr="roxana" onclick="openYapeQr('roxana')" title="Abrir código QR de Yape de Roxana">
-            <span>🟣</span> <b>Roxana</b>
+            <img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <b>Roxana</b>
           </button>
         </div>
       </div>
@@ -194,5 +194,5 @@
     </form>
   </section>
 </main>
-<script src="/public/booking.js?v=14" defer></script>
+<script src="/public/booking.js?v=15" defer></script>
 <%- include('partials/footer') %>

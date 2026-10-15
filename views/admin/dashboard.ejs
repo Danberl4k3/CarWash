@@ -8,7 +8,7 @@
       <p>Vehículos organizados por la hora estimada de entrega.</p>
     </div>
     <div style="display: flex; gap: 8px; align-items: center;">
-      <a class="primary-button" href="/">+ Nueva reserva</a>
+      <a class="primary-button" href="/"><%- include('../partials/icon', { name: 'plus' }) %> Nueva reserva</a>
     </div>
   </div>
   <%- include('../partials/alerts', { error, success }) %>
@@ -16,7 +16,7 @@
   <!-- Barra de navegación por fechas, alertas y exportación -->
   <section class="dashboard-controls-bar">
     <div class="date-navigator">
-      <a href="/admin?date=<%= prevDate %>" class="btn-date-nav" title="Día anterior: <%= prevDate %>">◀</a>
+      <a href="/admin?date=<%= prevDate %>" class="btn-date-nav" title="Día anterior: <%= prevDate %>"><%- include('../partials/icon', { name: 'chevron-left' }) %></a>
       <div class="date-picker-wrap">
         <input type="date" id="admin-date-input" value="<%= selectedDate %>" class="date-picker-input" title="Seleccionar fecha">
         <% if (isToday) { %>
@@ -25,15 +25,15 @@
           <a href="/admin" class="btn-today-link" title="Volver a la fecha de hoy">Ir a Hoy</a>
         <% } %>
       </div>
-      <a href="/admin?date=<%= nextDate %>" class="btn-date-nav" title="Día siguiente: <%= nextDate %>">▶</a>
+      <a href="/admin?date=<%= nextDate %>" class="btn-date-nav" title="Día siguiente: <%= nextDate %>"><%- include('../partials/icon', { name: 'chevron-right' }) %></a>
     </div>
 
     <div class="dashboard-extra-actions">
       <button type="button" id="toggle-sound-btn" class="action-pill sound-btn" title="Activar o silenciar avisos sonoros de reservas">
-        <span class="sound-icon">🔔</span> <span class="sound-label">Avisos activos</span>
+        <span class="sound-icon"><%- include('../partials/icon', { name: 'bell' }) %></span> <span class="sound-label">Avisos activos</span>
       </button>
       <a href="/admin/export-csv?date=<%= selectedDate %>" class="action-pill export-csv-btn" title="Descargar planilla de reservas en CSV / Excel">
-        📥 Exportar CSV
+        <%- include('../partials/icon', { name: 'download' }) %> Exportar CSV
       </a>
     </div>
   </section>
@@ -54,7 +54,7 @@
     <% if (nextBookingToEnter) { %>
       <div class="next-up-card">
         <div class="next-up-header">
-          <span class="next-up-badge">🚗 Siguiente por ingresar a pista</span>
+          <span class="next-up-badge"><%- include('../partials/icon', { name: 'car-front' }) %> Siguiente por ingresar a pista</span>
           <span class="next-up-count"><%= pendingBookings.length %> en espera</span>
         </div>
         <div class="next-up-body">
@@ -76,7 +76,7 @@
             <form method="post" action="/admin/reservas/<%= nextBookingToEnter.id %>/quick-action">
               <input type="hidden" name="_csrf" value="<%= csrfToken %>">
               <button type="submit" name="action" value="start_washing" class="start-wash-btn">
-                <span>▶ Iniciar lavado</span>
+                <span><%- include('../partials/icon', { name: 'play' }) %> Iniciar lavado</span>
                 <small>(<%= nextBookingToEnter.vehicle_type === 'small_suv' || nextBookingToEnter.vehicle_type === 'large_suv' ? '45 min' : '30 min' %>)</small>
               </button>
             </form>
@@ -97,7 +97,7 @@
       </div>
     <% } else { %>
       <div class="next-up-card empty-queue">
-        <span>✨ <b>Todos los vehículos registrados han ingresado a lavado</b> · No hay turnos pendientes</span>
+        <span><%- include('../partials/icon', { name: 'circle-check' }) %> <b>Todos los vehículos registrados han ingresado a lavado</b> · No hay turnos pendientes</span>
       </div>
     <% } %>
   </section>
@@ -110,13 +110,13 @@
       </div>
     </div>
     <div class="board-filters-container">
-      <input type="search" id="board-search" class="board-search" placeholder="🔍 Buscar placa o cliente...">
+      <div class="board-search-wrap"><%- include('../partials/icon', { name: 'search' }) %><input type="search" id="board-search" class="board-search" placeholder="Buscar placa o cliente..."></div>
       <div class="status-filter-pills" id="board-status-filters">
         <button type="button" class="filter-pill active" data-filter="all">Todos</button>
-        <button type="button" class="filter-pill pill-progress" data-filter="in_progress">⏳ En proceso</button>
-        <button type="button" class="filter-pill pill-completed" data-filter="completed">✅ Listos</button>
-        <button type="button" class="filter-pill pill-paid" data-filter="paid">💵 Pagados</button>
-        <button type="button" class="filter-pill pill-pending-pay" data-filter="pending_payment">🔴 Por cobrar</button>
+        <button type="button" class="filter-pill pill-progress" data-filter="in_progress"><%- include('../partials/icon', { name: 'hourglass' }) %> En proceso</button>
+        <button type="button" class="filter-pill pill-completed" data-filter="completed"><%- include('../partials/icon', { name: 'circle-check' }) %> Listos</button>
+        <button type="button" class="filter-pill pill-paid" data-filter="paid"><%- include('../partials/icon', { name: 'banknote' }) %> Pagados</button>
+        <button type="button" class="filter-pill pill-pending-pay" data-filter="pending_payment"><%- include('../partials/icon', { name: 'circle-alert' }) %> Por cobrar</button>
       </div>
       <div class="board-filter-toggle-row">
         <label class="hide-completed-paid-toggle" title="Ocultar del tablero los vehículos que ya están terminados y cobrados para dejar solo los autos activos">
@@ -159,13 +159,13 @@
                   <span class="vehicle-badge"><%= vehicleLabels[booking.vehicle_type] %></span>
                 </div>
                 <details class="card-more-menu">
-                  <summary class="card-more-trigger" title="Más opciones" aria-label="Más opciones de <%= booking.plate %>">⋮</summary>
+                  <summary class="card-more-trigger" title="Más opciones" aria-label="Más opciones de <%= booking.plate %>"><%- include('../partials/icon', { name: 'ellipsis-vertical' }) %></summary>
                   <div class="card-more-dropdown">
-                    <a href="/admin/reservas/<%= booking.id %>" class="card-dropdown-link">✏️ Ver / Editar detalle</a>
+                    <a href="/admin/reservas/<%= booking.id %>" class="card-dropdown-link"><%- include('../partials/icon', { name: 'pencil' }) %> Ver / Editar detalle</a>
                     <form method="post" action="/admin/reservas/<%= booking.id %>/eliminar" class="card-delete-form" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente el registro de <%= booking.plate %>? Esta acción no se puede deshacer.');">
                       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                       <input type="hidden" name="redirectDate" value="<%= selectedDate %>">
-                      <button type="submit" class="card-delete-btn" title="Eliminar registro" aria-label="Eliminar registro">🗑️ Eliminar</button>
+                      <button type="submit" class="card-delete-btn" title="Eliminar registro" aria-label="Eliminar registro"><%- include('../partials/icon', { name: 'trash' }) %> Eliminar</button>
                     </form>
                   </div>
                 </details>
@@ -181,7 +181,7 @@
               <div class="card-timing-row">
                 <div class="card-pickup-highlight">
                   <span class="time-label">Recojo:</span>
-                  <strong class="pickup-highlight-time">⏰ <%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></strong>
+                  <strong class="pickup-highlight-time"><%- include('../partials/icon', { name: 'clock-3' }) %> <%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></strong>
                 </div>
                 <div class="card-dropoff-sub">
                   <span>Ingreso: <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span>
@@ -197,7 +197,7 @@
               </p>
 
               <div class="card-service-section highlight-on-update">
-                <span class="card-service-name">🧼 <%= booking.services || 'Sin servicio asignado' %></span>
+                <span class="card-service-name"><%- include('../partials/icon', { name: 'sparkles' }) %> <%= booking.services || 'Sin servicio asignado' %></span>
                 <span class="card-service-price"><%= formatMoney(booking.total_cents) %></span>
               </div>
               <% if (booking.payment_status !== 'paid') { %>
@@ -207,7 +207,7 @@
               <% if (booking.status === 'in_progress' && booking.started_washing_at) { %>
                 <div class="wash-timer-card" data-wash-timer>
                   <div class="wash-timer-row">
-                    <span class="wash-timer-label">⏳ Lavando...</span>
+                    <span class="wash-timer-label"><%- include('../partials/icon', { name: 'hourglass' }) %> <span class="wash-timer-text">Lavando...</span></span>
                     <strong class="wash-timer-remain">-- min</strong>
                   </div>
                   <div class="wash-progress-track"><div class="wash-progress-bar"></div></div>
@@ -220,23 +220,23 @@
                   <div class="action-row">
                     <div class="action-main-btn-wrap">
                       <% if (booking.status === 'pending') { %>
-                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-start" title="Avanzar a En proceso">▶ Iniciar lavado</button>
+                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-start" title="Avanzar a En proceso"><%- include('../partials/icon', { name: 'play' }) %> Iniciar lavado</button>
                       <% } else if (booking.status === 'in_progress') { %>
-                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-finish" title="Avanzar a Terminado">✓ Marcar listo</button>
+                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-finish" title="Avanzar a Terminado"><%- include('../partials/icon', { name: 'check' }) %> Marcar listo</button>
                       <% } else if (booking.status === 'completed') { %>
-                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-delivered" disabled title="Vehículo terminado">✓ Listo</button>
+                        <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-delivered" disabled title="Vehículo terminado"><%- include('../partials/icon', { name: 'check' }) %> Listo</button>
                       <% } else { %>
                         <button type="submit" name="action" value="next_status" class="action-btn-status action-btn-cancelled" disabled>Cancelada</button>
                       <% } %>
                     </div>
                     <div class="action-secondary-group">
-                      <button type="submit" name="action" value="prev_status" class="btn-prev-status" title="Retroceder estado" <%= booking.status === 'pending' || booking.status === 'cancelled' ? 'disabled' : '' %>>↩</button>
+                      <button type="submit" name="action" value="prev_status" class="btn-prev-status" title="Retroceder estado" <%= booking.status === 'pending' || booking.status === 'cancelled' ? 'disabled' : '' %>><%- include('../partials/icon', { name: 'undo-2' }) %></button>
                       <button type="submit" name="action" value="toggle_payment" class="toggle-btn <%= booking.payment_status === 'paid' ? 'is-paid' : '' %>">
                         <%= booking.payment_status === 'paid' ? 'Pagado' : 'Cobrar' %>
                       </button>
-                      <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" class="ticket-btn">🖨️</a>
+                      <a href="/admin/reservas/<%= booking.id %>/ticket" target="_blank" title="Imprimir ticket" class="ticket-btn"><%- include('../partials/icon', { name: 'printer' }) %></a>
                       <% if (booking.phone) { %>
-                        <a href="https://wa.me/<%= booking.phone.replace(/\D/g, '') %>?text=<%= encodeURIComponent(`Hola ${(booking.customer_name || 'Amigo').split(' ')[0]}, tu vehículo de placa ${booking.plate} ya está listo y reluciente en DASAV Car Wash. Monto: S/ ${(booking.total_cents / 100).toFixed(2)}. ¡Te esperamos!`) %>" target="_blank" class="wa-btn" title="Avisar por WhatsApp: ¡Vehículo listo!">💬</a>
+                        <a href="https://wa.me/<%= booking.phone.replace(/\D/g, '') %>?text=<%= encodeURIComponent(`Hola ${(booking.customer_name || 'Amigo').split(' ')[0]}, tu vehículo de placa ${booking.plate} ya está listo y reluciente en DASAV Car Wash. Monto: S/ ${(booking.total_cents / 100).toFixed(2)}. ¡Te esperamos!`) %>" target="_blank" class="wa-btn" title="Avisar por WhatsApp: ¡Vehículo listo!"><%- include('../partials/icon', { name: 'message-circle' }) %></a>
                       <% } %>
                     </div>
                   </div>
@@ -253,11 +253,11 @@
   <details class="cash-breakdown-panel cash-disclosure" id="cash-disclosure">
     <summary class="cash-disclosure-summary">
       <div class="cash-disclosure-header">
-        <span class="cash-title-text">💵 <strong>Cierre de caja y QRs de cobro · <%= selectedDate %></strong></span>
+        <span class="cash-title-text"><%- include('../partials/icon', { name: 'banknote' }) %> <strong>Cierre de caja y QRs de cobro · <%= selectedDate %></strong></span>
         <% if (paymentBreakdown.totalPendingCents > 0) { %>
           <span class="pending-to-collect">Por cobrar: <b><%= formatMoney(paymentBreakdown.totalPendingCents) %></b></span>
         <% } else { %>
-          <span class="all-collected">✓ 100% cobrado</span>
+          <span class="all-collected"><%- include('../partials/icon', { name: 'check' }) %> 100% cobrado</span>
         <% } %>
         <span class="cash-disclosure-arrow" aria-hidden="true">▾</span>
       </div>
@@ -265,27 +265,27 @@
     <div class="cash-disclosure-content">
       <div class="cash-breakdown-chips">
         <div class="cash-chip chip-yape">
-          <span class="chip-label">🟣 Yape</span>
+          <span class="chip-label"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> Yape</span>
           <strong><%= formatMoney(paymentBreakdown.yapeCents) %></strong>
         </div>
         <div class="cash-chip chip-plin">
-          <span class="chip-label">🔵 Plin</span>
+          <span class="chip-label"><img class="brand-payment-icon" src="/public/img/payment-plin.png" alt=""> Plin</span>
           <strong><%= formatMoney(paymentBreakdown.plinCents) %></strong>
         </div>
         <div class="cash-chip chip-cash">
-          <span class="chip-label">💵 Efectivo</span>
+          <span class="chip-label"><img class="brand-payment-icon" src="/public/img/payment-cash.svg" alt=""> Efectivo</span>
           <strong><%= formatMoney(paymentBreakdown.cashCents) %></strong>
         </div>
       </div>
       <div class="admin-qr-quick-bar">
-        <span class="admin-qr-title">📱 QRs de Cobro rápido:</span>
+        <span class="admin-qr-title"><%- include('../partials/icon', { name: 'qr-code' }) %> QRs de Cobro rápido:</span>
         <div class="admin-qr-btns">
-          <button type="button" class="admin-yape-btn" data-open-qr="hugo" onclick="openYapeQr('hugo')">🟣 Yape Hugo</button>
-          <button type="button" class="admin-yape-btn" data-open-qr="roxana" onclick="openYapeQr('roxana')">🟣 Yape Roxana</button>
+          <button type="button" class="admin-yape-btn" data-open-qr="hugo" onclick="openYapeQr('hugo')"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> Yape Hugo</button>
+          <button type="button" class="admin-yape-btn" data-open-qr="roxana" onclick="openYapeQr('roxana')"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> Yape Roxana</button>
         </div>
       </div>
     </div>
   </details>
 </main>
-<script src="/public/admin.js?v=12" defer></script>
+<script src="/public/admin.js?v=13" defer></script>
 <%- include('../partials/footer') %>

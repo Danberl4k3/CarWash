@@ -44,7 +44,7 @@ describe('pruebas exhaustivas del sistema', () => {
       for (const name of ['vehicleType', 'baseServiceId', 'addonServiceIds', 'plate', 'model', 'name', 'phone', 'pickupTime', 'paymentMethod', 'paymentStatus', 'notes']) {
         expect(form).toContain(`name="${name}"`);
       }
-      expect(html).toMatch(/<button[^>]*global-submit-btn[^>]*type="submit"[^>]*form="booking-form"/);
+      expect(form).toMatch(/<button[^>]*global-submit-btn[^>]*type="submit"/);
       expect(form).not.toMatch(/<fieldset[^>]*hidden/);
       expect(html).not.toContain('data-wizard-step');
       expect(html).not.toContain('data-step-next');

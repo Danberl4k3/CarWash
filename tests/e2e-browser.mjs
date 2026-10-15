@@ -50,22 +50,18 @@ async function runE2E() {
     // Todos los datos se completan en una sola página.
     const legends = await page.$$eval('legend', (els) => els.map((e) => e.textContent.trim()));
     console.log('✓ Secciones encontradas en la página:', legends);
-    assert.equal(legends.length, 5);
-    assert.match(legends[0], /Datos del vehículo/);
-    assert.match(legends[1], /Lavado principal/);
-    assert.match(legends[2], /Adicionales/);
-    assert.match(legends[3], /Tus datos/);
-    assert.match(legends[4], /Horario y pago/);
-    assert.equal(await page.locator('fieldset').first().locator('input:not([type="hidden"])').first().getAttribute('name'), 'plate');
+    assert.equal(legends.length, 3);
+    assert.match(legends[0], /Vehículo y servicio/);
+    assert.match(legends[1], /Datos de la reserva/);
+    assert.match(legends[2], /Horario y pago/);
 
-    console.log('2. Probando botón de tema...');
+    console.log('2. Probando botón de Modo Oscuro...');
     const themeBtn = page.locator('.theme-toggle-btn');
-    assert.equal(await page.evaluate(() => document.documentElement.getAttribute('data-theme') === 'dark'), true);
     await themeBtn.click();
     const isDark = await page.evaluate(() => document.documentElement.getAttribute('data-theme') === 'dark');
-    assert.equal(isDark, false);
-    console.log(`✓ Modo claro activado: ${!isDark}`);
-    await themeBtn.click(); // Regresar a oscuro
+    assert.equal(isDark, true);
+    console.log(`✓ Modo oscuro activado: ${isDark}`);
+    await themeBtn.click(); // Regresar a claro
 
     console.log('2.5. Probando consulta de placa SUNARP y autocompletado...');
     await page.fill('input[name="plate"]', 'SUV-001');
@@ -166,8 +162,7 @@ async function runE2E() {
     assert.equal(await page.locator('input[name="paymentStatus"]:checked').inputValue(), 'pending');
     await page.fill('input[name="plate"]', 'PAG-321');
 
-    await page.locator('input[data-slug="complete"]').evaluate(input => input.closest('label').click());
-    assert.equal(await page.locator('input[name="baseServiceId"]:checked').getAttribute('data-slug'), 'complete');
+    await page.locator('input[data-slug="complete"]').check({ force: true });
     await page.locator('label[data-addon-slug="wax"] input').check({ force: true });
 
     await page.locator('label.payment-option:has(input[name="paymentMethod"][value="cash"])').click();
@@ -218,7 +213,7 @@ async function runE2E() {
     await page.locator('[data-summary-filter="in_progress"]').click();
     assert.equal(await card.isVisible(), true);
     assert.equal(await paidCard.isVisible(), false);
-    await page.locator('.summary-clickable[data-summary-filter="all"]').click();
+    await page.locator('[data-summary-filter="all"]').click();
     await page.fill('#board-search', 'NPG-321');
     assert.equal(await card.isVisible(), true);
     assert.equal(await paidCard.isVisible(), false);

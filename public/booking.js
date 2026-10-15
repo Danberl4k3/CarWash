@@ -31,34 +31,11 @@
     document.querySelectorAll('[data-service-price]').forEach((element) => {
       const service = catalog.find((item) => item.id === Number(element.dataset.servicePrice));
       const cents = servicePrice(service);
-      element.textContent = service?.slug === 'motorcycle-wash' && selectedVehicle() !== 'motorcycle'
-        ? 'Solo moto' : cents ? money.format(cents / 100) : 'No disponible';
+      element.textContent = cents ? money.format(cents / 100) : 'Por definir';
     });
     const total = [selectedBase(), ...selectedAddons()].reduce((sum, service) => sum + servicePrice(service), 0);
     const totalElement = document.querySelector('#booking-total');
     if (totalElement) totalElement.textContent = money.format(total / 100);
-    refreshSummary();
-  }
-
-  function refreshSummary() {
-    const set = (selector, value) => {
-      const element = document.querySelector(selector);
-      if (element) element.textContent = value;
-    };
-    const plate = form.querySelector('[name="plate"]')?.value.trim().toUpperCase();
-    const model = form.querySelector('[name="model"]')?.value.trim();
-    const vehicle = form.querySelector('[name="vehicleType"]:checked')?.closest('label')?.querySelector('strong')?.textContent.trim() || 'Vehículo';
-    const pickup = form.querySelector('#pickup-time')?.value;
-    const dropoff = form.querySelector('#dropoff-display')?.value;
-    set('#summary-plate', plate || 'Por ingresar');
-    set('#summary-model', [vehicle, model].filter(Boolean).join(' · '));
-    set('#summary-service', selectedBase()?.name || 'Por elegir');
-    set('#summary-addons', selectedAddons().map((item) => item.name).join(', ') || 'Ninguno');
-    set('#summary-service-price', selectedBase() ? money.format(servicePrice(selectedBase()) / 100) : '—');
-    const addonsTotal = selectedAddons().reduce((sum, item) => sum + servicePrice(item), 0);
-    set('#summary-addons-price', addonsTotal ? money.format(addonsTotal / 100) : '—');
-    set('#summary-dropoff', dropoff || 'Automático');
-    set('#summary-pickup', pickup || 'Por elegir');
   }
 
   function refreshAddonRules() {
@@ -83,15 +60,12 @@
     baseChoices.forEach((input) => {
       const isMotorcycleService = input.dataset.slug === 'motorcycle-wash';
       const option = input.tagName === 'OPTION' ? input : input.closest('label');
-      const hidden = false;
-      const unavailable = motorcycle ? !isMotorcycleService : isMotorcycleService;
+      const hidden = motorcycle ? !isMotorcycleService : isMotorcycleService;
       if (option) {
         option.hidden = hidden;
         option.style.display = hidden ? 'none' : '';
-        option.classList?.toggle('is-unavailable', unavailable);
       }
-      if (input.tagName !== 'OPTION') input.disabled = unavailable;
-      else input.disabled = unavailable;
+      if (input.tagName !== 'OPTION') input.disabled = hidden;
     });
 
     // Moto solo tiene lavado simple (ocultar adicionales para motos)
@@ -154,9 +128,7 @@
     if (name === 'addonServiceIds') refreshPrices();
     if (name === 'pickupTime') refreshPhoneRule();
     if (name === 'dropoffHour' || name === 'dropoffMinute') refreshPickupOptions();
-    refreshSummary();
   });
-  form.addEventListener('input', refreshSummary);
 
   // Uppercase for license plate & auto-lookup
   // Uppercase for license plate, OCR & auto-lookup
@@ -443,13 +415,6 @@
     pickup.dispatchEvent(new Event('change', { bubbles: true }));
   }));
 
-  const pickupDefault = form.querySelector('#pickup-time');
-  if (pickupDefault && !pickupDefault.value) {
-    const dropoffHour = Number(form.querySelector('#dropoff-hour')?.value || 0);
-    const dropoffMinute = Number(form.querySelector('#dropoff-minute')?.value || 0);
-    const pickupMinutes = (dropoffHour * 60 + dropoffMinute + 60) % 1440;
-    pickupDefault.value = `${String(Math.floor(pickupMinutes / 60)).padStart(2, '0')}:${String(pickupMinutes % 60).padStart(2, '0')}`;
-  }
   refreshAddonRules();
   refreshVehicleRules();
   refreshPickupOptions();

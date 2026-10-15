@@ -1,5 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="DASAV">
-  <rect width="64" height="64" rx="12" fill="#315efb"/>
-  <path d="M13 17h16c12 0 20 6 20 15S41 47 29 47H13V17Zm13 9v12h4c5 0 8-2 8-6s-3-6-8-6h-4Z" fill="#fff"/>
-  <path d="M47 17h5v30h-5z" fill="#a9bdff"/>
-</svg>

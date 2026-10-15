@@ -40,7 +40,7 @@ try {
     columns: document.querySelectorAll('.pickup-column').length,
     emptySlots: document.querySelectorAll('.empty-slot').length,
   }));
-  if (dashboard.heading !== 'Agenda de lavados' || dashboard.emptySlots !== 0) {
+  if (dashboard.heading !== 'Panel de recojos' || dashboard.emptySlots !== 0) {
     throw new Error(`Unexpected admin dashboard: ${JSON.stringify(dashboard)}`);
   }
   await admin.screenshot({ path: 'artifacts/admin-dashboard.png', fullPage: true });

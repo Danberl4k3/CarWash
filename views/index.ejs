@@ -1,129 +1,36 @@
 <%- include('partials/head', { title, bodyClass: 'public-page' }) %>
 <header class="public-header">
   <a class="public-brand" href="/">
-    <span class="brand-mark">DA</span>
-    <span><strong>DASAV Car Wash</strong><small>Cuidado que se nota</small></span>
+    <span><strong>DASAV</strong><small>CAR WASH</small></span>
   </a>
-  <div style="display: flex; gap: 10px; align-items: center;">
-    <button class="theme-toggle-btn" type="button" aria-label="Cambiar tema" title="Modo oscuro">🌙</button>
+  <nav class="public-nav" aria-label="Navegación principal">
+    <a class="active" href="#booking-form">Reservar</a>
+    <a href="#booking-services">Servicios</a>
+    <a href="#booking-summary">Tu reserva</a>
+  </nav>
+  <div class="public-header-actions">
+    <button class="theme-toggle-btn" type="button" aria-label="Cambiar tema" title="Modo claro">🌙</button>
+    <span class="theme-toggle-label">Modo oscuro</span>
     <a class="admin-link" href="/admin/login">Administración</a>
   </div>
 </header>
 
 <main class="booking-shell">
   <section class="booking-intro">
-    <span class="eyebrow">Reserva para hoy</span>
-    <h1>Tu vehículo limpio,<br> <em>sin perder tiempo.</em></h1>
-    <p>Elige tu servicio y separa tu turno. Cuidamos cada detalle de tu vehículo.</p>
-    <div class="intro-pills">
-      <span>Turnos para hoy</span>
-      <span>📅 Lun–Dom</span>
-      <span>⏰ 7 a. m. – 6 p. m.</span>
-    </div>
-
-    <div class="hero-car-showcase" aria-hidden="true">
-      <svg class="hero-car-svg" viewBox="0 0 420 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="neonGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#58e4d3" stop-opacity="0.2"/>
-            <stop offset="50%" stop-color="#58e4d3" stop-opacity="0.9"/>
-            <stop offset="100%" stop-color="#12ad9e" stop-opacity="0.4"/>
-          </linearGradient>
-          <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="50%">
-            <stop offset="0%" stop-color="#12ad9e" stop-opacity="0.15"/>
-            <stop offset="100%" stop-color="#58e4d3" stop-opacity="0.05"/>
-          </linearGradient>
-          <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="6" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
-        </defs>
-        <!-- Speed & water spray lines -->
-        <path d="M 20 65 L 110 65" stroke="#58e4d3" stroke-width="2" stroke-linecap="round" opacity="0.4" stroke-dasharray="4 8"/>
-        <path d="M 40 85 L 90 85" stroke="#58e4d3" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
-        <path d="M 10 115 L 75 115" stroke="#58e4d3" stroke-width="2.5" stroke-linecap="round" opacity="0.5" stroke-dasharray="8 6"/>
-        <path d="M 330 152 L 410 152" stroke="#58e4d3" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
-        <!-- Aerodynamic Car Silhouette -->
-        <path d="M 70 125 C 80 120 110 118 135 112 C 160 85 195 52 250 50 C 295 50 315 72 340 102 C 375 108 395 118 400 128 C 402 138 395 146 385 148 L 338 148 C 335 125 315 110 290 110 C 265 110 245 125 242 148 L 158 148 C 155 125 135 110 110 110 C 85 110 65 125 62 148 L 50 148 C 42 148 38 138 42 132 C 48 126 58 125 70 125 Z" fill="url(#bodyGrad)" stroke="url(#neonGlow)" stroke-width="3.5" filter="url(#softGlow)"/>
-        <!-- Glass Cabin Windshield & Windows -->
-        <path d="M 165 106 C 185 82 210 62 250 60 C 285 60 298 75 320 102 Z" fill="#58e4d3" fill-opacity="0.12" stroke="#58e4d3" stroke-width="2" opacity="0.85"/>
-        <line x1="245" y1="62" x2="242" y2="104" stroke="#58e4d3" stroke-width="2" opacity="0.6"/>
-        <!-- Wheels with sports rims -->
-        <circle cx="110" cy="148" r="26" fill="#071a26" stroke="#58e4d3" stroke-width="4.5"/>
-        <circle cx="110" cy="148" r="14" fill="#0c2d3c" stroke="#58e4d3" stroke-width="2" opacity="0.8"/>
-        <circle cx="110" cy="148" r="5" fill="#58e4d3"/>
-        <circle cx="290" cy="148" r="26" fill="#071a26" stroke="#58e4d3" stroke-width="4.5"/>
-        <circle cx="290" cy="148" r="14" fill="#0c2d3c" stroke="#58e4d3" stroke-width="2" opacity="0.8"/>
-        <circle cx="290" cy="148" r="5" fill="#58e4d3"/>
-        <!-- Front Headlight Neon Ray -->
-        <polygon points="380,120 420,110 420,135 385,130" fill="url(#neonGlow)" opacity="0.45"/>
-      </svg>
-      <div class="hero-trust-badge">
-        <span class="trust-badge-icon">✨</span>
-        <div class="trust-badge-text">
-          <strong>Atención profesional</strong>
-          <small>Lavado minucioso e insumos de calidad</small>
-        </div>
-      </div>
-    </div>
+    <h1>Reserva tu lavado</h1>
+    <p>Tu vehículo, siempre en las mejores manos. Completa los datos y confirma tu reserva en minutos.</p>
   </section>
 
   <section class="booking-panel">
-    <div class="panel-heading">
-      <div><span class="step-kicker">Reserva en línea</span><h2>Separa tu turno</h2></div>
-      <span class="today-chip"><span></span> Hoy</span>
-    </div>
     <%- include('partials/alerts', { error, success: null }) %>
 
 <form id="booking-form" class="booking-form booking-sheet" method="post" action="/reservar"
       data-catalog="<%= serviceCatalog %>" data-now-hour="<%= now.hour %>">
 
-      <fieldset class="booking-section booking-services">
-        <legend>Vehículo y servicio</legend>
+      <fieldset class="booking-section booking-vehicle">
+        <legend><span class="section-number">01</span><span>Datos del vehículo<small>Ingresa la información de tu vehículo.</small></span></legend>
 
-        <div class="booking-subgroup">
-          <h3 class="booking-group-title">¿Qué vehículo traes?</h3>
-          <div class="choice-grid vehicle-grid">
-            <% Object.entries(vehicleLabels).forEach(([value, label], index) => { %>
-              <label class="choice-card">
-                <input type="radio" name="vehicleType" value="<%= value %>" <%= index === 1 ? 'checked' : '' %> required>
-                <span class="vehicle-icon vehicle-<%= value %>"></span>
-                <strong><%= label %></strong>
-              </label>
-            <% }) %>
-          </div>
-        </div>
-
-        <div class="booking-subgroup">
-          <h3 class="booking-group-title">Elige el lavado</h3>
-          <div class="service-list">
-            <% services.filter(service => service.category === 'base').forEach((service, index) => { %>
-              <label class="service-option">
-                <input type="radio" name="baseServiceId" value="<%= service.id %>" data-slug="<%= service.slug %>" <%= index === 1 ? 'checked' : '' %> required>
-                <span><strong><%= service.name %></strong></span>
-                <b class="service-price" data-service-price="<%= service.id %>">—</b>
-              </label>
-            <% }) %>
-          </div>
-        </div>
-
-        <div class="booking-subgroup addon-section">
-          <h3 class="booking-group-title">Agrega un cuidado extra <small class="text-muted">(opcional)</small></h3>
-          <div class="addon-grid">
-            <% services.filter(service => service.category === 'addon').forEach(service => { %>
-              <label class="addon-option" data-addon-slug="<%= service.slug %>" data-incompatible-interior="<%= service.incompatible_with_interior %>">
-                <input type="checkbox" name="addonServiceIds" value="<%= service.id %>">
-                <span class="check-mark">✓</span>
-                <span><strong><%= service.name %></strong><small class="service-price" data-service-price="<%= service.id %>">—</small></span>
-              </label>
-            <% }) %>
-          </div>
-        </div>
-
-      </fieldset>
-
-      <fieldset class="booking-section booking-details">
-        <legend>Datos de la reserva</legend>
+        <div class="vehicle-fields">
         <div class="field-wrapper plate-wrapper">
           <label for="plate-input">Placa <b>*</b></label>
           <div class="plate-input-group">
@@ -140,8 +47,60 @@
           <input type="file" id="plate-camera-input" accept="image/*" capture="environment" class="visually-hidden-file-input">
           <div id="plate-feedback" class="plate-feedback" style="display: none;"></div>
         </div>
-
         <label>Marca / Modelo<input name="model" list="car-brands" maxlength="100" placeholder="Ej. Toyota, Hyundai, Kia..." autocomplete="off"></label>
+        </div>
+
+        <div class="booking-subgroup">
+          <h3 class="booking-group-title">¿Qué vehículo traes?</h3>
+          <div class="choice-grid vehicle-grid">
+            <% Object.entries(vehicleLabels).forEach(([value, label], index) => { %>
+              <label class="choice-card">
+                <input type="radio" name="vehicleType" value="<%= value %>" <%= index === 1 ? 'checked' : '' %> required>
+                <span class="vehicle-icon vehicle-<%= value %>"></span>
+                <strong><%= label %></strong>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+
+      </fieldset>
+
+      <fieldset class="booking-section booking-services" id="booking-services">
+        <legend><span class="section-number">02</span><span>Lavado principal<small>Selecciona el servicio principal para tu vehículo.</small></span></legend>
+        <div class="booking-subgroup">
+          <div class="service-list">
+            <% services.filter(service => service.category === 'base').forEach((service, index) => { %>
+              <label class="service-option">
+                <input type="radio" name="baseServiceId" value="<%= service.id %>" data-slug="<%= service.slug %>" <%= index === 1 ? 'checked' : '' %> required>
+                <span class="service-glyph" aria-hidden="true"><%= { 'motorcycle-wash': '♧', interior: '◧', exterior: '✦', complete: '▣' }[service.slug] || '✦' %></span>
+                <span><strong><%= service.name %></strong></span>
+                <b class="service-price" data-service-price="<%= service.id %>">—</b>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+
+      </fieldset>
+
+      <fieldset class="booking-section addon-section booking-addons">
+        <legend><span class="section-number">03</span><span>Adicionales<small>Selecciona los servicios adicionales que desees.</small></span></legend>
+        <div class="booking-subgroup">
+          <div class="addon-grid">
+            <% services.filter(service => service.category === 'addon').forEach(service => { %>
+              <label class="addon-option" data-addon-slug="<%= service.slug %>" data-incompatible-interior="<%= service.incompatible_with_interior %>">
+                <input type="checkbox" name="addonServiceIds" value="<%= service.id %>">
+                <span class="check-mark">✓</span>
+                <span class="service-glyph" aria-hidden="true"><%= { engine: '⚙', leather: '♙', wax: '✧', 'seat-wash': '◧' }[service.slug] || '✦' %></span>
+                <span><strong><%= service.name %></strong><small class="service-price" data-service-price="<%= service.id %>">—</small></span>
+              </label>
+            <% }) %>
+          </div>
+        </div>
+
+      </fieldset>
+
+      <fieldset class="booking-section booking-details">
+        <legend><span class="section-number">04</span><span>Tus datos<small>Completa tus datos para la reserva (opcional).</small></span></legend>
         <div class="field-grid two-columns">
           <label><span>Nombre <small>Opcional</small></span><input name="name" maxlength="200" placeholder="¿A nombre de quién?"></label>
           <label id="phone-field"><span>Teléfono <small id="phone-optional">Opcional</small></span><input type="tel" name="phone" id="phone" maxlength="20" placeholder="999 999 999"></label>
@@ -149,12 +108,13 @@
         <% if (csrfToken) { %>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <% } %>
-        <label><span>Indicaciones <small>Opcional</small></span><textarea name="notes" rows="2" maxlength="1000" placeholder="Nivel de suciedad, objetos delicados u otra indicación"></textarea></label>
+        <details class="notes-disclosure"><summary>+ Indicaciones opcionales</summary><label><span>Indicaciones</span><textarea name="notes" rows="2" maxlength="1000" placeholder="Nivel de suciedad, objetos delicados u otra indicación"></textarea></label></details>
 
       </fieldset>
 
       <fieldset class="booking-section booking-schedule">
-        <legend>Horario y pago</legend>
+        <legend><span class="section-number">05</span><span>Horario y pago<small>Confirma el horario de tu reserva y el método de pago.</small></span></legend>
+        <div class="schedule-layout">
         <div class="field-grid two-columns schedule-fields">
           <label>Hora de ingreso
             <input id="dropoff-display" value="<%= hourLabel(automaticDropoff.hour, automaticDropoff.minute) %>" readonly>
@@ -172,27 +132,39 @@
           </label>
         </div>
         <%- include('partials/payment-choices', { paymentLabels }) %>
+        </div>
       </fieldset>
 
-      <!-- Barra de total y acción siempre visible -->
+    </form>
+  </section>
+  <aside class="booking-summary" id="booking-summary" aria-label="Resumen de la reserva">
+    <h2>Tu reserva</h2>
+    <p class="summary-caption">Revisa los detalles antes de confirmar.</p>
+    <div class="summary-vehicle"><span class="summary-vehicle-icon" aria-hidden="true">▣</span><div><span id="summary-model">Auto</span><small>Placa <strong id="summary-plate">Por ingresar</strong></small></div></div>
+    <dl class="summary-lines">
+      <div><dt><span class="summary-line-icon">▣</span><span id="summary-service">—</span></dt><dd id="summary-service-price">—</dd></div>
+      <div><dt><span class="summary-line-icon">✧</span><span id="summary-addons">Ninguno</span></dt><dd id="summary-addons-price">—</dd></div>
+      <div><dt><span class="summary-line-icon">◷</span>Hora de ingreso</dt><dd id="summary-dropoff"><%= hourLabel(automaticDropoff.hour, automaticDropoff.minute) %></dd></div>
+      <div><dt><span class="summary-line-icon">◷</span>Hora estimada de recojo</dt><dd id="summary-pickup">Por elegir</dd></div>
+    </dl>
       <div class="booking-total">
         <span><small>Total estimado</small><strong id="booking-total">S/ 0.00</strong></span>
-        <button class="primary-button global-submit-btn" type="submit">Confirmar reserva <span>→</span></button>
+        <button class="primary-button global-submit-btn" type="submit" form="booking-form">Confirmar reserva <span>→</span></button>
       </div>
+      <p class="summary-secure">♙ Tu información se utilizará solo para gestionar tu reserva.</p>
       <div class="index-yape-bar">
-        <span class="index-yape-prompt">🟣 <strong>Pagar con Yape:</strong></span>
+        <span class="index-yape-prompt">🟣 <strong>Pagar con Yape</strong><small>Escanea uno de los códigos QR para pagar.</small></span>
         <div class="index-yape-buttons">
           <button type="button" class="btn-yape-pill" data-open-qr="hugo" onclick="openYapeQr('hugo')" title="Abrir código QR de Yape de Hugo">
-            <span>🟣</span> <b>Hugo</b>
+            <span>▦</span> <b>Ver QR de Hugo</b>
           </button>
           <button type="button" class="btn-yape-pill" data-open-qr="roxana" onclick="openYapeQr('roxana')" title="Abrir código QR de Yape de Roxana">
-            <span>🟣</span> <b>Roxana</b>
+            <span>▦</span> <b>Ver QR de Roxana</b>
           </button>
         </div>
       </div>
-      <p class="price-note">Los pagos se realizan por Yape, Plin o efectivo. Si un precio figura en cero, será confirmado en el local.</p>
-    </form>
-  </section>
+      <p class="price-note">Si un precio figura en cero, será confirmado en el local.</p>
+  </aside>
 </main>
-<script src="/public/booking.js?v=14" defer></script>
+<script src="/public/booking.js?v=16" defer></script>
 <%- include('partials/footer') %>

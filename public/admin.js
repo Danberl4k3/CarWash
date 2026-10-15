@@ -213,9 +213,10 @@
       const status = card.dataset.status || '';
       const paymentStatus = card.dataset.paymentStatus || '';
       const plate = card.querySelector('.plate-number')?.textContent?.toLowerCase() || '';
-      const name = card.querySelector('p')?.textContent?.toLowerCase() || '';
+      const name = card.querySelector('.card-customer')?.textContent?.toLowerCase() || '';
+      const service = card.querySelector('.card-service-name')?.textContent?.toLowerCase() || '';
 
-      const matchesSearch = !term || plate.includes(term) || name.includes(term);
+      const matchesSearch = !term || plate.includes(term) || name.includes(term) || service.includes(term);
 
       let matchesCategory = true;
       if (currentFilter === 'in_progress') {
@@ -233,7 +234,7 @@
       const isDoneAndPaid = status === 'completed' && paymentStatus === 'paid';
       let shouldHideDonePaid = false;
       // Ocultar si está activo el toggle y el auto está terminado y pagado
-      if (hideDonePaid && isDoneAndPaid && currentFilter === 'all') {
+      if (hideDonePaid && isDoneAndPaid && currentFilter === 'all' && !term) {
         shouldHideDonePaid = true;
         hiddenDonePaidCount++;
       }
@@ -251,7 +252,10 @@
       const cardsInCol = col.querySelectorAll('.vehicle-card');
       const visibleInCol = Array.from(cardsInCol).filter((c) => c.style.display !== 'none').length;
       const countSpan = col.querySelector('header > span');
-      if (countSpan) countSpan.textContent = visibleInCol;
+      const displayCount = term || currentFilter !== 'all' || hideDonePaid ? visibleInCol : cardsInCol.length;
+      if (countSpan) countSpan.textContent = displayCount;
+      const hourCount = col.querySelector('.hour-count');
+      if (hourCount) hourCount.textContent = `· ${displayCount} carro${displayCount === 1 ? '' : 's'}`;
 
       let emptyNote = col.querySelector('.empty-filter-note');
       if (visibleInCol === 0 && cardsInCol.length > 0) {
@@ -274,6 +278,27 @@
         counterEl.innerHTML = `👁️ <b>${hiddenDonePaidCount}</b> terminados y cobrados ocultos`;
       } else {
         counterEl.textContent = `${visibleCount} vehículo${visibleCount === 1 ? '' : 's'}`;
+      }
+    }
+
+    const result = document.getElementById('plate-search-result');
+    if (result) {
+      result.replaceChildren();
+      result.hidden = term.length < 2;
+      if (term.length >= 2) {
+        const match = [...cards].find((card) => card.querySelector('.plate-number')?.textContent?.toLowerCase().includes(term));
+        if (match) {
+          const title = document.createElement('strong');
+          title.textContent = `${match.querySelector('.plate-number')?.textContent.trim()} · ${match.querySelector('.card-model')?.textContent.trim().replace(/^·\s*/, '') || 'Vehículo'}`;
+          const details = document.createElement('span');
+          details.textContent = `${match.querySelector('.card-service-name')?.textContent.trim() || 'Sin servicio'} · ${match.querySelector('.status-badge')?.textContent.trim() || ''} · ${match.querySelector('.payment-badge')?.textContent.trim() || ''}`;
+          const link = document.createElement('a');
+          link.href = `#${match.id}`;
+          link.textContent = 'Ver en agenda →';
+          result.append(title, details, link);
+        } else {
+          result.textContent = 'No se encontró esa placa en la fecha seleccionada.';
+        }
       }
     }
   }

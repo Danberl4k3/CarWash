@@ -135,6 +135,7 @@ const defaultServices = [
   ['engine', 'Lavado de motor', 'addon', 0, 40],
   ['leather', 'Crema para cuero', 'addon', 0, 50],
   ['wax', 'Cera', 'addon', 1, 60],
+  ['seat-wash', 'Lavado de asientos', 'addon', 0, 70],
 ] as const;
 
 const defaultPrices: Record<string, Partial<Record<VehicleType, number>>> = {
@@ -145,6 +146,7 @@ const defaultPrices: Record<string, Partial<Record<VehicleType, number>>> = {
   engine: { car: 1500, small_suv: 1500, large_suv: 1500 },
   leather: { car: 1500, small_suv: 1500, large_suv: 1500 },
   wax: { car: 1000, small_suv: 1000, large_suv: 1000 },
+  'seat-wash': { car: 10000, small_suv: 10000, large_suv: 10000 },
 };
 
 export function createDatabase(databasePath?: string): DatabaseContext {
@@ -246,6 +248,15 @@ export function createDatabase(databasePath?: string): DatabaseContext {
       }
     }
     if (!seeded) db.prepare("INSERT INTO schema_migrations (name) VALUES ('initial_catalog_v1')").run();
+    const seatWashSeeded = db.prepare("SELECT 1 FROM schema_migrations WHERE name = 'seat_wash_addon_v1'").get();
+    if (!seatWashSeeded) {
+      insertService.run('seat-wash', 'Lavado de asientos', 'addon', 0, 70);
+      const seatWash = db.prepare("SELECT id FROM services WHERE slug = 'seat-wash'").get() as { id: number };
+      for (const vehicleType of VEHICLE_TYPES) {
+        insertPrice.run(seatWash.id, vehicleType, defaultPrices['seat-wash'][vehicleType] ?? 0);
+      }
+      db.prepare("INSERT INTO schema_migrations (name) VALUES ('seat_wash_addon_v1')").run();
+    }
     const insertCapacity = db.prepare('INSERT OR IGNORE INTO capacity_slots (hour, max_slots) VALUES (?, 6)');
     for (const hour of dropoffHours()) insertCapacity.run(hour);
   });

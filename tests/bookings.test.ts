@@ -68,6 +68,20 @@ describe('reglas de reserva', () => {
     expect(result.totalCents).toBe(1500);
   });
 
+  it('guarda lavado de asientos como adicional por S/ 100', () => {
+    const seatWash = db.prepare("SELECT id FROM services WHERE slug = 'seat-wash'").get() as { id: number };
+    const result = createBooking(db, {
+      ...validInput(),
+      addonServiceIds: [seatWash.id],
+    }, { now: mondayAt(8) });
+
+    expect(result.totalCents).toBe(11000);
+    expect(getBookingServiceIds(db, result.id)).toEqual({
+      baseServiceId: exteriorId,
+      addonServiceIds: [seatWash.id],
+    });
+  });
+
 
 
   it('no permite cera con lavado interior', () => {

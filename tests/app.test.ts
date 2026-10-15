@@ -28,7 +28,7 @@ describe('aplicación web', () => {
   it('renderiza el formulario público', async () => {
     const response = await app.inject({ method: 'GET', url: '/' });
     expect(response.statusCode).toBe(200);
-    expect(response.body).toContain('Separa tu turno');
+    expect(response.body).toContain('Reserva tu lavado');
     expect(response.body).toContain('Lavado completo');
     expect(response.body).toContain('Hugo');
     expect(response.body).toContain('Roxana');
@@ -42,7 +42,7 @@ describe('aplicación web', () => {
     try {
       const response = await app.inject({ method: 'GET', url: '/' });
       expect(response.statusCode).toBe(200);
-      expect(response.body).toContain('Lun–Dom');
+      expect(response.body).toContain('Atención de lunes a domingo');
       expect(response.body).not.toContain('Hoy no atendemos reservas.');
       expect(response.body).toMatch(/<form id="booking-form"[^>]*>/);
       expect(response.body.match(/<form id="booking-form"[^>]*>/)?.[0]).not.toContain('inert');
@@ -95,7 +95,7 @@ describe('aplicación web', () => {
       headers: { cookie: `${cookie.name}=${cookie.value}` },
     });
     expect(dashboard.statusCode).toBe(200);
-    expect(dashboard.body).toContain('Panel de recojos');
+    expect(dashboard.body).toContain('Agenda de lavados');
     expect(dashboard.body).toContain('Sin vehículos programados');
     expect(dashboard.body).not.toContain('class="pickup-column');
   });

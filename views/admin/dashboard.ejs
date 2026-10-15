@@ -1,17 +1,29 @@
-<%- include('../partials/head', { title, bodyClass: 'admin-page' }) %>
+<%- include('../partials/head', { title, bodyClass: 'admin-page dashboard-page' }) %>
 <%- include('../partials/admin-nav', { admin, csrfToken, activeNav: 'operacion' }) %>
+<aside class="dashboard-sidebar" aria-label="Menú de administración">
+  <a class="sidebar-brand" href="/admin"><strong>DASAV</strong><small>CAR WASH</small></a>
+  <nav class="sidebar-nav">
+    <a href="#dashboard-summary"><span>⌂</span> Resumen</a>
+    <a href="#agenda" class="active"><span>▣</span> Agenda</a>
+    <a href="/admin/clientes"><span>♧</span> Clientes</a>
+    <a href="/admin/servicios"><span>✦</span> Servicios</a>
+    <a href="/admin/estadisticas"><span>▥</span> Reportes</a>
+    <a href="/admin/capacidad"><span>◷</span> Capacidad</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="sidebar-theme"><span>☾ Modo oscuro</span><button class="theme-toggle-btn" type="button" aria-label="Cambiar tema" title="Modo claro">🌙</button></div>
+    <span class="sidebar-user"><%= admin.username %></span>
+    <form action="/admin/logout" method="post"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit">Salir</button></form>
+  </div>
+</aside>
 <main class="admin-main">
+  <div class="dashboard-top">
   <div class="page-heading">
     <div>
-      <span class="eyebrow">Control de operaciones</span>
-      <h1>Panel de recojos</h1>
-      <p>Vehículos organizados por la hora estimada de entrega.</p>
-    </div>
-    <div style="display: flex; gap: 8px; align-items: center;">
-      <a class="primary-button" href="/">+ Nueva reserva</a>
+      <h1>Agenda de lavados</h1>
+      <p><%= new Date(`${selectedDate}T12:00:00`).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' }) %></p>
     </div>
   </div>
-  <%- include('../partials/alerts', { error, success }) %>
 
   <!-- Barra de navegación por fechas, alertas y exportación -->
   <section class="dashboard-controls-bar">
@@ -29,6 +41,7 @@
     </div>
 
     <div class="dashboard-extra-actions">
+      <a class="primary-button" href="/">＋ Nueva reserva</a>
       <button type="button" id="toggle-sound-btn" class="action-pill sound-btn" title="Activar o silenciar avisos sonoros de reservas">
         <span class="sound-icon">🔔</span> <span class="sound-label">Avisos activos</span>
       </button>
@@ -37,12 +50,14 @@
       </a>
     </div>
   </section>
+  </div>
+  <%- include('../partials/alerts', { error, success }) %>
 
-  <section class="summary-grid">
-    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="pending" title="Filtrar vehículos pendientes"><span class="summary-dot dot-amber"></span><small>En espera</small><strong><%= summary.pending %></strong></article>
+  <section class="summary-grid" id="dashboard-summary">
+    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="all" title="Ver todos los vehículos"><span class="summary-dot dot-amber"></span><small>Reservas hoy</small><strong><%= summary.total %></strong></article>
     <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="in_progress" title="Filtrar vehículos en proceso"><span class="summary-dot dot-purple"></span><small>En proceso</small><strong><%= summary.inProgress %></strong></article>
-    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="completed" title="Filtrar vehículos listos"><span class="summary-dot dot-green"></span><small>Listos</small><strong><%= summary.completed %></strong></article>
-    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="pending_payment" title="Filtrar saldo pendiente de cobro"><span class="summary-dot dot-danger"></span><small>Por cobrar</small><strong><%= formatMoney(paymentBreakdown.totalPendingCents) %></strong></article>
+    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="pending" title="Filtrar vehículos pendientes"><span class="summary-dot dot-danger"></span><small>Pendientes</small><strong><%= summary.pending %></strong></article>
+    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="completed" title="Filtrar vehículos listos"><span class="summary-dot dot-green"></span><small>Terminadas</small><strong><%= summary.completed %></strong></article>
     <div class="operation-meta">
       <button type="button" data-summary-filter="all"><b><%= summary.total %></b> vehículos hoy</button>
       <button type="button" data-summary-filter="paid">Cobrado <b><%= formatMoney(summary.collected) %></b></button>
@@ -54,7 +69,7 @@
     <% if (nextBookingToEnter) { %>
       <div class="next-up-card">
         <div class="next-up-header">
-          <span class="next-up-badge">🚗 Siguiente por ingresar a pista</span>
+          <span class="next-up-badge">Siguiente carro</span>
           <span class="next-up-count"><%= pendingBookings.length %> en espera</span>
         </div>
         <div class="next-up-body">
@@ -80,18 +95,23 @@
                 <small>(<%= nextBookingToEnter.vehicle_type === 'small_suv' || nextBookingToEnter.vehicle_type === 'large_suv' ? '45 min' : '30 min' %>)</small>
               </button>
             </form>
+            <form method="post" action="/admin/reservas/<%= nextBookingToEnter.id %>/quick-action">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" name="action" value="toggle_payment" class="next-up-pay-btn"><%= nextBookingToEnter.payment_status === 'paid' ? '✓ Pagado' : '$ Cobrar' %></button>
+            </form>
           </div>
         </div>
         <% if (pendingBookings.length > 1) { %>
           <div class="next-up-queue">
-            <small>Siguientes en cola:</small>
+            <small>Después siguen</small>
             <div class="queue-chips">
-              <% pendingBookings.slice(1).forEach((b) => { %>
+              <% pendingBookings.slice(1, 4).forEach((b) => { %>
                 <a href="#booking-<%= b.id %>" class="queue-chip">
-                  <%= b.plate %> · <%= b.vehicle_model || vehicleLabels[b.vehicle_type] %>
+                  <strong><%= b.plate %></strong><span><%= b.vehicle_model || vehicleLabels[b.vehicle_type] %> · <%= hourLabel(b.dropoff_hour, b.dropoff_minute === null ? 0 : b.dropoff_minute % 60) %></span><small><%= b.services %></small>
                 </a>
               <% }) %>
             </div>
+            <a class="view-queue-link" href="#agenda">Ver cola completa →</a>
           </div>
         <% } %>
       </div>
@@ -102,15 +122,18 @@
     <% } %>
   </section>
 
-  <div class="board-heading">
+  <div class="board-heading" id="agenda">
     <div class="board-heading-row">
-      <h2>Panel de recojos por hora</h2>
+      <h2>Busca un vehículo</h2>
       <div class="board-heading-actions">
         <span class="board-date"><%= selectedDate %></span>
       </div>
     </div>
     <div class="board-filters-container">
-      <input type="search" id="board-search" class="board-search" placeholder="🔍 Buscar placa o cliente...">
+      <div class="board-search-row">
+      <input type="search" id="board-search" class="board-search" placeholder="Buscar placa, cliente o servicio..." aria-label="Buscar placa, cliente o servicio" autocomplete="off">
+      <div id="plate-search-result" class="plate-search-result" aria-live="polite" hidden></div>
+      </div>
       <div class="status-filter-pills" id="board-status-filters">
         <button type="button" class="filter-pill active" data-filter="all">Todos</button>
         <button type="button" class="filter-pill pill-progress" data-filter="in_progress">⏳ En proceso</button>
@@ -131,22 +154,25 @@
 
   <section class="pickup-board" data-live-board>
     <div class="hourly-summary">
-      <h3 class="hourly-summary-title">Vehículos por hora</h3>
+      <div class="agenda-intro">
+        <span class="agenda-kicker">AGENDA DEL DÍA</span>
+        <h3 class="hourly-summary-title">Vehículos por hora</h3>
+      </div>
       <% if (hourlySummary.length === 0) { %>
         <p class="hourly-summary-empty">Sin vehículos programados</p>
       <% } else { %>
         <ul class="hourly-summary-chips">
           <% hourlySummary.forEach(item => { %>
-            <li class="hourly-chip"><%= item.label %> (<%= item.count %>)</li>
+            <li class="hourly-chip"><a href="#hora-<%= item.hour %>" aria-label="<%= item.label %> (<%= item.count %>)"><strong><%= item.label %></strong><span><%= item.count %> <%= item.count === 1 ? 'vehículo' : 'vehículos' %></span></a></li>
           <% }); %>
         </ul>
       <% } %>
     </div>
     <% pickupGroups.forEach(group => { %>
-      <article class="pickup-column <%= group.hour === 17 ? 'featured-hour' : '' %>">
-        <header><div><small>Listos para</small><h3><%= group.label %></h3></div><span><%= group.activeCount %></span></header>
+      <article class="pickup-column <%= group.hour === 17 ? 'featured-hour' : '' %>" id="hora-<%= group.hour %>">
+        <header><div><h3><%= group.label %> <small class="hour-count">· <%= group.bookings.length %> carros</small></h3></div><span><%= group.bookings.length %></span></header>
         <div class="pickup-stack">
-          <% group.bookings.forEach(booking => { %>
+          <% group.bookings.forEach((booking, index) => { %>
             <div class="vehicle-card status-<%= booking.status %>" id="booking-<%= booking.id %>"
                  data-started-at="<%= booking.started_washing_at || '' %>"
                  data-vehicle-type="<%= booking.vehicle_type %>"
@@ -172,6 +198,7 @@
               </div>
 
               <div class="plate-row">
+                <span class="card-position"><%= index + 1 %></span>
                 <a href="/admin/reservas/<%= booking.id %>" class="plate-number" title="Ver detalle de <%= booking.plate %>"><%= booking.plate %></a>
                 <% if (booking.vehicle_model) { %>
                   <span class="card-model">· <%= booking.vehicle_model %></span>
@@ -181,10 +208,10 @@
               <div class="card-timing-row">
                 <div class="card-pickup-highlight">
                   <span class="time-label">Recojo:</span>
-                  <strong class="pickup-highlight-time">⏰ <%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></strong>
+                  <strong class="pickup-highlight-time"><%= hourLabel(booking.pickup_hour, booking.pickup_minute === null ? 0 : booking.pickup_minute % 60) %></strong>
                 </div>
                 <div class="card-dropoff-sub">
-                  <span>Ingreso: <b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b></span>
+                  <span>Ingreso</span><b><%= hourLabel(booking.dropoff_hour, booking.dropoff_minute === null ? 0 : booking.dropoff_minute % 60) %></b>
                 </div>
               </div>
 
@@ -197,7 +224,7 @@
               </p>
 
               <div class="card-service-section highlight-on-update">
-                <span class="card-service-name">🧼 <%= booking.services || 'Sin servicio asignado' %></span>
+                <span class="card-service-name"><%= booking.services || 'Sin servicio asignado' %></span>
                 <span class="card-service-price"><%= formatMoney(booking.total_cents) %></span>
               </div>
               <% if (booking.payment_status !== 'paid') { %>
@@ -287,5 +314,5 @@
     </div>
   </details>
 </main>
-<script src="/public/admin.js?v=12" defer></script>
+<script src="/public/admin.js?v=14" defer></script>
 <%- include('../partials/footer') %>

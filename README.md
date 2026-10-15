@@ -113,7 +113,7 @@ Si deseas transferir tu base de datos local actual con todos sus turnos, servici
 #### Opción B: Arranque Limpio Automatizado
 Si no cargas un backup previo, la aplicación detectará que `/data/carwash.db` no existe y creará automáticamente:
 * Todas las tablas y relaciones.
-* El catálogo completo de servicios y precios (Lavado simple de moto a S/ 15, interior, exterior, completo, motor, cera, crema para cuero).
+* El catálogo completo de servicios y precios (lavado simple de moto a S/ 15; interior, exterior y completo; motor, cera, crema para cuero y lavado de asientos por S/ 100).
 * Capacidad horaria por defecto (6 vehículos por turno).
 * El usuario administrador con las credenciales de `ADMIN_USERNAME` y `ADMIN_PASSWORD`.
 

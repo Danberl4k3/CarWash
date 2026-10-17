@@ -65,6 +65,26 @@
     </div>
   </section>
 
+  <section class="admin-yape-qr-section" aria-labelledby="admin-yape-qr-title">
+    <div class="admin-yape-qr-heading">
+      <div>
+        <span class="eyebrow">Cobro rápido</span>
+        <h2 id="admin-yape-qr-title">QR de Yape</h2>
+      </div>
+      <p>Elige el código que usarás para recibir el pago.</p>
+    </div>
+    <div class="admin-yape-qr-grid">
+      <button type="button" class="admin-yape-qr-card" data-open-qr="hugo" aria-label="Ampliar QR de Yape de Hugo">
+        <img src="/public/img/qr-hugo.jpg" alt="Código QR de Yape de Hugo" loading="lazy">
+        <span><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <strong>Hugo</strong><small>Toca para ampliar</small></span>
+      </button>
+      <button type="button" class="admin-yape-qr-card" data-open-qr="roxana" aria-label="Ampliar QR de Yape de Roxana">
+        <img src="/public/img/qr-roxana.jpg" alt="Código QR de Yape de Roxana" loading="lazy">
+        <span><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <strong>Roxana</strong><small>Toca para ampliar</small></span>
+      </button>
+    </div>
+  </section>
+
   <section class="summary-grid">
     <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="pending" title="Filtrar vehículos pendientes"><span class="summary-dot dot-amber"></span><small>En espera</small><strong><%= summary.pending %></strong></article>
     <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="in_progress" title="Filtrar vehículos en proceso"><span class="summary-dot dot-purple"></span><small>En proceso</small><strong><%= summary.inProgress %></strong></article>
@@ -273,11 +293,11 @@
     <% }) %>
   </section>
 
-  <!-- Módulo secundario: Cierre de caja y QRs de cobro rápido -->
+  <!-- Módulo secundario: Cierre de caja -->
   <details class="cash-breakdown-panel cash-disclosure" id="cash-disclosure">
     <summary class="cash-disclosure-summary">
       <div class="cash-disclosure-header">
-        <span class="cash-title-text"><%- include('../partials/icon', { name: 'banknote' }) %> <strong>Cierre de caja y QRs de cobro · <%= selectedDate %></strong></span>
+        <span class="cash-title-text"><%- include('../partials/icon', { name: 'banknote' }) %> <strong>Cierre de caja · <%= selectedDate %></strong></span>
         <% if (paymentBreakdown.totalPendingCents > 0) { %>
           <span class="pending-to-collect">Por cobrar: <b><%= formatMoney(paymentBreakdown.totalPendingCents) %></b></span>
         <% } else { %>
@@ -299,13 +319,6 @@
         <div class="cash-chip chip-cash">
           <span class="chip-label"><img class="brand-payment-icon" src="/public/img/payment-cash.svg" alt=""> Efectivo</span>
           <strong><%= formatMoney(paymentBreakdown.cashCents) %></strong>
-        </div>
-      </div>
-      <div class="admin-qr-quick-bar">
-        <span class="admin-qr-title"><%- include('../partials/icon', { name: 'qr-code' }) %> QRs de Cobro rápido:</span>
-        <div class="admin-qr-btns">
-          <button type="button" class="admin-yape-btn" data-open-qr="hugo" onclick="openYapeQr('hugo')"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> Yape Hugo</button>
-          <button type="button" class="admin-yape-btn" data-open-qr="roxana" onclick="openYapeQr('roxana')"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> Yape Roxana</button>
         </div>
       </div>
     </div>

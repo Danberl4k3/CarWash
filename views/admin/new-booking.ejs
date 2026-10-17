@@ -9,12 +9,13 @@
       <div class="field-wrapper plate-wrapper">
         <label for="plate-input-admin">Placa *</label>
         <div class="plate-input-group">
-          <input name="plate" id="plate-input-admin" maxlength="12" required placeholder="ABC-123">
+          <input name="plate" id="plate-input-admin" maxlength="12" required placeholder="ABC-123" data-plate-balance-input>
           <label for="plate-camera-input-admin" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto" role="button" tabindex="0"><%- include('../partials/icon', { name: 'camera' }) %> <span class="btn-text">Escanear</span></label>
           <button type="button" id="btn-lookup-plate" class="plate-action-btn plate-lookup-btn" title="Consultar placa en SUNARP"><%- include('../partials/icon', { name: 'search' }) %> <span class="btn-text">Consultar</span></button>
         </div>
         <input type="file" id="plate-camera-input-admin" accept="image/*" capture="environment" class="visually-hidden-file-input">
         <div id="plate-feedback" class="plate-feedback" style="display: none;"></div>
+        <div class="plate-balance-popover" data-plate-balance-result role="status" aria-live="polite" hidden></div>
       </div>
       <label>Tipo de vehículo<select name="vehicleType" required><% Object.entries(vehicleLabels).forEach(([value, label]) => { %><option value="<%= value %>"><%= label %></option><% }) %></select></label>
       <label>Modelo / Marca <small>Opcional</small><input name="model" list="car-brands" placeholder="Ej. Toyota Yaris, Hyundai Tucson..."></label>
@@ -38,4 +39,5 @@
   </form>
 </main>
 <script src="/public/booking.js?v=15" defer></script>
+<script src="/public/plate-balances.js?v=1" defer></script>
 <%- include('../partials/footer') %>

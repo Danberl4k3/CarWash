@@ -65,23 +65,11 @@
     </div>
   </section>
 
-  <section class="admin-yape-qr-section" aria-labelledby="admin-yape-qr-title">
-    <div class="admin-yape-qr-heading">
-      <div>
-        <span class="eyebrow">Cobro rápido</span>
-        <h2 id="admin-yape-qr-title">QR de Yape</h2>
-      </div>
-      <p>Elige el código que usarás para recibir el pago.</p>
-    </div>
-    <div class="admin-yape-qr-grid">
-      <button type="button" class="admin-yape-qr-card" data-open-qr="hugo" aria-label="Ampliar QR de Yape de Hugo">
-        <img src="/public/img/qr-hugo.jpg" alt="Código QR de Yape de Hugo" loading="lazy">
-        <span><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <strong>Hugo</strong><small>Toca para ampliar</small></span>
-      </button>
-      <button type="button" class="admin-yape-qr-card" data-open-qr="roxana" aria-label="Ampliar QR de Yape de Roxana">
-        <img src="/public/img/qr-roxana.jpg" alt="Código QR de Yape de Roxana" loading="lazy">
-        <span><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <strong>Roxana</strong><small>Toca para ampliar</small></span>
-      </button>
+  <section class="index-yape-bar admin-yape-quick-bar" aria-label="Cobrar con Yape">
+    <span class="index-yape-prompt"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <strong>Cobrar con Yape:</strong></span>
+    <div class="index-yape-buttons">
+      <button type="button" class="btn-yape-pill" data-open-qr="hugo" title="Abrir código QR de Yape de Hugo"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <b>Hugo</b></button>
+      <button type="button" class="btn-yape-pill" data-open-qr="roxana" title="Abrir código QR de Yape de Roxana"><img class="brand-payment-icon" src="/public/img/payment-yape.png" alt=""> <b>Roxana</b></button>
     </div>
   </section>
 
@@ -154,7 +142,7 @@
       </div>
     </div>
     <div class="board-filters-container">
-      <div class="board-search-wrap"><%- include('../partials/icon', { name: 'search' }) %><input type="search" id="board-search" class="board-search" placeholder="Buscar placa o cliente..."></div>
+        <div class="board-search-wrap"><%- include('../partials/icon', { name: 'search' }) %><input type="search" id="board-search" class="board-search" data-plate-balance-input placeholder="Buscar placa o cliente..."><div class="plate-balance-popover" data-plate-balance-result role="status" aria-live="polite" hidden></div></div>
       <div class="status-filter-pills" id="board-status-filters">
         <button type="button" class="filter-pill active" data-filter="all">Todos</button>
         <button type="button" class="filter-pill pill-progress" data-filter="in_progress"><%- include('../partials/icon', { name: 'hourglass' }) %> En proceso</button>
@@ -325,4 +313,5 @@
   </details>
 </main>
 <script src="/public/admin.js?v=13" defer></script>
+<script src="/public/plate-balances.js?v=1" defer></script>
 <%- include('../partials/footer') %>

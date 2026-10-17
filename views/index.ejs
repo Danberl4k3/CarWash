@@ -127,7 +127,7 @@
         <div class="field-wrapper plate-wrapper">
           <label for="plate-input">Placa <b>*</b></label>
           <div class="plate-input-group">
-            <input name="plate" id="plate-input" maxlength="12" placeholder="ABC-123" autocomplete="off" required>
+            <input name="plate" id="plate-input" maxlength="12" placeholder="ABC-123" autocomplete="off" required<% if (csrfToken) { %> data-plate-balance-input<% } %>>
             <label for="plate-camera-input" id="btn-scan-plate" class="plate-action-btn" title="Escanear placa con cámara o foto" role="button" tabindex="0">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="action-svg" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
               <span class="btn-text">Escanear</span>
@@ -139,6 +139,7 @@
           </div>
           <input type="file" id="plate-camera-input" accept="image/*" capture="environment" class="visually-hidden-file-input">
           <div id="plate-feedback" class="plate-feedback" style="display: none;"></div>
+          <% if (csrfToken) { %><div class="plate-balance-popover" data-plate-balance-result role="status" aria-live="polite" hidden></div><% } %>
         </div>
 
         <label>Marca / Modelo<input name="model" list="car-brands" maxlength="100" placeholder="Ej. Toyota, Hyundai, Kia..." autocomplete="off"></label>
@@ -195,4 +196,5 @@
   </section>
 </main>
 <script src="/public/booking.js?v=15" defer></script>
+<% if (csrfToken) { %><script src="/public/plate-balances.js?v=1" defer></script><% } %>
 <%- include('partials/footer') %>

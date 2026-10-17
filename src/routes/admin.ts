@@ -341,6 +341,31 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
     });
   });
 
+  app.get('/admin/api/placa-saldos', async (request, reply) => {
+    if (!getSession(db, request)) return reply.code(401).send({ error: 'Acceso administrativo requerido' });
+    const plate = String((request.query as { plate?: unknown }).plate ?? '').trim().toUpperCase();
+    if (!/^[A-Z0-9-]{3,12}$/.test(plate)) return reply.code(400).send({ error: 'Placa inválida' });
+
+    const balances = db.prepare(`
+      SELECT b.id AS bookingId, b.booking_date AS date,
+        b.total_cents - b.amount_paid_cents AS pendingCents
+      FROM bookings b
+      JOIN vehicles v ON v.id = b.vehicle_id
+      LEFT JOIN booking_snapshots s ON s.booking_id = b.id
+      WHERE COALESCE(s.plate, v.plate) = ?
+        AND b.status != 'cancelled'
+        AND b.total_cents > b.amount_paid_cents
+      ORDER BY b.booking_date DESC, b.id DESC
+    `).all(plate) as Array<{ bookingId: number; date: string; pendingCents: number }>;
+
+    reply.header('Cache-Control', 'no-store');
+    return reply.send({
+      plate,
+      totalPendingCents: balances.reduce((sum, balance) => sum + balance.pendingCents, 0),
+      balances,
+    });
+  });
+
   app.post('/admin/reservas', async (request, reply) => {
     const session = requirePostAuth(db, request, reply);
     if (!session) return;

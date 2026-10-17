@@ -122,6 +122,40 @@ describe('aplicación web', () => {
     expect(dashboard.body).toMatch(/Total facturado<\/small>\s*<strong>S\/\s*20\.00<\/strong>/);
   });
 
+  it('consulta saldos anteriores por placa solo para administración', async () => {
+    const serviceId = (db.prepare('SELECT id FROM services WHERE slug = ?').get('exterior') as { id: number }).id;
+    const now = getLimaNow();
+    const create = (plate: string) => createBooking(db, {
+      plate, vehicleType: 'car', baseServiceId: serviceId, addonServiceIds: [],
+      dropoffHour: 7, pickupHour: 8, paymentMethod: 'cash', phone: '', name: '', notes: '',
+    }, { now: { ...now, weekday: 'Mon' }, allowPastSlot: true });
+    const partial = create('DEU-123');
+    const unpaid = create('DEU-123');
+    const paid = create('DEU-123');
+    const cancelled = create('DEU-123');
+    create('OTR-999');
+    db.prepare('UPDATE bookings SET booking_date = ?, amount_paid_cents = 400 WHERE id = ?').run('2026-09-12', partial.id);
+    db.prepare('UPDATE bookings SET booking_date = ? WHERE id = ?').run('2026-10-02', unpaid.id);
+    db.prepare("UPDATE bookings SET payment_status = 'paid', amount_paid_cents = total_cents WHERE id = ?").run(paid.id);
+    db.prepare("UPDATE bookings SET status = 'cancelled' WHERE id = ?").run(cancelled.id);
+
+    const url = '/admin/api/placa-saldos?plate=deu-123';
+    const anonymous = await app.inject({ method: 'GET', url });
+    expect(anonymous.statusCode).toBe(401);
+
+    const login = await app.inject({ method: 'POST', url: '/admin/login', payload: { username: 'admin-test', password: 'password-seguro-test' } });
+    const cookie = login.cookies[0];
+    const response = await app.inject({ method: 'GET', url, headers: { cookie: `${cookie.name}=${cookie.value}` } });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      plate: 'DEU-123', totalPendingCents: 1600,
+      balances: [
+        { bookingId: unpaid.id, date: '2026-10-02', pendingCents: 1000 },
+        { bookingId: partial.id, date: '2026-09-12', pendingCents: 600 },
+      ],
+    });
+  });
+
   it('refleja en el panel una reserva creada para hoy', async () => {
     const serviceId = (db.prepare('SELECT id FROM services WHERE slug = ?').get('exterior') as { id: number }).id;
     const now = getLimaNow();

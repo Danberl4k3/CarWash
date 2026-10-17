@@ -18,7 +18,20 @@
 .page-heading { margin-bottom: 18px; }
 .page-heading h1 { font-size: clamp(25px, 3vw, 36px); }
 .dashboard-controls-bar { margin-bottom: 16px; }
+.financial-overview { margin-bottom: 20px; }
+.financial-overview-heading { display: flex; justify-content: space-between; align-items: end; gap: 16px; margin-bottom: 12px; }
+.financial-overview-heading h2 { margin: 3px 0 0; font-size: 20px; line-height: 1.25; }
+.financial-overview-heading p { margin: 0; color: var(--muted); font-size: 12px; }
+.financial-overview-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.financial-overview-card { min-width: 0; display: flex; flex-direction: column; padding: 19px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); }
+.financial-overview-card small { color: var(--muted); font-size: 12px; font-weight: 700; }
+.financial-overview-card strong { margin: 8px 0 5px; color: var(--ink); font: 800 clamp(22px,2.5vw,32px)/1.2 var(--font-display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.financial-overview-card span { color: var(--muted); font-size: 11px; }
+.financial-overview-card.summary-clickable { cursor: pointer; }
+.financial-overview-total { border-color: var(--ui-accent); background: var(--ui-soft); }
+.financial-overview-total strong { color: var(--ui-accent); }
 .summary-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; overflow: visible; padding: 0; margin-bottom: 18px; }
+.admin-main > .summary-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
 .summary-grid > article { min-width: 0; padding: 16px 18px; box-shadow: none; }
 .summary-grid > article.kpi-prominent { background: var(--paper); border-color: var(--line); }
 .summary-grid > article:hover { transform: none; box-shadow: none; }
@@ -158,6 +171,11 @@
   .booking-schedule .schedule-fields { grid-column: 1 / -1; }
 }
 @media (max-width: 760px) {
+  .admin-main > .summary-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .financial-overview-heading { align-items: start; flex-direction: column; gap: 4px; }
+  .financial-overview-grid { grid-template-columns: 1fr; gap: 8px; }
+  .financial-overview-card { padding: 14px 16px; }
+  .financial-overview-card strong { font-size: 26px; }
   .admin-topbar { grid-template-columns: 1fr auto; min-height: 64px; padding: 10px 16px; gap: 8px; }
   .admin-topbar .admin-brand { grid-column: 1; grid-row: 1; }
   .admin-topbar .admin-brand strong { font-size: 14px; }

@@ -38,15 +38,39 @@
     </div>
   </section>
 
+  <section class="financial-overview" aria-label="Resumen de cobros">
+    <div class="financial-overview-heading">
+      <div>
+        <span class="eyebrow">Resumen de cobros</span>
+        <h2>Ingresos del día seleccionado</h2>
+      </div>
+      <p>Reservas no canceladas · incluye abonos parciales</p>
+    </div>
+    <div class="financial-overview-grid">
+      <article role="button" tabindex="0" class="financial-overview-card summary-clickable" data-summary-filter="pending_payment" title="Ver reservas con saldo por cobrar">
+        <small>Falta cobrar</small>
+        <strong><%= formatMoney(paymentBreakdown.totalPendingCents) %></strong>
+        <span>Saldo pendiente</span>
+      </article>
+      <article class="financial-overview-card">
+        <small>Se cobró</small>
+        <strong><%= formatMoney(paymentBreakdown.totalCollectedCents) %></strong>
+        <span>Pagos y abonos recibidos</span>
+      </article>
+      <article class="financial-overview-card financial-overview-total">
+        <small>Total facturado</small>
+        <strong><%= formatMoney(paymentBreakdown.totalExpectedCents) %></strong>
+        <span>Cobrado + falta cobrar</span>
+      </article>
+    </div>
+  </section>
+
   <section class="summary-grid">
     <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="pending" title="Filtrar vehículos pendientes"><span class="summary-dot dot-amber"></span><small>En espera</small><strong><%= summary.pending %></strong></article>
     <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="in_progress" title="Filtrar vehículos en proceso"><span class="summary-dot dot-purple"></span><small>En proceso</small><strong><%= summary.inProgress %></strong></article>
     <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="completed" title="Filtrar vehículos listos"><span class="summary-dot dot-green"></span><small>Listos</small><strong><%= summary.completed %></strong></article>
-    <article role="button" tabindex="0" class="summary-clickable kpi-prominent" data-summary-filter="pending_payment" title="Filtrar saldo pendiente de cobro"><span class="summary-dot dot-danger"></span><small>Por cobrar</small><strong><%= formatMoney(paymentBreakdown.totalPendingCents) %></strong></article>
     <div class="operation-meta">
       <button type="button" data-summary-filter="all"><b><%= summary.total %></b> vehículos hoy</button>
-      <button type="button" data-summary-filter="paid">Cobrado <b><%= formatMoney(summary.collected) %></b></button>
-      <span>Proyectado <b><%= formatMoney(summary.expected) %></b></span>
     </div>
   </section>
 

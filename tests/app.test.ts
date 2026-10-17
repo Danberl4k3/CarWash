@@ -100,6 +100,28 @@ describe('aplicación web', () => {
     expect(dashboard.body).not.toContain('class="pickup-column');
   });
 
+  it('muestra cobrado, pendiente y facturado con abonos parciales y sin canceladas', async () => {
+    const serviceId = (db.prepare('SELECT id FROM services WHERE slug = ?').get('exterior') as { id: number }).id;
+    const now = getLimaNow();
+    const create = (plate: string) => createBooking(db, {
+      plate, vehicleType: 'car', baseServiceId: serviceId, addonServiceIds: [],
+      dropoffHour: 7, pickupHour: 8, paymentMethod: 'cash', phone: '999999999', name: 'Panel test', notes: '',
+    }, { now: { ...now, weekday: 'Mon' }, allowPastSlot: true });
+    const partial = create('FIN-001');
+    create('FIN-002');
+    const cancelled = create('FIN-003');
+    db.prepare('UPDATE bookings SET amount_paid_cents = 400 WHERE id = ?').run(partial.id);
+    db.prepare("UPDATE bookings SET status = 'cancelled' WHERE id = ?").run(cancelled.id);
+
+    const login = await app.inject({ method: 'POST', url: '/admin/login', payload: { username: 'admin-test', password: 'password-seguro-test' } });
+    const cookie = login.cookies[0];
+    const dashboard = await app.inject({ method: 'GET', url: '/admin', headers: { cookie: `${cookie.name}=${cookie.value}` } });
+    expect(dashboard.statusCode).toBe(200);
+    expect(dashboard.body).toMatch(/Falta cobrar<\/small>\s*<strong>S\/\s*16\.00<\/strong>/);
+    expect(dashboard.body).toMatch(/Se cobró<\/small>\s*<strong>S\/\s*4\.00<\/strong>/);
+    expect(dashboard.body).toMatch(/Total facturado<\/small>\s*<strong>S\/\s*20\.00<\/strong>/);
+  });
+
   it('refleja en el panel una reserva creada para hoy', async () => {
     const serviceId = (db.prepare('SELECT id FROM services WHERE slug = ?').get('exterior') as { id: number }).id;
     const now = getLimaNow();

@@ -86,7 +86,7 @@
     <% if (nextBookingToEnter) { %>
       <div class="next-up-card">
         <div class="next-up-header">
-          <span class="next-up-badge"><%- include('../partials/icon', { name: 'car-front' }) %> Siguiente por ingresar a pista</span>
+          <span class="next-up-badge"><%- include('../partials/icon', { name: 'car-front' }) %> Siguiente por hora de recojo</span>
           <span class="next-up-count"><%= pendingBookings.length %> en espera</span>
         </div>
         <div class="next-up-body">
@@ -101,6 +101,7 @@
             <div class="next-up-meta">
               <span>Cliente: <b><%= nextBookingToEnter.customer_name || 'Sin nombre' %></b></span>
               <span>Servicio: <b><%= nextBookingToEnter.services %></b> <strong class="next-up-price-tag"><%= formatMoney(nextBookingToEnter.total_cents) %></strong></span>
+              <span>Recojo: <b><%= hourLabel(nextBookingToEnter.pickup_hour, nextBookingToEnter.pickup_minute === null ? 0 : nextBookingToEnter.pickup_minute % 60) %></b></span>
               <span>Ingreso: <b><%= hourLabel(nextBookingToEnter.dropoff_hour, nextBookingToEnter.dropoff_minute === null ? 0 : nextBookingToEnter.dropoff_minute % 60) %></b></span>
             </div>
           </div>
@@ -116,7 +117,7 @@
         </div>
         <% if (pendingBookings.length > 1) { %>
           <div class="next-up-queue">
-            <small>Siguientes en cola:</small>
+            <small>Siguientes por recojo:</small>
             <div class="queue-chips">
               <% pendingBookings.slice(1).forEach((b) => { %>
                 <a href="#booking-<%= b.id %>" class="queue-chip">

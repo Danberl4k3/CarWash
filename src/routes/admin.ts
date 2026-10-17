@@ -161,13 +161,7 @@ export async function registerAdminRoutes(app: FastifyInstance, db: Database.Dat
 
     const paymentBreakdown = getDailyPaymentBreakdown(db, selectedDate);
 
-    const pendingBookings = bookings
-      .filter((booking) => booking.status === 'pending')
-      .sort((a, b) => {
-        const aMin = a.dropoff_minute ?? (a.dropoff_hour * 60);
-        const bMin = b.dropoff_minute ?? (b.dropoff_hour * 60);
-        return aMin - bMin;
-      });
+    const pendingBookings = bookings.filter((booking) => booking.status === 'pending');
     const nextBookingToEnter = pendingBookings[0] || null;
 
     return reply.view('admin/dashboard.ejs', {

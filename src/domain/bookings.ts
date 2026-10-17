@@ -319,7 +319,8 @@ export function listBookingsForDate(db: Database.Database, date: string): Bookin
     ${bookingDetailsSelect}
     WHERE b.booking_date = ?
     GROUP BY b.id
-    ORDER BY b.pickup_minute, b.dropoff_minute, b.created_at
+    ORDER BY COALESCE(b.pickup_minute, b.pickup_hour * 60),
+      COALESCE(b.dropoff_minute, b.dropoff_hour * 60), b.created_at, b.id
   `).all(date) as BookingDetailRow[];
 }
 

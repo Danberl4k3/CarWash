@@ -192,6 +192,36 @@ describe('aplicación web', () => {
     expect(dashboard.body.match(/class="pickup-column/g)?.length).toBe(1);
   });
 
+  it('ordena el carro siguiente por recojo y desempata por ingreso y registro', async () => {
+    const serviceId = (db.prepare('SELECT id FROM services WHERE slug = ?').get('exterior') as { id: number }).id;
+    const now = getLimaNow();
+    const create = (plate: string, pickupHour: number, pickupMinute: number, dropoffHour: number, dropoffMinute: number) => createBooking(db, {
+      plate, vehicleType: 'car', baseServiceId: serviceId, addonServiceIds: [],
+      pickupHour, pickupMinute, dropoffHour, dropoffMinute,
+      paymentMethod: 'cash', phone: '', name: '', notes: '',
+    }, { now, allowPastSlot: true });
+
+    create('ORD-120', 12, 0, 7, 0);
+    create('ORD-101', 10, 30, 9, 0);
+    create('ORD-102', 10, 30, 8, 30);
+    create('ORD-103', 10, 30, 8, 30);
+    create('ORD-090', 10, 15, 9, 30);
+
+    const login = await app.inject({ method: 'POST', url: '/admin/login', payload: { username: 'admin-test', password: 'password-seguro-test' } });
+    const cookie = login.cookies[0];
+    const dashboard = await app.inject({ method: 'GET', url: '/admin', headers: { cookie: `${cookie.name}=${cookie.value}` } });
+    expect(dashboard.statusCode).toBe(200);
+
+    const nextCard = dashboard.body.match(/<section class="next-up-card-container">([\s\S]*?)<div class="board-heading">/)?.[1];
+    expect(nextCard).toBeDefined();
+    expect(nextCard).toContain('Siguiente por hora de recojo');
+    expect(nextCard).toMatch(/class="next-up-plate">ORD-090<\/strong>/);
+    expect(nextCard).toMatch(/ORD-102[\s\S]*ORD-103[\s\S]*ORD-101[\s\S]*ORD-120/);
+
+    const board = dashboard.body.match(/<section class="pickup-board"[\s\S]*?<\/section>/)?.[0];
+    expect(board).toMatch(/ORD-090[\s\S]*ORD-102[\s\S]*ORD-103[\s\S]*ORD-101[\s\S]*ORD-120/);
+  });
+
   it('muestra botones de pago Yape para Hugo y Roxana en la página de confirmación y autocompleta teléfono', async () => {
     const serviceId = (db.prepare('SELECT id FROM services WHERE slug = ?').get('complete') as { id: number }).id;
     const booking = createBooking(db, {
